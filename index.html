@@ -68,7 +68,7 @@ main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px max(12p
 .row.drop-before::before,.row.drop-after::after{content:"";position:absolute;left:8px;right:8px;height:3px;border-radius:2px;background:var(--accent);pointer-events:none}
 .row.drop-before::before{top:-5px}
 .row.drop-after::after{bottom:-5px}
-.grip{width:18px;flex:none;color:var(--muted);opacity:.7;display:flex;justify-content:center;cursor:grab}
+.grip{width:34px;height:44px;margin:0 -6px 0 -4px;flex:none;color:var(--muted);opacity:.75;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none}
 .chk{flex:1;min-width:0;display:flex;align-items:center;gap:10px;min-height:44px;cursor:pointer}
 .chk input{width:20px;height:20px;margin:0;flex:none;accent-color:var(--accent)}
 .txt{display:flex;flex-direction:column;min-width:0}
@@ -563,6 +563,8 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     if (e.target.closest('button')) return;
     var row = e.target.closest('.row'); if (!row) return;
     var t = e.touches[0]; startCandidate(row, t.clientX, t.clientY, true);
+    // De puntjes links zijn een greep: daar begint het slepen direct, zonder lang indrukken.
+    if (e.target.closest('.grip')) { clearTimeout(drag.timer); activate(); }
   }, { passive: true });
   document.addEventListener('touchmove', function (e) {
     if (!drag) return;
