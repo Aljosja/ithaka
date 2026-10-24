@@ -64,6 +64,10 @@ main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px max(12p
 .row{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px 4px 4px 6px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:pan-y}
 .row.is-done .t{text-decoration:line-through;text-decoration-color:var(--muted);color:var(--muted)}
 .row.is-dragging{opacity:.3}
+.row{position:relative}
+.row.drop-before::before,.row.drop-after::after{content:"";position:absolute;left:8px;right:8px;height:3px;border-radius:2px;background:var(--accent);pointer-events:none}
+.row.drop-before::before{top:-5px}
+.row.drop-after::after{bottom:-5px}
 .grip{width:18px;flex:none;color:var(--muted);opacity:.7;display:flex;justify-content:center;cursor:grab}
 .chk{flex:1;min-width:0;display:flex;align-items:center;gap:10px;min-height:44px;cursor:pointer}
 .chk input{width:20px;height:20px;margin:0;flex:none;accent-color:var(--accent)}
@@ -298,10 +302,26 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   }
 
   // ---------- acties ----------
-  function moveTo(id, key) {
-    var b = find(id); if (!b || b.m === key) return;
-    b.m = key; save(); render();
-    toast('Verplaatst naar ' + destLabel(key));
+  // Verplaats een boek naar een maand/voorraad. Met beforeId komt het vóór dat boek,
+  // zonder beforeId achteraan in die maand. Werkt ook binnen dezelfde maand (volgorde).
+  function moveTo(id, key, beforeId) {
+    var b = find(id); if (!b) return;
+    var from = b.m;
+    var idx = state.books.indexOf(b);
+    var rest = state.books.slice(0, idx).concat(state.books.slice(idx + 1));
+    var at = -1, i;
+    if (beforeId && beforeId !== id) {
+      for (i = 0; i < rest.length; i++) if (rest[i].id === beforeId) { at = i; break; }
+    }
+    if (at < 0) {
+      at = rest.length;
+      for (i = rest.length - 1; i >= 0; i--) if (rest[i].m === key) { at = i + 1; break; }
+    }
+    rest.splice(at, 0, b);
+    var same = from === key && rest.every(function (x, j) { return x === state.books[j]; });
+    if (same) return;
+    b.m = key; state.books = rest; save(); render();
+    if (from !== key) toast('Verplaatst naar ' + destLabel(key));
   }
 
   list.addEventListener('change', function (e) {
@@ -479,10 +499,27 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     drag.overEl = el; drag.over = el ? el.dataset.drop : null;
     if (el) el.classList.add('is-over');
   }
+  function clearMarker() {
+    if (drag && drag.markEl) drag.markEl.classList.remove('drop-before', 'drop-after');
+    if (drag) { drag.markEl = null; drag.beforeId = null; }
+  }
+  function updateMarker(target) {
+    clearMarker();
+    if (!target || target.tagName !== 'SECTION') return;
+    var rows = Array.prototype.slice.call(target.querySelectorAll('.row')).filter(function (r) { return r.dataset.id !== drag.id; });
+    var before = null;
+    for (var i = 0; i < rows.length; i++) {
+      var rr = rows[i].getBoundingClientRect();
+      if (drag.y < rr.top + rr.height / 2) { before = rows[i]; break; }
+    }
+    if (before) { before.classList.add('drop-before'); drag.markEl = before; drag.beforeId = before.dataset.id; }
+    else if (rows.length) { rows[rows.length - 1].classList.add('drop-after'); drag.markEl = rows[rows.length - 1]; }
+  }
   function updateOver() {
     var el = document.elementFromPoint(drag.x, drag.y);
     var target = el ? el.closest('[data-drop],[data-spring]') : null;
     setOver(target && target.dataset.drop ? target : null);
+    updateMarker(target && target.dataset.drop ? target : null);
     var spring = target && target.dataset.spring && target.dataset.spring !== state.tab ? target.dataset.spring : null;
     if (spring !== drag.springKey) {
       clearTimeout(drag.springTimer); drag.springKey = spring;
@@ -508,14 +545,15 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     clearTimeout(drag.timer); clearTimeout(drag.springTimer);
     if (raf) cancelAnimationFrame(raf), raf = null;
     if (drag.active) {
-      var key = drag.over, id = drag.id;
+      var key = drag.over, id = drag.id, beforeId = drag.beforeId;
+      if (drag.markEl) drag.markEl.classList.remove('drop-before', 'drop-after');
       if (drag.overEl) drag.overEl.classList.remove('is-over');
       if (drag.ghost) drag.ghost.remove();
       var row = list.querySelector('.row[data-id="' + id + '"]'); if (row) row.classList.remove('is-dragging');
       document.body.classList.remove('dragging');
       suppressClick = true; setTimeout(function () { suppressClick = false; }, 350);
       drag = null;
-      if (commit && key) moveTo(id, key);
+      if (commit && key) moveTo(id, key, beforeId);
     } else drag = null;
   }
 
