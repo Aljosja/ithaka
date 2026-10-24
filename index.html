@@ -78,6 +78,20 @@ main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px max(12p
 .iconbtn:hover{background:var(--hover)}
 .empty{margin:0;padding:12px 10px;border:1px dashed var(--line2);border-radius:12px;font-size:13px;color:var(--muted);text-align:center}
 
+.searchrow{display:flex;gap:8px}
+.search{flex:1;min-width:0;position:relative;display:flex;align-items:center}
+.search > svg{position:absolute;left:12px;color:var(--muted);pointer-events:none}
+.search input{width:100%;min-height:44px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:inherit;font-size:16px;padding:0 42px 0 38px;-webkit-appearance:none;appearance:none}
+.search input::-webkit-search-cancel-button{display:none}
+.search input.is-active,#f-auth.is-active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.search .clear{position:absolute;right:2px;width:40px;height:40px;border:0;background:transparent;border-radius:10px;color:var(--soft);cursor:pointer;display:flex;align-items:center;justify-content:center}
+#f-auth{flex:none;width:38%;max-width:180px;min-height:44px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:inherit;font-size:14px;padding:0 8px}
+.filterinfo{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px 2px;font-size:13px;color:var(--soft)}
+.filterinfo button{flex:none;min-height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-weight:600;font-size:13px;cursor:pointer}
+.slide-l{animation:slideL .22s ease}
+.slide-r{animation:slideR .22s ease}
+@keyframes slideL{from{transform:translateX(28px);opacity:.3}to{transform:none;opacity:1}}
+@keyframes slideR{from{transform:translateX(-28px);opacity:.3}to{transform:none;opacity:1}}
 .ghost{position:fixed;left:0;top:0;z-index:50;pointer-events:none;box-shadow:0 10px 28px rgba(0,0,0,.22);transform-origin:center;opacity:.97}
 body.dragging,body.dragging *{cursor:grabbing!important}
 
@@ -126,6 +140,16 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     <div class="tabs" role="tablist">
       <button class="tab" id="tab-plan" role="tab" data-spring="plan">Planning <span class="n" id="n-plan"></span></button>
       <button class="tab" id="tab-stock" role="tab" data-spring="stock" data-drop="voorraad">Voorraad <span class="n" id="n-stock"></span></button>
+    </div>
+    <div class="searchrow">
+      <div class="search">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="q" type="search" placeholder="Zoek op titel of schrijver" autocomplete="off" enterkeyhint="search" aria-label="Zoek op titel of schrijver">
+        <button class="clear" id="q-clear" aria-label="Zoekterm wissen" hidden>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg>
+        </button>
+      </div>
+      <select id="f-auth" aria-label="Filter op schrijver"><option value="">Alle schrijvers</option></select>
     </div>
   </header>
 
@@ -268,8 +292,39 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       '<button class="iconbtn" data-act="more" aria-label="Opties voor ' + esc(b.t) + '">' + ICON_MORE + '</button>' +
       '</div>';
   }
-  function secHTML(d) {
-    var items = state.books.filter(function (b) { return b.m === d.key; });
+  // ---------- zoeken & filter ----------
+  var filter = { q: '', author: '' };
+  function norm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+  function filtering() { return filter.q.trim() !== '' || filter.author !== ''; }
+  function matches(b) {
+    if (filter.author && b.a !== filter.author) return false;
+    var q = norm(filter.q.trim()); if (!q) return true;
+    var hay = norm(b.t + ' ' + b.a);
+    return q.split(/\s+/).every(function (w) { return hay.indexOf(w) >= 0; });
+  }
+  function renderAuthors() {
+    var sel = $('f-auth');
+    var names = [];
+    state.books.forEach(function (b) { if (b.a && names.indexOf(b.a) < 0) names.push(b.a); });
+    names.sort(function (x, y) { return x.localeCompare(y, 'nl'); });
+    if (filter.author && names.indexOf(filter.author) < 0) filter.author = '';
+    sel.innerHTML = '<option value="">Alle schrijvers</option>' + names.map(function (n) { return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join('');
+    sel.value = filter.author;
+  }
+  function updateFilterUI() {
+    $('q-clear').hidden = filter.q === '';
+    $('q').classList.toggle('is-active', filter.q.trim() !== '');
+    $('f-auth').classList.toggle('is-active', filter.author !== '');
+  }
+  function clearFilters() {
+    filter.q = ''; filter.author = '';
+    $('q').value = ''; $('f-auth').value = '';
+    updateFilterUI(); render(); list.scrollTop = 0;
+  }
+
+  function secHTML(d, filtered) {
+    var items = state.books.filter(function (b) { return b.m === d.key && (!filtered || matches(b)); });
+    if (filtered && !items.length) return '';
     var doneN = items.filter(function (b) { return b.done; }).length;
     var now = nowKey() === d.key ? ' is-now' : '';
     return '<section class="sec' + now + '" data-drop="' + d.key + '" id="sec-' + d.key + '">' +
@@ -286,15 +341,35 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     $('prog-bar').style.width = pct + '%';
     $('n-plan').textContent = planned.length;
     $('n-stock').textContent = state.books.length - planned.length;
-    $('tab-plan').classList.toggle('is-on', state.tab === 'plan');
-    $('tab-stock').classList.toggle('is-on', state.tab === 'stock');
-    $('tab-plan').setAttribute('aria-selected', state.tab === 'plan');
-    $('tab-stock').setAttribute('aria-selected', state.tab === 'stock');
+    var f = filtering();
+    $('tab-plan').classList.toggle('is-on', !f && state.tab === 'plan');
+    $('tab-stock').classList.toggle('is-on', !f && state.tab === 'stock');
+    $('tab-plan').setAttribute('aria-selected', !f && state.tab === 'plan');
+    $('tab-stock').setAttribute('aria-selected', !f && state.tab === 'stock');
   }
   function render() {
     renderHeader();
-    var secs = state.tab === 'plan' ? DESTS.filter(function (d) { return d.key !== 'voorraad'; }) : [DESTS[DESTS.length - 1]];
-    list.innerHTML = secs.map(secHTML).join('');
+    renderAuthors();
+    var f = filtering();
+    // Tijdens zoeken: resultaten uit planning én voorraad, alleen maanden met treffers.
+    var secs = f ? DESTS : (state.tab === 'plan' ? DESTS.filter(function (d) { return d.key !== 'voorraad'; }) : [DESTS[DESTS.length - 1]]);
+    var html = secs.map(function (d) { return secHTML(d, f); }).join('');
+    if (f) {
+      var n = state.books.filter(matches).length;
+      html = '<div class="filterinfo"><span>' + (n ? n + (n === 1 ? ' boek' : ' boeken') + ' gevonden' : 'Niets gevonden') + '</span>' +
+        '<button data-act="clearfilters">Wis zoeken</button></div>' + html;
+    }
+    list.innerHTML = html;
+  }
+  function goTab(t) {
+    if (filtering()) { filter.q = ''; filter.author = ''; $('q').value = ''; updateFilterUI(); }
+    if (state.tab !== t) { state.tab = t; save(); list.scrollTop = 0; }
+    render();
+  }
+  function swipeTo(t, cls) {
+    if (state.tab === t) return;
+    state.tab = t; save(); render(); list.scrollTop = 0;
+    list.classList.remove('slide-l', 'slide-r'); void list.offsetWidth; list.classList.add(cls);
   }
   function setTab(tab) {
     if (state.tab === tab) return;
@@ -339,12 +414,34 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   });
   list.addEventListener('click', function (e) {
     if (suppressClick) { e.preventDefault(); e.stopPropagation(); return; }
+    if (e.target.closest('button[data-act="clearfilters"]')) { clearFilters(); return; }
     var btn = e.target.closest('button[data-act="more"]'); if (!btn) return;
     openActions(btn.closest('.row').dataset.id);
   }, true);
 
-  $('tab-plan').addEventListener('click', function () { setTab('plan'); });
-  $('tab-stock').addEventListener('click', function () { setTab('stock'); });
+  $('tab-plan').addEventListener('click', function () { goTab('plan'); });
+  $('tab-stock').addEventListener('click', function () { goTab('stock'); });
+  $('q').addEventListener('input', function () { filter.q = this.value; updateFilterUI(); render(); list.scrollTop = 0; });
+  $('q').addEventListener('keydown', function (e) { if (e.key === 'Enter') this.blur(); });
+  $('q-clear').addEventListener('click', function () { filter.q = ''; $('q').value = ''; updateFilterUI(); render(); $('q').focus(); });
+  $('f-auth').addEventListener('change', function () { filter.author = this.value; updateFilterUI(); render(); list.scrollTop = 0; });
+
+  // vegen tussen Planning en Voorraad
+  var sw = null;
+  list.addEventListener('touchstart', function (e) {
+    if (e.touches.length !== 1) { sw = null; return; }
+    var t = e.touches[0]; sw = { x: t.clientX, y: t.clientY, dx: 0, dy: 0, at: Date.now(), blocked: false };
+  }, { passive: true });
+  list.addEventListener('touchmove', function (e) {
+    if (!sw) return; var t = e.touches[0]; sw.dx = t.clientX - sw.x; sw.dy = t.clientY - sw.y;
+  }, { passive: true });
+  list.addEventListener('touchend', function () {
+    var s = sw; sw = null;
+    if (!s || s.blocked || filtering()) return;
+    if (Math.abs(s.dx) > 70 && Math.abs(s.dx) > Math.abs(s.dy) * 1.6 && Date.now() - s.at < 800) {
+      if (s.dx < 0) swipeTo('stock', 'slide-l'); else swipeTo('plan', 'slide-r');
+    }
+  });
   $('btn-add').addEventListener('click', openAdd);
   $('btn-backup').addEventListener('click', openBackup);
 
@@ -374,11 +471,13 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     }).join('');
     openSheet('Opties voor ' + b.t,
       '<div style="display:flex;flex-direction:column;gap:2px"><h3>' + esc(b.t) + '</h3>' + (b.a ? '<span class="a">' + esc(b.a) + '</span>' : '') + '</div>' +
+      '<button class="btn" id="edit-open" style="flex:none">Titel of schrijver aanpassen</button>' +
       '<p class="lbl">Verplaats naar</p><div class="destgrid">' + grid + '</div>' +
       '<div id="delzone"><button class="linkdanger" id="ask-del">Verwijder uit de lijst</button></div>');
     sheet.querySelectorAll('[data-dest]').forEach(function (el) {
       el.addEventListener('click', function () { closeSheet(); moveTo(id, el.dataset.dest); });
     });
+    $('edit-open').addEventListener('click', function () { openEdit(id); });
     $('ask-del').addEventListener('click', function () {
       $('delzone').innerHTML = '<p class="note" style="margin-bottom:10px">Dit boek verdwijnt uit je planning en voorraad.</p>' +
         '<div class="btnrow"><button class="btn" id="del-no">Annuleer</button><button class="btn danger" id="del-yes">Verwijder</button></div>';
@@ -388,6 +487,27 @@ body.dragging,body.dragging *{cursor:grabbing!important}
         save(); closeSheet(); render(); toast('Verwijderd');
       });
       $('del-yes').focus();
+    });
+  }
+
+  function openEdit(id) {
+    var b = find(id); if (!b) return;
+    openSheet('Boek aanpassen',
+      '<h3>Boek aanpassen</h3>' +
+      '<form id="editform" style="display:flex;flex-direction:column;gap:12px" novalidate>' +
+      '<div class="field"><label for="e-title">Titel</label><input id="e-title" type="text" autocomplete="off" required></div>' +
+      '<div class="field"><label for="e-author">Auteur</label><input id="e-author" type="text" autocomplete="off"></div>' +
+      '<div class="btnrow"><button type="button" class="btn" id="edit-no">Annuleer</button><button type="submit" class="btn primary" id="edit-yes">Bewaar</button></div>' +
+      '</form>', '#e-title');
+    var ti = $('e-title'), au = $('e-author');
+    ti.value = b.t; au.value = b.a || '';
+    ti.addEventListener('input', function () { $('edit-yes').disabled = ti.value.trim() === ''; });
+    $('edit-no').addEventListener('click', closeSheet);
+    $('editform').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var t = ti.value.trim(); if (!t) return;
+      b.t = t; b.a = au.value.trim();
+      save(); closeSheet(); render(); toast('Aangepast');
     });
   }
 
@@ -411,6 +531,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       var m = $('f-dest').value;
       state.books.push({ id: 'n' + (state.nextId++), t: t, a: $('f-author').value.trim(), m: m, done: false });
       state.tab = m === 'voorraad' ? 'stock' : 'plan';
+      filter.q = ''; filter.author = ''; $('q').value = ''; updateFilterUI();
       save(); closeSheet(); render();
       var sec = $('sec-' + m); if (sec) sec.scrollIntoView({ block: 'center', behavior: 'smooth' });
       toast('Toegevoegd aan ' + destLabel(m));
@@ -479,6 +600,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   function activate() {
     if (!drag || drag.active) return;
     drag.active = true;
+    if (sw) sw.blocked = true;
     try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {}
     var r = drag.row.getBoundingClientRect();
     drag.offX = drag.x - r.left; drag.offY = drag.y - r.top;
