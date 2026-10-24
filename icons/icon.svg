@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3E2616"/>
+      <stop offset="1" stop-color="#1F130A"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.6" cy="0.44" r="0.55">
+      <stop offset="0" stop-color="#E07A2E" stop-opacity="0.75"/>
+      <stop offset="0.45" stop-color="#B5541E" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#B5541E" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="sun" cx="0.4" cy="0.35" r="0.7">
+      <stop offset="0" stop-color="#F7C67A"/>
+      <stop offset="1" stop-color="#E0873A"/>
+    </radialGradient>
+    <clipPath id="clip"><rect x="261" y="0" width="251" height="512"/></clipPath>
+    <linearGradient id="main" x1="0" y1="0" x2="1" y2="0.2">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="0.55" stop-color="#F7EEE3"/>
+      <stop offset="1" stop-color="#DCC6AE"/>
+    </linearGradient>
+    <linearGradient id="jib" x1="1" y1="0" x2="0" y2="0.2">
+      <stop offset="0" stop-color="#ECE2D4"/>
+      <stop offset="1" stop-color="#C4B29C"/>
+    </linearGradient>
+    <linearGradient id="hull" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#D3BFA8"/>
+    </linearGradient>
+    <filter id="sh" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#0D0703" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <rect width="512" height="512" fill="url(#glow)"/>
+  <circle cx="300" cy="226" r="104" fill="url(#sun)" clip-path="url(#clip)"/>
+  <g filter="url(#sh)">
+    <rect x="251" y="122" width="10" height="262" rx="5" fill="#F3ECE2"/>
+    <rect x="256" y="122" width="5" height="262" rx="2.5" fill="#D6CABA"/>
+    <path d="M266 128 C 318 206, 360 280, 388 362 L 266 362 Z" fill="url(#main)"/>
+    <path d="M266 224 C 300 264, 328 312, 344 362" fill="none" stroke="#CDB9A2" stroke-width="2.5" opacity="0.8"/>
+    <path d="M246 156 C 214 224, 178 298, 132 362 L 246 362 Z" fill="url(#jib)"/>
+    <path d="M112 376 L 400 376 L 392 388 L 120 388 Z" fill="#FBF6EF"/>
+    <path d="M120 388 L 392 388 L 356 434 C 300 442, 212 442, 156 434 Z" fill="url(#hull)"/>
+  </g>
+</svg>
