@@ -33,7 +33,7 @@
     --unplan:#8FB0E3; --tgt:#8C7B6B;
     color-scheme:dark;
   }
-  .tag,.tagopt:not(.is-on){color:var(--tag-c)!important}
+  .tag,.tagopt:not(.is-on),.lnm b,.showbtn{color:var(--tag-c)!important}
 }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
@@ -172,10 +172,48 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .tagrowbtn .tn{flex:1;min-width:0;font-weight:600;font-size:15px;overflow-wrap:anywhere}
 .tagrowbtn .tc{font-size:12px;color:var(--muted);flex:none}
 .tagrow .sure{min-height:36px;border:0;border-radius:9px;background:var(--danger);color:var(--surface);font-weight:600;font-size:13px;padding:0 12px;margin-right:4px;cursor:pointer}
-.swatches{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px}
+.swatches{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;max-width:320px}
 .sw{aspect-ratio:1;width:100%;max-width:100%;border-radius:50%;border:3px solid var(--surface);box-shadow:0 0 0 1px var(--line2);cursor:pointer;padding:0}
 .sw.is-on{box-shadow:0 0 0 2px var(--ink)}
 .preview{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.preview .tag svg{flex:none}
+.tico{width:18px;height:18px;flex:none;display:flex;align-items:center;justify-content:center}
+.swline{display:flex;align-items:center;gap:12px}
+.swline span{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.swline b{font-size:14px;font-weight:600}
+.swline em{font-style:normal;font-size:12.5px;line-height:1.35;color:var(--muted)}
+.switch{position:relative;width:48px;height:30px;flex:none;border:0;border-radius:15px;background:var(--line2);cursor:pointer;padding:0}
+.switch::after{content:'';position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#FFFFFF;box-shadow:0 1px 3px rgba(42,29,20,.3);transition:left .15s}
+.switch.is-on{background:var(--accent)}
+.switch.is-on::after{left:21px}
+.icons{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;max-width:340px}
+.icb{height:44px;border:1px solid var(--line2);border-radius:10px;background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);padding:0}
+.icb.is-on{border:2px solid var(--tag-c);color:var(--tag-c)}
+.tagopt.is-line{display:inline-flex;align-items:center;gap:6px;padding-left:10px}
+.tagopt.is-line svg{flex:none}
+.fchip.is-line{gap:6px;padding-left:10px}
+.syms{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;margin-right:-6px}
+.sym{display:flex;color:var(--tag-c)}
+.lanes{display:flex;flex-direction:column;gap:2px;margin:0 -6px}
+.lh{display:grid;grid-template-columns:24px minmax(0,1fr) auto 20px;column-gap:10px;align-items:center;min-height:52px;width:100%;border:0;border-radius:12px;background:transparent;padding:4px 8px;text-align:left;cursor:pointer;color:var(--ink)}
+.lh.is-open{background:var(--track)}
+.lic{display:flex;justify-content:center;color:var(--tag-c)}
+.lnm{display:flex;flex-direction:column;gap:6px;min-width:0}
+.lnm b{font-size:14.5px;font-weight:700;color:var(--tag-d);overflow-wrap:anywhere}
+.segs{display:flex;gap:2px}
+.segs i{flex:1;height:5px;border-radius:2px;display:block;background:var(--tag-c);opacity:.22}
+.segs i.is-bezig{opacity:.6}
+.segs i.is-done{opacity:1}
+.lct{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.lbody{display:flex;flex-direction:column;padding:4px 8px 12px 42px}
+.drow{display:grid;grid-template-columns:12px minmax(0,1fr) auto;column-gap:10px;align-items:center;min-height:32px}
+.drow .d{width:10px;height:10px;border-radius:50%;border:2px solid var(--tag-c);background:var(--surface)}
+.drow .d.is-done{background:var(--tag-c)}
+.drow .d.is-bezig{background:linear-gradient(90deg,var(--tag-c) 50%,var(--surface) 50%)}
+.drow .bt{font-family:var(--f-title);font-size:14px;line-height:1.25;overflow-wrap:anywhere}
+.drow.is-done .bt{color:var(--muted)}
+.drow .m{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.showbtn{align-self:flex-start;margin-top:8px;min-height:40px;border:1.5px solid var(--tag-c);border-radius:10px;background:transparent;color:var(--tag-d);font-weight:600;font-size:13.5px;padding:0 14px;cursor:pointer}
 .datefields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .brow{display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);padding:8px 0}
 .brow .bt{flex:1;min-width:0;display:flex;flex-direction:column}
@@ -309,8 +347,31 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     { name: 'Blauw', c: '#4A6FA5', d: '#2B4B7A' },
     { name: 'Pruim', c: '#8A5A86', d: '#5E3A5B' },
     { name: 'Rood', c: '#B23A2E', d: '#82231A' },
-    { name: 'Taupe', c: '#8C7B6B', d: '#55483D' }
+    { name: 'Taupe', c: '#8C7B6B', d: '#55483D' },
+    { name: 'Oudroze', c: '#C06A7E', d: '#8A3C50' },
+    { name: 'Indigo', c: '#5A5CA6', d: '#383A78' },
+    { name: 'Petrol', c: '#2E7A8F', d: '#1A5263' },
+    { name: 'Leisteen', c: '#5F6E7A', d: '#3A4651' }
   ];
+  // symbolen voor lijnen
+  var ICONS = [
+    { id: 'zeil', name: 'Zeil', d: 'M12 3v14M12 3l6 11h-6M4 18h16l-2.5 3h-11z' },
+    { id: 'golf', name: 'Golf', d: 'M3 10c3-3 6-3 9 0s6 3 9 0M3 16c3-3 6-3 9 0s6 3 9 0' },
+    { id: 'oog', name: 'Oog', d: 'M2 12s4-6 10-6 10 6 10 6-4 6-10 6S2 12 2 12zM14.5 12a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z' },
+    { id: 'zuil', name: 'Zuil', d: 'M4 5h16M6 8h12M8 8v10M12 8v10M16 8v10M5 18h14M3 21h18' },
+    { id: 'kaars', name: 'Kaars', d: 'M9.5 11h5v10h-5zM12 3c1.6 2 1.6 3.8 0 5.5-1.6-1.7-1.6-3.5 0-5.5z' },
+    { id: 'hamer', name: 'Hamer', d: 'M13 3.5l7.5 7.5-3 3L10 6.5zM13.8 10.2L4 20' },
+    { id: 'vlam', name: 'Vlam', d: 'M12 3c4 4 6 7 6 11a6 6 0 0 1-12 0c0-3 1.5-5 3-6.5 0 2 1 3.2 2.2 3.5C11 8 11.5 5.5 12 3z' },
+    { id: 'vlok', name: 'Sneeuwvlok', d: 'M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M9.5 4.5L12 7l2.5-2.5M9.5 19.5L12 17l2.5 2.5' },
+    { id: 'ster', name: 'Ster', d: 'M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z' },
+    { id: 'maan', name: 'Maan', d: 'M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z' },
+    { id: 'sleutel', name: 'Sleutel', d: 'M11 13a4 4 0 1 1-5.7-5.7A4 4 0 0 1 11 13zM11 13l9-9M16.5 7.5l3 3' },
+    { id: 'boom', name: 'Boom', d: 'M12 21v-7M12 3a6 6 0 0 1 6 6 5 5 0 0 1-6 5 5 5 0 0 1-6-5 6 6 0 0 1 6-6z' }
+  ];
+  function iconOf(t) { for (var i = 0; i < ICONS.length; i++) if (ICONS[i].id === (t && t.icon)) return ICONS[i]; return ICONS[0]; }
+  function iconSVG(t, size, color) {
+    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="' + (color || 'currentColor') + '" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + iconOf(t).d + '"/></svg>';
+  }
   function defaultTags() { return [{ id: 'opt', name: 'optioneel', color: 1 }, { id: 'her', name: 'herlezen', color: 3 }]; }
 
   var SEED = [
@@ -448,6 +509,10 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   function findTag(id) { for (var i = 0; i < state.tags.length; i++) if (state.tags[i].id === id) return state.tags[i]; return null; }
   function pal(t) { return PALETTE[t && t.color] || PALETTE[0]; }
   function tagVars(t) { var p = pal(t); return '--tag-c:' + p.c + ';--tag-d:' + p.d; }
+  function isLine(id) { var t = findTag(id); return !!(t && t.line); }
+  function linesOf(b) { return b.tags.map(findTag).filter(function (t) { return t && t.line; }); }
+  function lineTags() { return state.tags.filter(function (t) { return t.line; }); }
+  function plainTags() { return state.tags.filter(function (t) { return !t.line; }); }
   var toastTimer = null;
   function toast(msg) {
     var t = $('toast'); t.textContent = msg; t.hidden = false;
@@ -509,7 +574,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   function rangeLabel(b) { return b.until ? MON_SHORT[+b.m - 1] + ' – ' + MON_SHORT[+b.until - 1] : ''; }
   function tagsHTML(ids, b) {
     var out = (b && b.until ? '<span class="span">' + rangeLabel(b) + '</span>' : '') +
-      ids.map(function (id) { var t = findTag(id); if (!t) return ''; return '<span class="tag" style="' + tagVars(t) + ';background:' + pal(t).c + '26"><i></i>' + esc(t.name) + '</span>'; }).join('');
+      ids.map(function (id) { var t = findTag(id); if (!t || t.line) return ''; return '<span class="tag" style="' + tagVars(t) + ';background:' + pal(t).c + '26"><i></i>' + esc(t.name) + '</span>'; }).join('');
     return out ? '<span class="tags">' + out + '</span>' : '';
   }
   var ICON_BOOK = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h6a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H3z"/><path d="M21 5h-6a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h7z"/></svg>';
@@ -519,8 +584,15 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       '<span class="grip" aria-hidden="true">' + ICON_GRIP + '</span>' +
       '<button class="st st-' + b.status + '" data-act="status" aria-label="' + esc(b.t) + ': ' + stLabel(b) + '"><i>' + (b.status === 'done' ? ICON_CHECK : b.status === 'bezig' ? ICON_BOOK : '') + '</i></button>' +
       '<span class="txt"><span class="t">' + esc(b.t) + '</span>' + (b.a ? '<span class="a">' + esc(b.a) + '</span>' : '') + tagsHTML(b.tags, b) + '</span>' +
+      symsHTML(b) +
       '<button class="iconbtn" data-act="more" aria-label="Opties voor ' + esc(b.t) + '">' + ICON_MORE + '</button>' +
       '</div>';
+  }
+  function symsHTML(b) {
+    var ls = linesOf(b);
+    if (!ls.length) return '';
+    return '<span class="syms" role="img" aria-label="Lijn: ' + esc(ls.map(function (t) { return t.name; }).join(', ')) + '">' +
+      ls.map(function (t) { return '<span class="sym" style="' + tagVars(t) + '">' + iconSVG(t, 15) + '</span>'; }).join('') + '</span>';
   }
   function monthInfo(key) {
     var items = state.books.filter(function (b) { return b.m === key; });
@@ -590,7 +662,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     if (!filtering()) { box.hidden = true; box.innerHTML = ''; return; }
     var chips = [];
     if (filter.q.trim()) chips.push('<button class="fchip" data-rm="q">“' + esc(filter.q.trim()) + '”' + ICON_X + '</button>');
-    filter.tags.forEach(function (id) { var t = findTag(id); if (t) chips.push('<button class="fchip" data-rm="tag" data-id="' + esc(id) + '" style="' + tagVars(t) + ';border-color:var(--tag-c);color:var(--tag-d)">' + esc(t.name) + ICON_X + '</button>'); });
+    filter.tags.forEach(function (id) { var t = findTag(id); if (t) chips.push('<button class="fchip' + (t.line ? ' is-line' : '') + '" data-rm="tag" data-id="' + esc(id) + '" style="' + tagVars(t) + ';border-color:var(--tag-c);color:var(--tag-d)" aria-label="' + (t.line ? 'Lijn ' : 'Tag ') + esc(t.name) + ' weghalen">' + (t.line ? iconSVG(t, 15) : '') + esc(t.name) + ICON_X + '</button>'); });
     if (filter.author) chips.push('<button class="fchip" data-rm="author">' + esc(filter.author) + ICON_X + '</button>');
     if (filter.status !== 'all') chips.push('<button class="fchip" data-rm="status">' + STATUS_LABEL[filter.status] + ICON_X + '</button>');
     box.innerHTML = chips.join('') + '<button class="fclear" data-rm="all">Wis alles</button>';
@@ -751,13 +823,20 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   overlay.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSheet(); });
 
   function tagOptHTML(t, on, attr) {
-    return '<button class="tagopt' + (on ? ' is-on' : '') + '" ' + attr + ' aria-pressed="' + on + '" style="' + tagVars(t) + '">' + esc(t.name) + '</button>';
+    return '<button class="tagopt' + (t.line ? ' is-line' : '') + (on ? ' is-on' : '') + '" ' + attr + ' aria-pressed="' + on + '" style="' + tagVars(t) + '">' + (t.line ? iconSVG(t, 15) : '') + esc(t.name) + '</button>';
+  }
+  // lijnen en tags als twee groepen keuzeknoppen; extra: iets achter de tags (bijv. '+ Nieuwe tag')
+  function tagGroupsHTML(isOn, attrName, extra) {
+    var opt = function (t) { return tagOptHTML(t, isOn(t.id), attrName + '="' + esc(t.id) + '" type="button"'); };
+    var ls = lineTags(), ts = plainTags();
+    return (ls.length ? '<p class="lbl">Lijnen</p><div class="chips">' + ls.map(opt).join('') + '</div>' : '') +
+      '<p class="lbl">Tags</p><div class="chips">' + (ts.map(opt).join('') || (extra ? '' : '<span class="note">Nog geen tags.</span>')) + (extra || '') + '</div>';
   }
 
   // boek: tags, verplaatsen, aanpassen, verwijderen
   function openActions(id) {
     var b = find(id); if (!b) return;
-    var tagsHtml = state.tags.map(function (t) { return tagOptHTML(t, b.tags.indexOf(t.id) >= 0, 'data-tag="' + esc(t.id) + '"'); }).join('');
+    var tagsHtml = tagGroupsHTML(function (tid) { return b.tags.indexOf(tid) >= 0; }, 'data-tag', '<button class="addtag" id="newtag">+ Nieuwe tag</button>');
     var grid = DESTS.map(function (d) {
       var cur = d.key === b.m;
       return '<button class="dest' + (d.wide ? ' wide' : '') + (cur ? ' is-cur' : '') + '" data-dest="' + d.key + '"' + (cur ? ' disabled aria-current="true"' : '') + '>' + d.short + '</button>';
@@ -774,7 +853,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       (+b.m >= 1 ? '<div class="field"><label for="d-until">Gepland t/m</label><select id="d-until"><option value="">Alleen ' + destLabel(b.m).toLowerCase() + '</option>' +
         MONTHS.slice(+b.m).map(function (name, i) { var v = String(+b.m + i + 1); return '<option value="' + v + '"' + (b.until === v ? ' selected' : '') + '>' + destLabel(b.m) + ' t/m ' + name.toLowerCase() + '</option>'; }).join('') +
         '</select></div>' : '') +
-      '<p class="lbl">Tags</p><div class="chips">' + tagsHtml + '<button class="addtag" id="newtag">+ Nieuwe tag</button></div>' +
+      tagsHtml +
       '<p class="lbl">Verplaats naar</p><div class="destgrid">' + grid + '</div>' +
       '<button class="btn" id="edit-open" style="flex:none">Titel of schrijver aanpassen</button>' +
       '<div id="delzone"><button class="linkdanger" id="ask-del">Verwijder uit de lijst</button></div>');
@@ -835,15 +914,15 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   // filters
   function openFilter() {
     var n = state.books.filter(matches).length;
-    var opts = state.tags.map(function (t) { return tagOptHTML(t, filter.tags.indexOf(t.id) >= 0, 'data-ftag="' + esc(t.id) + '"'); }).join('');
+    var opts = tagGroupsHTML(function (tid) { return filter.tags.indexOf(tid) >= 0; }, 'data-ftag');
     var status = [['all', 'Alles'], ['open', 'Te lezen'], ['bezig', 'Bezig'], ['done', 'Gelezen']].map(function (o) {
       return '<button data-status="' + o[0] + '" class="' + (filter.status === o[0] ? 'is-on' : '') + '">' + o[1] + '</button>';
     }).join('');
     var auth = '<option value="">Alle schrijvers</option>' + authors().map(function (a) { return '<option value="' + esc(a) + '"' + (a === filter.author ? ' selected' : '') + '>' + esc(a) + '</option>'; }).join('');
     openSheet('Filters',
       '<h3>Filters</h3>' +
-      '<p class="lbl">Tags</p><div class="chips">' + (opts || '<span class="note">Nog geen tags.</span>') + '</div>' +
-      '<button class="linkbtn" id="tags-manage">Tags beheren</button>' +
+      opts +
+      '<button class="linkbtn" id="tags-manage">Tags en lijnen beheren</button>' +
       '<p class="lbl">Status</p><div class="seg2">' + status + '</div>' +
       '<div class="field"><label for="f-auth">Schrijver</label><select id="f-auth">' + auth + '</select></div>' +
       '<div class="btnrow"><button class="btn" id="f-clear">Wis filters</button><button class="btn primary" id="f-show">Toon ' + n + (n === 1 ? ' boek' : ' boeken') + '</button></div>');
@@ -865,29 +944,41 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   }
 
   // tags beheren
-  var tagForm = { name: '', color: 4, editId: null, confirm: null };
+  function newTagForm(from) { return { name: '', color: 4, line: false, icon: 'zeil', editId: null, confirm: null, from: from }; }
+  var tagForm = newTagForm();
   function openTags(from) {
-    if (from !== undefined) { tagForm = { name: '', color: 4, editId: null, confirm: null, from: from }; }
+    if (from !== undefined) tagForm = newTagForm(from);
     var f = tagForm, p = PALETTE[f.color];
-    var rows = state.tags.map(function (t) {
+    var rowOf = function (t) {
       var n = state.books.filter(function (b) { return b.tags.indexOf(t.id) >= 0; }).length;
-      var sure = f.confirm === t.id;
+      var sure = f.confirm === t.id, kind = t.line ? 'Lijn ' : 'Tag ';
       return '<div class="tagrow' + (f.editId === t.id ? ' is-edit' : '') + '" style="' + tagVars(t) + '">' +
-        '<button class="tagrowbtn" data-tedit="' + esc(t.id) + '" aria-label="Tag ' + esc(t.name) + ' aanpassen"><i></i><span class="tn">' + esc(t.name) + '</span><span class="tc">' + (n === 1 ? '1 boek' : n + ' boeken') + '</span></button>' +
-        (sure ? '<button class="sure" data-tdelok="' + esc(t.id) + '">Verwijder</button>' : '<button class="iconbtn" data-tdel="' + esc(t.id) + '" aria-label="Tag ' + esc(t.name) + ' verwijderen">' + ICON_TRASH + '</button>') +
+        '<button class="tagrowbtn" data-tedit="' + esc(t.id) + '" aria-label="' + kind + esc(t.name) + ' aanpassen">' + (t.line ? '<span class="tico">' + iconSVG(t, 18, pal(t).c) + '</span>' : '<i></i>') + '<span class="tn">' + esc(t.name) + '</span><span class="tc">' + (n === 1 ? '1 boek' : n + ' boeken') + '</span></button>' +
+        (sure ? '<button class="sure" data-tdelok="' + esc(t.id) + '">Verwijder</button>' : '<button class="iconbtn" data-tdel="' + esc(t.id) + '" aria-label="' + kind + esc(t.name) + ' verwijderen">' + ICON_TRASH + '</button>') +
         '</div>';
-    }).join('');
+    };
+    var ls = lineTags(), ts = plainTags();
+    var rows = (ls.length ? '<p class="lbl">Lijnen</p>' + ls.map(rowOf).join('') : '') +
+      '<p class="lbl">Tags</p>' + (ts.map(rowOf).join('') || '<p class="note">Nog geen tags.</p>');
     var swatches = PALETTE.map(function (q, i) {
       return '<button class="sw' + (i === f.color ? ' is-on' : '') + '" data-sw="' + i + '" role="radio" aria-checked="' + (i === f.color) + '" aria-label="' + q.name + '" style="background:' + q.c + '"></button>';
     }).join('');
-    openSheet('Tags beheren',
-      '<div class="sheethead"><h3>Tags beheren</h3><button class="linkbtn" id="tags-done" style="align-self:center">Klaar</button></div>' +
-      '<div style="display:flex;flex-direction:column;gap:6px">' + (rows || '<p class="note">Nog geen tags.</p>') + '</div>' +
-      '<p class="lbl">' + (f.editId ? 'Tag aanpassen' : 'Nieuwe tag') + '</p>' +
-      '<div class="field"><label for="tg-name">Naam</label><input id="tg-name" type="text" autocomplete="off" placeholder="Bijv. herlezen" maxlength="24"></div>' +
+    var icons = ICONS.map(function (q) {
+      var on = q.id === f.icon;
+      return '<button class="icb' + (on ? ' is-on' : '') + '" data-ic="' + q.id + '" role="radio" aria-checked="' + on + '" aria-label="' + q.name + '" style="--tag-c:' + p.c + '">' + iconSVG({ icon: q.id }, 20) + '</button>';
+    }).join('');
+    var what = f.line ? 'lijn' : 'tag';
+    openSheet('Tags en lijnen',
+      '<div class="sheethead"><h3>Tags en lijnen</h3><button class="linkbtn" id="tags-done" style="align-self:center">Klaar</button></div>' +
+      '<div style="display:flex;flex-direction:column;gap:6px">' + rows + '</div>' +
+      '<p class="lbl">' + (f.editId ? (f.line ? 'Lijn' : 'Tag') + ' aanpassen' : 'Nieuwe tag of lijn') + '</p>' +
+      '<div class="field"><label for="tg-name">Naam</label><input id="tg-name" type="text" autocomplete="off" placeholder="' + (f.line ? 'Bijv. Epos' : 'Bijv. herlezen') + '" maxlength="24"></div>' +
       '<div class="swatches" role="radiogroup" aria-label="Kleur">' + swatches + '</div>' +
-      '<div class="preview">Voorbeeld <span class="tag" id="tg-prev" style="--tag-c:' + p.c + ';--tag-d:' + p.d + ';background:' + p.c + '26"><i></i><span id="tg-prev-t"></span></span></div>' +
-      '<div class="btnrow">' + (f.editId ? '<button class="btn" id="tg-cancel">Annuleer</button>' : '') + '<button class="btn primary" id="tg-save">' + (f.editId ? 'Bewaar' : 'Toevoegen') + '</button></div>');
+      '<div class="swline"><span><b>Lijn</b><em>Een thema door je jaar. Krijgt een symbool op de boekkaart en een eigen lijstje in Jouw leesjaar.</em></span>' +
+        '<button class="switch' + (f.line ? ' is-on' : '') + '" id="tg-line" role="switch" aria-checked="' + f.line + '" aria-label="Lijn"></button></div>' +
+      (f.line ? '<div class="icons" role="radiogroup" aria-label="Symbool">' + icons + '</div>' : '') +
+      '<div class="preview">Voorbeeld <span class="tag" id="tg-prev" style="--tag-c:' + p.c + ';--tag-d:' + p.d + ';background:' + p.c + '26">' + (f.line ? iconSVG(f, 13) : '<i></i>') + '<span id="tg-prev-t"></span></span></div>' +
+      '<div class="btnrow">' + (f.editId ? '<button class="btn" id="tg-cancel">Annuleer</button>' : '') + '<button class="btn primary" id="tg-save">' + (f.editId ? 'Bewaar' : what.charAt(0).toUpperCase() + what.slice(1) + ' toevoegen') + '</button></div>');
     var inp = $('tg-name');
     inp.value = f.name;
     var sync = function () { $('tg-prev-t').textContent = inp.value.trim() || 'voorbeeld'; $('tg-save').disabled = inp.value.trim() === ''; };
@@ -897,8 +988,12 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     sheet.querySelectorAll('[data-sw]').forEach(function (el) {
       el.addEventListener('click', function () { tagForm.color = +el.dataset.sw; tagForm.name = inp.value; openTags(); });
     });
+    sheet.querySelectorAll('[data-ic]').forEach(function (el) {
+      el.addEventListener('click', function () { tagForm.icon = el.dataset.ic; tagForm.name = inp.value; openTags(); });
+    });
+    $('tg-line').addEventListener('click', function () { tagForm.line = !tagForm.line; tagForm.name = inp.value; openTags(); });
     sheet.querySelectorAll('[data-tedit]').forEach(function (el) {
-      el.addEventListener('click', function () { var t = findTag(el.dataset.tedit); if (!t) return; tagForm.editId = t.id; tagForm.name = t.name; tagForm.color = t.color; tagForm.confirm = null; openTags(); });
+      el.addEventListener('click', function () { var t = findTag(el.dataset.tedit); if (!t) return; tagForm.editId = t.id; tagForm.name = t.name; tagForm.color = t.color; tagForm.line = !!t.line; tagForm.icon = t.icon || 'zeil'; tagForm.confirm = null; openTags(); });
     });
     sheet.querySelectorAll('[data-tdel]').forEach(function (el) {
       el.addEventListener('click', function () { tagForm.confirm = el.dataset.tdel; tagForm.name = inp.value; openTags(); });
@@ -911,23 +1006,26 @@ body.dragging,body.dragging *{cursor:grabbing!important}
         filter.tags = filter.tags.filter(function (x) { return x !== id; });
         if (tagForm.editId === id) { tagForm.editId = null; tagForm.name = ''; }
         tagForm.confirm = null;
-        save(); renderKeep(); openTags(); toast('Tag verwijderd');
+        save(); renderKeep(); openTags(); toast('Verwijderd');
       });
     });
-    if ($('tg-cancel')) $('tg-cancel').addEventListener('click', function () { tagForm.editId = null; tagForm.name = ''; tagForm.color = 4; openTags(); });
+    if ($('tg-cancel')) $('tg-cancel').addEventListener('click', function () { tagForm = newTagForm(tagForm.from); openTags(); });
     $('tg-save').addEventListener('click', function () {
       var name = inp.value.trim(); if (!name) return;
       if (tagForm.editId) {
-        var t = findTag(tagForm.editId); if (t) { t.name = name; t.color = tagForm.color; }
-        toast('Tag aangepast');
+        var t = findTag(tagForm.editId);
+        if (t) { t.name = name; t.color = tagForm.color; t.line = tagForm.line; if (t.line) t.icon = tagForm.icon; else delete t.icon; }
+        toast(tagForm.line ? 'Lijn aangepast' : 'Tag aangepast');
       } else {
         var nid = 't' + (state.nextTag++);
-        state.tags.push({ id: nid, name: name, color: tagForm.color });
+        var nt = { id: nid, name: name, color: tagForm.color, line: tagForm.line };
+        if (nt.line) nt.icon = tagForm.icon;
+        state.tags.push(nt);
         var fr = tagForm.from;
         if (fr && fr.kind === 'book') { var b = find(fr.id); if (b && b.tags.indexOf(nid) < 0) b.tags.push(nid); }
-        toast('Tag toegevoegd');
+        toast(tagForm.line ? 'Lijn toegevoegd' : 'Tag toegevoegd');
       }
-      tagForm.editId = null; tagForm.name = ''; tagForm.color = 4; tagForm.confirm = null;
+      tagForm = newTagForm(tagForm.from);
       save(); renderKeep(); openTags();
     });
     $('tags-done').addEventListener('click', function () {
@@ -943,7 +1041,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     var def = state.tab === 'stock' ? 'voorraad' : (nowKey() || '1');
     var opts = DESTS.map(function (d) { return '<option value="' + d.key + '"' + (d.key === def ? ' selected' : '') + '>' + d.label + '</option>'; }).join('');
     var chosen = [];
-    var tagsHtml = state.tags.map(function (t) { return tagOptHTML(t, false, 'data-atag="' + esc(t.id) + '" type="button"'); }).join('');
+    var tagsHtml = state.tags.length ? tagGroupsHTML(function () { return false; }, 'data-atag') : '';
     openSheet('Boek toevoegen',
       '<h3>Boek toevoegen</h3>' +
       '<form id="addform" style="display:flex;flex-direction:column;gap:12px" novalidate>' +
@@ -951,7 +1049,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       '<div class="field"><label for="f-author">Auteur</label><input id="f-author" type="text" autocomplete="off" placeholder="Bijv. Herman Melville"></div>' +
       '<div class="field"><label for="f-dest">Waar</label><select id="f-dest">' + opts + '</select></div>' +
       '<p class="lbl">Status</p><div class="seg2"><button type="button" data-ast="open" class="is-on">Te lezen</button><button type="button" data-ast="bezig">Bezig</button><button type="button" data-ast="done">Gelezen</button></div>' +
-      (tagsHtml ? '<p class="lbl">Tags</p><div class="chips">' + tagsHtml + '</div>' : '') +
+      tagsHtml +
       '<div class="btnrow"><button type="button" class="btn" id="add-no">Annuleer</button><button type="submit" class="btn primary" id="add-yes" disabled>Toevoegen</button></div>' +
       '</form>', '#f-title');
     var addSt = 'open';
@@ -1013,7 +1111,31 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   }
 
   // statistieken
-  var statsSel = null;
+  var statsSel = null, statsLine;
+  function linesCardHTML() {
+    var ls = lineTags();
+    if (!ls.length) return '';
+    if (statsLine === undefined) statsLine = ls[0].id;
+    var ord = function (b) { return b.m === 'door' ? 0 : b.m === 'voorraad' ? 13 : +b.m; };
+    var when = function (b) { return b.m === 'door' ? 'doorl.' : b.m === 'voorraad' ? 'voorraad' : (b.until ? MON_SHORT[+b.m - 1] + '–' + MON_SHORT[+b.until - 1] : MON_SHORT[+b.m - 1]); };
+    return '<div class="card"><h4>Lijnen</h4><div class="lanes">' + ls.map(function (L) {
+      var bs = state.books.filter(function (b) { return b.tags.indexOf(L.id) >= 0; })
+        .map(function (b, i) { return { b: b, i: i }; })
+        .sort(function (x, y) { return (ord(x.b) - ord(y.b)) || (x.i - y.i); }).map(function (x) { return x.b; });
+      var dn = bs.filter(function (b) { return b.status === 'done'; }).length;
+      var open = statsLine === L.id;
+      var segs = bs.map(function (b) { return '<i class="' + (b.status === 'done' ? 'is-done' : b.status === 'bezig' ? 'is-bezig' : '') + '"></i>'; }).join('');
+      var body = !open ? '' : '<div class="lbody">' + (bs.length ? bs.map(function (b) {
+        return '<div class="drow' + (b.status === 'done' ? ' is-done' : '') + '"><span class="d' + (b.status === 'done' ? ' is-done' : b.status === 'bezig' ? ' is-bezig' : '') + '"></span><span class="bt">' + esc(b.t) + '</span><span class="m">' + when(b) + '</span></div>';
+      }).join('') + '<button class="showbtn" data-lshow="' + esc(L.id) + '">Toon in lijst</button>' : '<p class="note" style="font-size:13px">Nog geen boeken in deze lijn. Voeg ze toe via ⋯ bij een boek.</p>') + '</div>';
+      return '<div class="lane" style="' + tagVars(L) + '">' +
+        '<button class="lh' + (open ? ' is-open' : '') + '" data-lane="' + esc(L.id) + '" aria-expanded="' + open + '" aria-label="' + esc(L.name) + ': ' + dn + ' van ' + bs.length + ' uit">' +
+        '<span class="lic">' + iconSVG(L, 18) + '</span>' +
+        '<span class="lnm"><b>' + esc(L.name) + '</b><span class="segs" aria-hidden="true">' + segs + '</span></span>' +
+        '<span class="lct">' + dn + '/' + bs.length + '</span>' +
+        '<span class="chev' + (open ? ' is-open' : '') + '">' + ICON_CHEV + '</span></button>' + body + '</div>';
+    }).join('') + '</div></div>';
+  }
   function monthOfYear(iso) { var d = parseISO(iso); if (!d) return null; var y = d.getFullYear(); return y < YEAR ? 0 : y > YEAR ? 13 : d.getMonth() + 1; }
   function nowMonthNum() { var d = new Date(), y = d.getFullYear(); return y < YEAR ? 0 : y > YEAR ? 13 : d.getMonth() + 1; }
   function sched(b) {
@@ -1104,6 +1226,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
             '<div><b>' + early + '</b><span>eerder dan gepland</span></div>' +
             '<div><b>' + late + '</b><span>later dan gepland</span></div>' +
           '</div></div>' +
+        linesCardHTML() +
         '<div class="card"><h4>Per maand</h4>' +
           '<div class="chart">' + chart + '</div><div class="axis" aria-hidden="true">' + axis + '</div>' +
           '<div class="legend"><span><i style="background:var(--accent)"></i>gepland gelezen</span><span><i style="background:var(--unplan)"></i>buiten de planning</span><span><i class="tgt"></i>gepland</span></div>' +
@@ -1116,6 +1239,15 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     if (!wasOpen) setTimeout(function () { $('stats-back').focus(); }, 30);
     box.querySelectorAll('[data-col]').forEach(function (el) {
       el.addEventListener('click', function () { statsSel = +el.dataset.col; openStats(); });
+    });
+    box.querySelectorAll('[data-lane]').forEach(function (el) {
+      el.addEventListener('click', function () { statsLine = statsLine === el.dataset.lane ? null : el.dataset.lane; openStats(); });
+    });
+    box.querySelectorAll('[data-lshow]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        filter = { q: '', tags: [el.dataset.lshow], author: '', status: 'all' }; $('q').value = '';
+        closeStats(); render(); list.scrollTop = 0;
+      });
     });
   }
   function closeStats() { $('stats').hidden = true; $('stats').innerHTML = ''; try { $('btn-stats').focus(); } catch (e) {} }
