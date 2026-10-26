@@ -113,6 +113,12 @@ main{position:relative;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;p
 .tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .tag{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:2px 8px 2px 6px;font-size:11.5px;font-weight:600;line-height:1.3;color:var(--tag-d)}
 .tag i{width:7px;height:7px;border-radius:50%;display:block;background:var(--tag-c)}
+.span{display:inline-flex;align-items:center;border-radius:999px;padding:2px 8px;font-size:11.5px;font-weight:600;line-height:1.3;color:var(--soft);background:var(--track);font-variant-numeric:tabular-nums}
+.cont{display:flex;align-items:center;gap:8px;min-height:40px;border:1px dashed var(--line2);border-radius:10px;background:transparent;color:var(--muted);font-size:13px;text-align:left;padding:0 12px;cursor:pointer;width:100%}
+.cont span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cont b{font-weight:600;color:var(--soft)}
+.cont em{flex:none;font-style:normal;font-size:12px}
+.cont.is-done b{text-decoration:line-through}
 .iconbtn{width:44px;height:44px;flex:none;border:0;background:transparent;border-radius:10px;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center}
 .iconbtn:hover{background:var(--hover)}
 .empty{margin:0 6px;padding:8px 0;border-top:1px dashed var(--line2);font-size:13px;color:var(--muted)}
@@ -375,10 +381,27 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 
   // ---------- opslag ----------
   function seedState() {
-    return {
-      v: 2, tab: 'plan', nextId: SEED.length + 1, nextTag: 1, coll: {}, tags: defaultTags(),
-      books: SEED.map(function (r, i) { return { id: 'b' + (i + 1), m: r[0], t: r[1], a: r[2], status: 'open', done: false, started: null, finished: null, tags: r[3] ? r[3].slice() : [] }; })
+    var st = {
+      v: 3, tab: 'plan', nextId: SEED.length + 1, nextTag: 1, coll: {}, tags: defaultTags(),
+      books: SEED.map(function (r, i) { return { id: 'b' + (i + 1), m: r[0], t: r[1], a: r[2], status: 'open', done: false, started: null, finished: null, until: null, tags: r[3] ? r[3].slice() : [] }; })
     };
+    migrateUntil(st);
+    return st;
+  }
+  // "(t/m juni)", "(uit op 16 juni)", "(26 mrt – 16 mei)" in de titel → periode 'gepland t/m'
+  var MONTH_WORDS = { januari: 1, jan: 1, februari: 2, feb: 2, maart: 3, mrt: 3, april: 4, apr: 4, mei: 5, juni: 6, jun: 6, juli: 7, jul: 7, augustus: 8, aug: 8, september: 9, sep: 9, sept: 9, oktober: 10, okt: 10, november: 11, nov: 11, december: 12, dec: 12 };
+  function migrateUntil(st) {
+    st.books.forEach(function (b) {
+      if (b.until !== undefined && b.until !== null) return;
+      b.until = null;
+      var start = +b.m; if (!(start >= 1 && start <= 12)) return;
+      var m = b.t.match(/\s*\((?:t\/m|uit op \d+|\d+ [a-z]+ [–-] \d+) ([a-z]+)\)\s*$/i);
+      if (!m) return;
+      var end = MONTH_WORDS[m[1].toLowerCase()];
+      if (!end || end <= start) return;
+      b.until = String(end);
+      b.t = b.t.slice(0, m.index).trim();
+    });
   }
   // Oude versie: "(herlezen, optioneel)" en "(optioneel)" in de titel worden tags.
   function migrateTitles(st) {
@@ -394,6 +417,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       if (b.status !== 'open' && b.status !== 'bezig' && b.status !== 'done') b.status = b.done ? 'done' : 'open';
       b.done = b.status === 'done'; b.a = b.a || '';
       b.started = b.started || null; b.finished = b.finished || null;
+      if (b.until !== undefined && b.until !== null && !(+b.until > +b.m && +b.m >= 1)) b.until = null;
     });
   }
   function load() {
@@ -402,9 +426,10 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       if (raw) {
         var d = JSON.parse(raw);
         if (d && Array.isArray(d.books)) {
-          var st = { v: 2, tab: d.tab === 'stock' ? 'stock' : 'plan', nextId: d.nextId || 1000, nextTag: d.nextTag || 1, coll: d.coll || {}, books: d.books, tags: Array.isArray(d.tags) ? d.tags : null };
+          var st = { v: d.v || 1, tab: d.tab === 'stock' ? 'stock' : 'plan', nextId: d.nextId || 1000, nextTag: d.nextTag || 1, coll: d.coll || {}, books: d.books, tags: Array.isArray(d.tags) ? d.tags : null };
           normalizeBooks(st.books);
           if (!st.tags) { st.tags = defaultTags(); migrateTitles(st); }
+          if (st.v < 3) { migrateUntil(st); st.v = 3; }
           return st;
         }
       }
@@ -481,8 +506,10 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   // ---------- weergave ----------
   var list = $('list');
 
-  function tagsHTML(ids) {
-    var out = ids.map(function (id) { var t = findTag(id); if (!t) return ''; return '<span class="tag" style="' + tagVars(t) + ';background:' + pal(t).c + '26"><i></i>' + esc(t.name) + '</span>'; }).join('');
+  function rangeLabel(b) { return b.until ? MON_SHORT[+b.m - 1] + ' – ' + MON_SHORT[+b.until - 1] : ''; }
+  function tagsHTML(ids, b) {
+    var out = (b && b.until ? '<span class="span">' + rangeLabel(b) + '</span>' : '') +
+      ids.map(function (id) { var t = findTag(id); if (!t) return ''; return '<span class="tag" style="' + tagVars(t) + ';background:' + pal(t).c + '26"><i></i>' + esc(t.name) + '</span>'; }).join('');
     return out ? '<span class="tags">' + out + '</span>' : '';
   }
   var ICON_BOOK = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h6a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H3z"/><path d="M21 5h-6a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h7z"/></svg>';
@@ -491,7 +518,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     return '<div class="row' + (b.done ? ' is-done' : '') + '" data-id="' + esc(b.id) + '">' +
       '<span class="grip" aria-hidden="true">' + ICON_GRIP + '</span>' +
       '<button class="st st-' + b.status + '" data-act="status" aria-label="' + esc(b.t) + ': ' + stLabel(b) + '"><i>' + (b.status === 'done' ? ICON_CHECK : b.status === 'bezig' ? ICON_BOOK : '') + '</i></button>' +
-      '<span class="txt"><span class="t">' + esc(b.t) + '</span>' + (b.a ? '<span class="a">' + esc(b.a) + '</span>' : '') + tagsHTML(b.tags) + '</span>' +
+      '<span class="txt"><span class="t">' + esc(b.t) + '</span>' + (b.a ? '<span class="a">' + esc(b.a) + '</span>' : '') + tagsHTML(b.tags, b) + '</span>' +
       '<button class="iconbtn" data-act="more" aria-label="Opties voor ' + esc(b.t) + '">' + ICON_MORE + '</button>' +
       '</div>';
   }
@@ -512,13 +539,21 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     var complete = !f && items.length > 0 && doneN === items.length;
     var collapsed = isCollapsed(d.key, { complete: complete });
     var now = nowKey() === d.key;
+    // boeken uit een eerdere maand die deze maand nog doorlopen
+    var k = +d.key;
+    var conts = (f || !(k >= 1)) ? [] : state.books.filter(function (b) { return b.until && +b.m < k && +b.until >= k; });
+    var contHTML = conts.map(function (b) {
+      return '<button class="cont' + (b.done ? ' is-done' : '') + '" data-act="jump" data-key="' + b.m + '" aria-label="' + esc(b.t) + ' loopt door uit ' + destLabel(b.m).toLowerCase() + '. Spring ernaartoe">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4v7a4 4 0 0 0 4 4h10"/><path d="M15 11l4 4-4 4"/></svg>' +
+        '<span>loopt door: <b>' + esc(b.t) + '</b></span><em>' + rangeLabel(b) + '</em></button>';
+    }).join('');
     return '<section class="sec' + (collapsed ? ' is-collapsed' : '') + '" data-drop="' + d.key + '" id="sec-' + d.key + '">' +
       '<button class="sechead" data-act="sec" data-key="' + d.key + '" aria-expanded="' + !collapsed + '">' +
       '<span class="h">' + esc(d.label) + '</span>' + (now ? '<span class="nowtag">nu</span>' : '') + '<span class="sp"></span>' +
       '<span class="cnt">' + (items.length ? doneN + '/' + items.length : '') + '</span>' +
       (complete ? '<span class="ok">' + ICON_CHECK + '</span>' : '') +
       '<span class="chev' + (collapsed ? '' : ' is-open') + '">' + ICON_CHEV + '</span></button>' +
-      (collapsed ? '' : (items.length ? items.map(rowHTML).join('') : '<p class="empty">' + (d.key === 'voorraad' ? 'Nog leeg' : 'Nog niets gepland') + '</p>')) +
+      (collapsed ? '' : (items.map(rowHTML).join('') + contHTML + (items.length || conts.length ? '' : '<p class="empty">' + (d.key === 'voorraad' ? 'Nog leeg' : 'Nog niets gepland') + '</p>'))) +
       '</section>';
   }
   function monthbarHTML() {
@@ -625,6 +660,11 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     rest.splice(at, 0, b);
     var same = from === key && rest.every(function (x, j) { return x === state.books[j]; });
     if (same) return;
+    // periode schuift mee (zelfde lengte, hooguit t/m december); buiten de maanden vervalt hij
+    if (b.until) {
+      if (+key >= 1) { var len = +b.until - +b.m; var nu = Math.min(12, +key + len); b.until = nu > +key ? String(nu) : null; }
+      else b.until = null;
+    }
     b.m = key; state.books = rest;
     if (key !== 'voorraad' && Object.prototype.hasOwnProperty.call(state.coll, key) && state.coll[key]) state.coll[key] = false;
     save(); renderKeep();
@@ -731,6 +771,9 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     openSheet('Opties voor ' + b.t,
       '<div style="display:flex;flex-direction:column;gap:2px"><h3>' + esc(b.t) + '</h3>' + (b.a ? '<span class="a">' + esc(b.a) + '</span>' : '') + '</div>' +
       '<p class="lbl">Status</p><div class="seg2">' + stSeg + '</div>' + dates +
+      (+b.m >= 1 ? '<div class="field"><label for="d-until">Gepland t/m</label><select id="d-until"><option value="">Alleen ' + destLabel(b.m).toLowerCase() + '</option>' +
+        MONTHS.slice(+b.m).map(function (name, i) { var v = String(+b.m + i + 1); return '<option value="' + v + '"' + (b.until === v ? ' selected' : '') + '>' + destLabel(b.m) + ' t/m ' + name.toLowerCase() + '</option>'; }).join('') +
+        '</select></div>' : '') +
       '<p class="lbl">Tags</p><div class="chips">' + tagsHtml + '<button class="addtag" id="newtag">+ Nieuwe tag</button></div>' +
       '<p class="lbl">Verplaats naar</p><div class="destgrid">' + grid + '</div>' +
       '<button class="btn" id="edit-open" style="flex:none">Titel of schrijver aanpassen</button>' +
@@ -751,6 +794,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     });
     if ($('d-start')) $('d-start').addEventListener('change', function () { b.started = this.value || null; save(); renderNowbar(); });
     if ($('d-end')) $('d-end').addEventListener('change', function () { b.finished = this.value || null; save(); });
+    if ($('d-until')) $('d-until').addEventListener('change', function () { b.until = this.value || null; save(); renderKeep(); });
     sheet.querySelectorAll('[data-dest]').forEach(function (el) {
       el.addEventListener('click', function () { closeSheet(); moveTo(id, el.dataset.dest); });
     });
@@ -975,7 +1019,8 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   function sched(b) {
     if (b.m === 'door') return 'tijd';
     var fm = monthOfYear(b.finished); if (fm === null) return null;
-    var pm = +b.m; return fm < pm ? 'eerder' : fm > pm ? 'later' : 'tijd';
+    var pm = +b.m, pe = b.until ? +b.until : pm;
+    return fm < pm ? 'eerder' : fm > pe ? 'later' : 'tijd';
   }
   function openStats() {
     var ML = MONTHS.map(function (m) { return m.toLowerCase(); });
@@ -994,7 +1039,8 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     var sel = statsSel || (nowM >= 1 && nowM <= 12 ? nowM : 1);
     var rows = [], maxV = 1;
     for (var m = 1; m <= 12; m++) {
-      var tgt = state.books.filter(function (b) { return b.m === String(m); }).length;
+      // gepland telt mee in de maand waarin het boek uit moet zijn (laatste maand van de periode)
+      var tgt = state.books.filter(function (b) { return +b.m >= 1 && +(b.until || b.m) === m; }).length;
       var pIn = planDone.filter(function (b) { return monthOfYear(b.finished) === m; });
       var ur = unplanDone.filter(function (b) { return monthOfYear(b.finished) === m; }).length;
       var er = pIn.filter(function (b) { return b.m !== 'door' && +b.m > m; }).length;
@@ -1023,7 +1069,8 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       if (b.m === 'voorraad') return 'buiten de planning';
       if (b.m === 'door') return 'gepland · doorlopend';
       var s = sched(b);
-      return s === 'eerder' ? 'eerder dan gepland (' + ML[+b.m - 1] + ')' : s === 'later' ? 'later dan gepland (' + ML[+b.m - 1] + ')' : 'gepland';
+      var when = b.until ? ML[+b.m - 1] + ' – ' + ML[+b.until - 1] : ML[+b.m - 1];
+      return s === 'eerder' ? 'eerder dan gepland (' + when + ')' : s === 'later' ? 'later dan gepland (' + when + ')' : 'gepland';
     };
     var tl = '', lastKey = '';
     withDate.forEach(function (b) {
@@ -1112,6 +1159,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
         var books = Array.isArray(d) ? d : d.books;
         if (!Array.isArray(books) || !books.every(function (b) { return b && typeof b.t === 'string' && typeof b.m === 'string'; })) throw new Error('vorm');
         normalizeBooks(books);
+        migrateUntil({ books: books });
         var tags = (!Array.isArray(d) && Array.isArray(d.tags)) ? d.tags : null;
         var maxN = 0;
         books.forEach(function (b) { var n = parseInt(String(b.id).replace(/\D/g, ''), 10); if (n > maxN) maxN = n; });
