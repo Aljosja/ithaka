@@ -1806,13 +1806,23 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       '</div>';
   }
   function linesCardHTML() {
-    var ls = lineTags();
+    // per jaar: geplande boeken van dat jaar; voorraadboeken als je ze dat jaar uitlas,
+    // of (nog niet gelezen) alleen in het laatste leesjaar. Lijnen zonder boeken blijven weg.
+    var latest = state.years[state.years.length - 1];
+    var lineBooks = function (L) {
+      return YB().filter(function (b) {
+        if (b.tags.indexOf(L.id) < 0) return false;
+        if (b.m !== 'voorraad') return true;
+        return b.status === 'done' ? readThisYear(b) : YEAR === latest;
+      });
+    };
+    var ls = lineTags().filter(function (L) { return lineBooks(L).length > 0; });
     if (!ls.length) return '';
-    if (statsLine === undefined) statsLine = ls[0].id;
+    if (statsLine === undefined || (statsLine && !ls.some(function (L) { return L.id === statsLine; }))) statsLine = ls[0].id;
     var ord = function (b) { return b.m === 'door' ? 0 : b.m === 'voorraad' ? 13 : +b.m; };
     var when = function (b) { return b.m === 'door' ? 'doorl.' : b.m === 'voorraad' ? 'voorraad' : (b.until ? MON_SHORT[+b.m - 1] + '–' + MON_SHORT[+b.until - 1] : MON_SHORT[+b.m - 1]); };
     return '<div class="card"><h4>Lijnen</h4><div class="lanes">' + ls.map(function (L) {
-      var bs = YB().filter(function (b) { return b.tags.indexOf(L.id) >= 0; })
+      var bs = lineBooks(L)
         .map(function (b, i) { return { b: b, i: i }; })
         .sort(function (x, y) { return (ord(x.b) - ord(y.b)) || (x.i - y.i); }).map(function (x) { return x.b; });
       var dn = bs.filter(function (b) { return b.status === 'done'; }).length;
