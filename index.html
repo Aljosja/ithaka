@@ -1696,7 +1696,7 @@ button.ayr{cursor:pointer}
   // ---------- toevoegen ----------
   var addForm = null;
   function newAddForm() {
-    return { isbn: '', t: '', a: '', pages: '', photo: null, dest: state.tab === 'stock' ? 'voorraad' : (nowKey() || '1'), st: 'open', tags: [], info: null, miss: false, err: '', busy: false, fromScan: false };
+    return { isbn: '', q: '', eds: null, t: '', a: '', pages: '', photo: null, dest: state.tab === 'stock' ? 'voorraad' : (nowKey() || '1'), st: 'open', tags: [], info: null, miss: false, err: '', busy: false, fromScan: false };
   }
   function openAdd(keep) {
     if (!keep || !addForm) addForm = newAddForm();
@@ -1713,15 +1713,23 @@ button.ayr{cursor:pointer}
       found = '<div class="found">' +
         '<span class="cover is-none" aria-hidden="true">' + ICON_BOOK + (f.photo ? '<img src="' + esc(f.photo) + '" alt="">' : f.info.cover ? '<img src="' + esc(f.info.cover) + '" alt="" referrerpolicy="no-referrer" onerror="this.remove()">' : '') + '</span>' +
         '<span class="fmeta"><span class="src">via ' + esc(f.info.src) + '</span><span class="facts">' + esc(facts) + '</span>' + photoBtn + '</span></div>';
+    } else if (f.eds) {
+      found = !f.eds.length ? '<p class="note" style="font-size:13.5px">Geen boek met precies deze titel bij de KB. De KB zoekt op de exacte titel: let op de spelling, probeer het zonder ondertitel, of vul titel en auteur hieronder zelf in.</p>' :
+        '<p class="lbl">' + f.eds.length + (f.eds.length === 1 ? ' uitgave' : ' uitgaven') + ' bij de KB · kies de jouwe</p><div class="eds">' + f.eds.map(function (x, i) {
+          var top = [x.year, x.edition && x.edition.replace(/\.$/, '').toLowerCase(), x.publisher].filter(Boolean).join(' · ');
+          return '<button type="button" class="ed" data-aed="' + i + '"><span class="et"><b>' + esc(x.t || f.q) + '</b>' + (x.a ? '<span>' + esc(x.a) + '</span>' : '') +
+            (top ? '<span>' + esc(top) + '</span>' : '') + (x.extra ? '<span>' + esc(x.extra) + '</span>' : '') + '<em>ISBN ' + esc(x.isbn) + '</em></span>' +
+            '<span class="ep">' + (x.pages ? nlNum(x.pages) + '<small>blz.</small>' : '<small>blz.<br>onbekend</small>') + '</span></button>';
+        }).join('') + '</div>';
     } else if (f.miss) {
       found = '<div class="found"><span class="cover is-none" aria-hidden="true">' + ICON_BOOK + (f.photo ? '<img src="' + esc(f.photo) + '" alt="">' : '') + '</span><span class="fmeta"><span class="src is-miss">niet gevonden</span><span class="facts">ISBN ' + esc(fmtIsbn(f.isbn)) + ' staat niet bij de KB, Google Books of Open Library. Vul titel en auteur zelf in; het ISBN wordt bewaard.' + (f.missNote ? '<br><small>' + esc(f.missNote) + '</small>' : '') + '</span>' + photoBtn + '</span></div>';
     }
     openSheet('Boek toevoegen',
       '<h3>Boek toevoegen</h3>' +
-      (canScan && !f.info && !f.miss ? '<button type="button" class="scanbig" id="add-scan"><span class="ic">' + ICON_SCAN + '</span><span><b>Scan de streepjescode</b><span>Achterop het boek. Titel en schrijver vullen zichzelf in.</span></span></button><div class="or">of</div>' : '') +
+      (canScan && !f.info && !f.miss && !f.eds ? '<button type="button" class="scanbig" id="add-scan"><span class="ic">' + ICON_SCAN + '</span><span><b>Scan de streepjescode</b><span>Achterop het boek. Titel en schrijver vullen zichzelf in.</span></span></button><div class="or">of</div>' : '') +
       '<form id="addform" style="display:flex;flex-direction:column;gap:12px" novalidate>' +
-      '<div class="field"><label for="f-isbn">ISBN</label><div class="isbnrow"><input id="f-isbn" type="text" inputmode="numeric" autocomplete="off" placeholder="978…" value="' + esc(f.isbn ? fmtIsbn(f.isbn) : '') + '"><button type="button" class="btn" id="isbn-go"' + (f.busy ? ' disabled' : '') + '>' + (f.busy ? 'Zoeken…' : 'Zoek') + '</button></div>' +
-        (f.err ? '<p class="err">' + esc(f.err) + '</p>' : '') + '</div>' +
+      '<div class="field"><label for="f-isbn">ISBN of titel</label><div class="isbnrow"><input id="f-isbn" type="search" enterkeyhint="search" autocomplete="off" placeholder="978… of bijv. De idioot" value="' + esc(f.isbn ? fmtIsbn(f.isbn) : f.q) + '"><button type="button" class="btn" id="isbn-go"' + (f.busy ? ' disabled' : '') + '>' + (f.busy ? 'Zoeken…' : 'Zoek') + '</button></div>' +
+        (f.err ? '<p class="err">' + esc(f.err) + '</p>' : '') + (!f.isbn && !f.q && !f.err ? '<p class="note" style="font-size:12.5px;color:var(--muted);margin:2px 0 0">Een titel zoekt de app bij de KB (Nederlandse uitgaven). Vul je ook de auteur in, dan filtert hij daarop.</p>' : '') + '</div>' +
       found +
       (dup ? '<div class="dup">' + ICON_WARN + '<span>Dit boek staat al in je lijst (' + esc(dup.m === 'voorraad' ? 'voorraad' : destLabel(dup.m).toLowerCase()) + '). Toch nog een keer toevoegen?</span></div>' : '') +
       '<div class="field"><label for="f-title">Titel</label><input id="f-title" type="text" autocomplete="off" placeholder="Bijv. Moby-Dick" required value="' + esc(f.t) + '"></div>' +
@@ -1752,6 +1760,8 @@ button.ayr{cursor:pointer}
     });
     var go = function () {
       sync();
+      var v = isbnIn.value.trim(); if (!v) return;
+      if (!/^[\d\s-]+[xX]?$/.test(v)) { titleSearch(v); return; }
       var isbn = toIsbn13(isbnIn.value);
       if (!isbn) { f.err = 'Dit is geen geldig ISBN. Controleer de 10 of 13 cijfers.'; f.isbn = isbnDigits(isbnIn.value); openAdd(true); return; }
       findIsbn(isbn, false);
@@ -1760,6 +1770,17 @@ button.ayr{cursor:pointer}
     isbnIn.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); go(); } });
     if ($('add-scan')) $('add-scan').addEventListener('click', function () { sync(); closeSheet(); openScanner(); });
     $('add-no').addEventListener('click', function () { addForm = null; closeSheet(); });
+    sheet.querySelectorAll('[data-aed]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        sync();
+        var x = f.eds[+el.dataset.aed];
+        f.isbn = x.isbn; f.eds = null; f.err = '';
+        f.info = { src: 'KB', t: x.t || f.q, a: x.a || '', pages: x.pages || null, year: x.year || null, publisher: x.publisher || '', edition: x.edition || '',
+          cover: 'https://covers.openlibrary.org/b/isbn/' + x.isbn + '-M.jpg?default=false' };
+        f.t = f.info.t; if (x.a) f.a = x.a; if (x.pages) f.pages = String(x.pages);
+        openAdd(true);
+      });
+    });
     if ($('add-photo')) $('add-photo').addEventListener('click', function () { sync(); takePhoto(function (u) { f.photo = u; openAdd(true); }); });
     var commit = function (andNext) {
       sync();
@@ -1789,11 +1810,20 @@ button.ayr{cursor:pointer}
     if ($('add-next')) $('add-next').addEventListener('click', function () { commit(true); });
     $('addform').addEventListener('submit', function (e) { e.preventDefault(); commit(false); });
   }
+  // zoek op titel bij de KB (exacte titel, alle uitgaven met ISBN) en laat kiezen
+  function titleSearch(q) {
+    var f = addForm;
+    f.q = q; f.isbn = ''; f.err = ''; f.info = null; f.miss = false; f.eds = null; f.busy = true;
+    openAdd(true);
+    kbSearch(q, f.a).then(function (eds) { f.eds = eds; }, function (err) {
+      f.err = 'De KB gaf geen antwoord' + (err && err.status ? ' (foutcode ' + err.status + ')' : '') + '. Heb je internet? Je kunt titel en auteur ook zelf invullen.';
+    }).then(function () { f.busy = false; if (addForm === f && !overlay.hidden) openAdd(true); });
+  }
   // zoek een (geldig) ISBN op en toon het formulier, ingevuld als het lukt
   function findIsbn(isbn, fromScan) {
     if (!addForm) addForm = newAddForm();
     var f = addForm;
-    f.isbn = isbn; f.err = ''; f.info = null; f.miss = false; f.missNote = ''; f.busy = true; f.fromScan = f.fromScan || fromScan;
+    f.isbn = isbn; f.err = ''; f.eds = null; f.q = ''; f.info = null; f.miss = false; f.missNote = ''; f.busy = true; f.fromScan = f.fromScan || fromScan;
     if (!fromScan) openAdd(true);
     return lookupIsbn(isbn).then(function (res) {
       f.busy = false;
