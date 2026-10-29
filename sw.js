@@ -1,5 +1,5 @@
 // Ithaka service worker: app werkt offline; online haalt hij altijd de nieuwste versie.
-const CACHE = 'ithaka-v9';
+const CACHE = 'ithaka-v10';
 const SHELL = [
   './',
   './index.html',
@@ -43,8 +43,8 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Lettertypen van Google: eenmaal ophalen, daarna uit de cache.
-  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
+  // Lettertypen en de barcodescanner (vaste versies): eenmaal ophalen, daarna uit de cache.
+  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com' || url.hostname === 'fastly.jsdelivr.net' || url.hostname === 'cdn.jsdelivr.net') {
     e.respondWith(
       caches.match(req).then((hit) => hit || fetch(req).then((res) => {
         const copy = res.clone();

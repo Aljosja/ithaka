@@ -223,6 +223,41 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .days.is-old{color:var(--danger);font-weight:700}
 .rdone{flex:none;min-height:38px;border:0;border-radius:10px;background:var(--accent);color:var(--accent-ink);font-weight:600;font-size:13px;padding:0 14px;cursor:pointer}
 
+/* toevoegen & scannen */
+.scanbig{display:flex;align-items:center;gap:14px;min-height:72px;border:0;border-radius:16px;background:linear-gradient(160deg,#4A2A15 0%,#2A190E 100%);color:#F6EDE2;padding:0 16px;text-align:left;cursor:pointer;width:100%;flex:none}
+.scanbig .ic{width:44px;height:44px;border-radius:12px;background:rgba(246,237,226,.12);display:flex;align-items:center;justify-content:center;flex:none;color:#F6C98A}
+.scanbig b{display:block;font-size:16px;font-weight:700}
+.scanbig span span{font-size:12.5px;color:#D9C9B6}
+.or{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.or::before,.or::after{content:'';flex:1;height:1px;background:var(--line)}
+.isbnrow{display:flex;gap:8px}
+.isbnrow input{flex:1;min-width:0;font-variant-numeric:tabular-nums}
+.isbnrow .btn{flex:none;min-height:46px;padding:0 16px}
+.found{display:flex;gap:12px;align-items:flex-start}
+.cover{position:relative;overflow:hidden;flex:none;width:56px;height:84px;border-radius:4px;background:var(--track);box-shadow:0 4px 10px rgba(42,29,20,.18)}
+.cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cover.is-none{display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.fmeta{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.src{align-self:flex-start;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#1F5A4E;background:#DCEFEA;border-radius:999px;padding:3px 8px}
+.src.is-miss{color:#82231A;background:#F8E3E0}
+.facts{font-size:12.5px;line-height:1.4;color:var(--muted)}
+.dup{display:flex;gap:10px;align-items:flex-start;background:#FBEFD9;color:#5E4210;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.4}
+.dup svg{flex:none;margin-top:1px}
+.scan{position:fixed;inset:0;z-index:70;background:#0E0A07;color:#F6EDE2;overflow:hidden}
+.scan video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.scan-frame{position:absolute;left:8%;right:8%;top:34%;height:17%;border-radius:14px;box-shadow:0 0 0 2px rgba(246,237,226,.9),0 0 0 3000px rgba(0,0,0,.45)}
+.scan-frame::after{content:'';position:absolute;left:12px;right:12px;top:50%;height:2px;background:#E0873A;box-shadow:0 0 12px #E0873A;animation:scanline 1.8s ease-in-out infinite}
+@keyframes scanline{0%,100%{transform:translateY(-22px);opacity:.5}50%{transform:translateY(22px);opacity:1}}
+.scan-frame.is-hit{box-shadow:0 0 0 3px #6FBFAE,0 0 0 3000px rgba(0,0,0,.45)}
+.scan-frame.is-hit::after{display:none}
+.scan-top{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:8px;padding:calc(12px + env(safe-area-inset-top,0px)) 12px 12px}
+.scan-top b{flex:1;font-size:15px;font-weight:600}
+.cbtn{width:44px;height:44px;border:0;border-radius:22px;background:rgba(14,10,7,.55);color:#F6EDE2;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.cbtn.is-on{background:#F6C98A;color:#2A1D14}
+.scan-msg{position:absolute;left:24px;right:24px;top:calc(51% + 18px);margin:0;text-align:center;font-size:14.5px;line-height:1.45;color:rgba(246,237,226,.92)}
+.scan-foot{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:center;padding:18px 20px calc(28px + env(safe-area-inset-bottom,0px))}
+.typebtn{min-height:46px;border:1px solid rgba(246,237,226,.4);border-radius:12px;background:rgba(14,10,7,.55);color:#F6EDE2;font-weight:600;font-size:14px;padding:0 16px;cursor:pointer}
+@media (prefers-color-scheme: dark){ .dup{background:#3A2C12;color:#F1D9A8} .src{background:#173A33;color:#9FD8CB} .src.is-miss{background:#3A1A16;color:#F0A9A0} }
 /* statistieken */
 .stats{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;background:var(--ground);max-width:560px;margin:0 auto}
 .shead{background:linear-gradient(180deg,var(--hd1),var(--hd2));color:var(--hd-ink);padding:calc(12px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 12px max(12px,env(safe-area-inset-left,0px));display:flex;align-items:center;gap:8px}
@@ -325,6 +360,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 </div>
 <div class="stats" id="stats" role="dialog" aria-modal="true" aria-label="Statistieken" hidden></div>
 <div class="toast" id="toast" hidden></div>
+<div class="scan" id="scan" role="dialog" aria-modal="true" aria-label="Streepjescode scannen" hidden></div>
 
 <script>
 (function () {
@@ -540,6 +576,10 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   var ICON_CHECK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>';
   var ICON_CHEV = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
   var ICON_X = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg>';
+  var ICON_SCAN = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v8M15.5 8v8M17.5 8v8"/></svg>';
+  var ICON_WARN = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4"/><path d="M12 17.5v.01"/></svg>';
+  var ICON_X20 = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg>';
+  var ICON_TORCH = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2h6l-1 6h3l-7 14 1-9H8z"/></svg>';
   var ICON_TRASH = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/></svg>';
 
   // ---------- zoeken & filter (niet bewaard) ----------
@@ -784,7 +824,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   $('btn-filter').addEventListener('click', openFilter);
   $('nowbar').addEventListener('click', openBezig);
   $('btn-stats').addEventListener('click', function () { statsSel = null; openStats(); });
-  $('btn-add').addEventListener('click', openAdd);
+  $('btn-add').addEventListener('click', function () { openAdd(false); });
   $('btn-backup').addEventListener('click', openBackup);
 
   // vegen tussen Planning en Voorraad
@@ -848,7 +888,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       (b.status === 'done' ? '<div class="field"><label for="d-end">Uitgelezen op</label><input id="d-end" type="date" value="' + esc(b.finished || '') + '"></div>' : '') +
       '</div>';
     openSheet('Opties voor ' + b.t,
-      '<div style="display:flex;flex-direction:column;gap:2px"><h3>' + esc(b.t) + '</h3>' + (b.a ? '<span class="a">' + esc(b.a) + '</span>' : '') + '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:2px"><h3>' + esc(b.t) + '</h3>' + (b.a ? '<span class="a">' + esc(b.a) + '</span>' : '') + (bookFacts(b) ? '<span class="facts">' + esc(bookFacts(b)) + '</span>' : '') + '</div>' +
       '<p class="lbl">Status</p><div class="seg2">' + stSeg + '</div>' + dates +
       (+b.m >= 1 ? '<div class="field"><label for="d-until">Gepland t/m</label><select id="d-until"><option value="">Alleen ' + destLabel(b.m).toLowerCase() + '</option>' +
         MONTHS.slice(+b.m).map(function (name, i) { var v = String(+b.m + i + 1); return '<option value="' + v + '"' + (b.until === v ? ' selected' : '') + '>' + destLabel(b.m) + ' t/m ' + name.toLowerCase() + '</option>'; }).join('') +
@@ -1037,52 +1077,255 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   }
 
   // toevoegen
-  function openAdd() {
-    var def = state.tab === 'stock' ? 'voorraad' : (nowKey() || '1');
-    var opts = DESTS.map(function (d) { return '<option value="' + d.key + '"' + (d.key === def ? ' selected' : '') + '>' + d.label + '</option>'; }).join('');
-    var chosen = [];
-    var tagsHtml = state.tags.length ? tagGroupsHTML(function () { return false; }, 'data-atag') : '';
+  // ---------- ISBN ----------
+  function isbnDigits(v) { return String(v || '').toUpperCase().replace(/[^0-9X]/g, ''); }
+  function isbn13ok(d) {
+    if (!/^97[89]\d{10}$/.test(d)) return false;
+    var sum = 0; for (var i = 0; i < 12; i++) sum += (+d[i]) * (i % 2 ? 3 : 1);
+    return (10 - sum % 10) % 10 === +d[12];
+  }
+  function isbn10ok(d) {
+    if (!/^\d{9}[\dX]$/.test(d)) return false;
+    var sum = 0; for (var i = 0; i < 10; i++) sum += (d[i] === 'X' ? 10 : +d[i]) * (10 - i);
+    return sum % 11 === 0;
+  }
+  // geeft een geldig ISBN-13 terug, of null
+  function toIsbn13(v) {
+    var d = isbnDigits(v);
+    if (d.length === 13) return isbn13ok(d) ? d : null;
+    if (d.length === 10 && isbn10ok(d)) {
+      var b = '978' + d.slice(0, 9), sum = 0;
+      for (var i = 0; i < 12; i++) sum += (+b[i]) * (i % 2 ? 3 : 1);
+      return b + ((10 - sum % 10) % 10);
+    }
+    return null;
+  }
+  function fmtIsbn(d) { return d || ''; }
+  var GB_URL = 'https://www.googleapis.com/books/v1/volumes?q=isbn:';
+  function lookupIsbn(isbn) {
+    return fetch(GB_URL + isbn, { cache: 'no-store' }).then(function (r) {
+      if (!r.ok) throw new Error('http ' + r.status);
+      return r.json();
+    }).then(function (d) {
+      if (!d || !d.totalItems || !d.items || !d.items.length) return null;
+      var v = d.items[0].volumeInfo || {};
+      var img = v.imageLinks && (v.imageLinks.thumbnail || v.imageLinks.smallThumbnail);
+      return {
+        t: (v.title || '').trim(), a: (v.authors || []).join(', '),
+        pages: v.pageCount || null, year: (v.publishedDate || '').slice(0, 4) || null,
+        publisher: v.publisher || '', cover: img ? img.replace(/^http:/, 'https:') : ''
+      };
+    });
+  }
+  function findDup(isbn, t) {
+    var nt = norm(t).trim();
+    for (var i = 0; i < state.books.length; i++) {
+      var b = state.books[i];
+      if ((isbn && b.isbn === isbn) || (nt && norm(b.t).trim() === nt)) return b;
+    }
+    return null;
+  }
+  function bookFacts(b) {
+    var f = [];
+    if (b.pages) f.push(b.pages + ' blz.');
+    if (b.year) f.push(b.year);
+    if (b.publisher) f.push(b.publisher);
+    if (b.isbn) f.push('ISBN ' + fmtIsbn(b.isbn));
+    return f.join(' · ');
+  }
+
+  // ---------- toevoegen ----------
+  var addForm = null;
+  function newAddForm() {
+    return { isbn: '', t: '', a: '', dest: state.tab === 'stock' ? 'voorraad' : (nowKey() || '1'), st: 'open', tags: [], info: null, miss: false, err: '', busy: false, fromScan: false };
+  }
+  function openAdd(keep) {
+    if (!keep || !addForm) addForm = newAddForm();
+    var f = addForm;
+    var canScan = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+    var opts = DESTS.map(function (d) { return '<option value="' + d.key + '"' + (d.key === f.dest ? ' selected' : '') + '>' + d.label + '</option>'; }).join('');
+    var tagsHtml = state.tags.length ? tagGroupsHTML(function (id) { return f.tags.indexOf(id) >= 0; }, 'data-atag') : '';
+    var stSeg = ['open', 'bezig', 'done'].map(function (k) { return '<button type="button" data-ast="' + k + '" class="' + (f.st === k ? 'is-on' : '') + '">' + STATUS_LABEL[k] + '</button>'; }).join('');
+    var dup = (f.info || f.isbn) ? findDup(f.isbn, f.info ? f.info.t : '') : null;
+    var found = '';
+    if (f.info) {
+      var facts = bookFacts({ pages: f.info.pages, year: f.info.year, publisher: f.info.publisher, isbn: f.isbn });
+      found = '<div class="found">' +
+        '<span class="cover is-none" aria-hidden="true">' + ICON_BOOK + (f.info.cover ? '<img src="' + esc(f.info.cover) + '" alt="" referrerpolicy="no-referrer" onerror="this.remove()">' : '') + '</span>' +
+        '<span class="fmeta"><span class="src">via Google Books</span><span class="facts">' + esc(facts) + '</span></span></div>';
+    } else if (f.miss) {
+      found = '<div class="found"><span class="cover is-none" aria-hidden="true">' + ICON_BOOK + '</span><span class="fmeta"><span class="src is-miss">niet gevonden</span><span class="facts">ISBN ' + esc(fmtIsbn(f.isbn)) + ' staat niet in Google Books. Vul titel en auteur zelf in; het ISBN wordt bewaard.</span></span></div>';
+    }
     openSheet('Boek toevoegen',
       '<h3>Boek toevoegen</h3>' +
+      (canScan && !f.info && !f.miss ? '<button type="button" class="scanbig" id="add-scan"><span class="ic">' + ICON_SCAN + '</span><span><b>Scan de streepjescode</b><span>Achterop het boek. Titel en schrijver vullen zichzelf in.</span></span></button><div class="or">of</div>' : '') +
       '<form id="addform" style="display:flex;flex-direction:column;gap:12px" novalidate>' +
-      '<div class="field"><label for="f-title">Titel</label><input id="f-title" type="text" autocomplete="off" placeholder="Bijv. Moby-Dick" required></div>' +
-      '<div class="field"><label for="f-author">Auteur</label><input id="f-author" type="text" autocomplete="off" placeholder="Bijv. Herman Melville"></div>' +
+      '<div class="field"><label for="f-isbn">ISBN</label><div class="isbnrow"><input id="f-isbn" type="text" inputmode="numeric" autocomplete="off" placeholder="978…" value="' + esc(f.isbn ? fmtIsbn(f.isbn) : '') + '"><button type="button" class="btn" id="isbn-go"' + (f.busy ? ' disabled' : '') + '>' + (f.busy ? 'Zoeken…' : 'Zoek') + '</button></div>' +
+        (f.err ? '<p class="err">' + esc(f.err) + '</p>' : '') + '</div>' +
+      found +
+      (dup ? '<div class="dup">' + ICON_WARN + '<span>Dit boek staat al in je lijst (' + esc(dup.m === 'voorraad' ? 'voorraad' : destLabel(dup.m).toLowerCase()) + '). Toch nog een keer toevoegen?</span></div>' : '') +
+      '<div class="field"><label for="f-title">Titel</label><input id="f-title" type="text" autocomplete="off" placeholder="Bijv. Moby-Dick" required value="' + esc(f.t) + '"></div>' +
+      '<div class="field"><label for="f-author">Auteur</label><input id="f-author" type="text" autocomplete="off" placeholder="Bijv. Herman Melville" value="' + esc(f.a) + '"></div>' +
       '<div class="field"><label for="f-dest">Waar</label><select id="f-dest">' + opts + '</select></div>' +
-      '<p class="lbl">Status</p><div class="seg2"><button type="button" data-ast="open" class="is-on">Te lezen</button><button type="button" data-ast="bezig">Bezig</button><button type="button" data-ast="done">Gelezen</button></div>' +
+      '<p class="lbl">Status</p><div class="seg2">' + stSeg + '</div>' +
       tagsHtml +
-      '<div class="btnrow"><button type="button" class="btn" id="add-no">Annuleer</button><button type="submit" class="btn primary" id="add-yes" disabled>Toevoegen</button></div>' +
-      '</form>', '#f-title');
-    var addSt = 'open';
+      (f.fromScan ? '<button type="button" class="btn" id="add-next" style="flex:none">Toevoegen en volgende scannen</button>' : '') +
+      '<div class="btnrow"><button type="button" class="btn" id="add-no">Annuleer</button><button type="submit" class="btn primary" id="add-yes"' + (f.t.trim() ? '' : ' disabled') + '>Toevoegen</button></div>' +
+      '</form>', f.info || f.miss ? null : '#f-title');
+    var title = $('f-title'), author = $('f-author'), isbnIn = $('f-isbn');
+    var sync = function () { f.t = title.value; f.a = author.value; f.dest = $('f-dest').value; $('add-yes').disabled = title.value.trim() === ''; if ($('add-next')) $('add-next').disabled = title.value.trim() === ''; };
+    title.addEventListener('input', sync); author.addEventListener('input', sync); $('f-dest').addEventListener('change', sync);
+    if ($('add-next')) $('add-next').disabled = f.t.trim() === '';
     sheet.querySelectorAll('[data-ast]').forEach(function (el) {
       el.addEventListener('click', function () {
-        addSt = el.dataset.ast;
+        f.st = el.dataset.ast;
         sheet.querySelectorAll('[data-ast]').forEach(function (x) { x.classList.toggle('is-on', x === el); });
       });
     });
-    var title = $('f-title');
-    title.addEventListener('input', function () { $('add-yes').disabled = title.value.trim() === ''; });
     sheet.querySelectorAll('[data-atag]').forEach(function (el) {
       el.addEventListener('click', function () {
-        var id = el.dataset.atag, on = chosen.indexOf(id) >= 0;
-        chosen = on ? chosen.filter(function (x) { return x !== id; }) : chosen.concat([id]);
+        var id = el.dataset.atag, on = f.tags.indexOf(id) >= 0;
+        f.tags = on ? f.tags.filter(function (x) { return x !== id; }) : f.tags.concat([id]);
         el.classList.toggle('is-on', !on); el.setAttribute('aria-pressed', !on);
       });
     });
-    $('add-no').addEventListener('click', closeSheet);
-    $('addform').addEventListener('submit', function (e) {
-      e.preventDefault();
-      var t = title.value.trim(); if (!t) return;
-      var m = $('f-dest').value;
-      var nb = { id: 'n' + (state.nextId++), t: t, a: $('f-author').value.trim(), m: m, status: 'open', done: false, started: null, finished: null, tags: chosen };
-      setStatus(nb, addSt);
+    var go = function () {
+      sync();
+      var isbn = toIsbn13(isbnIn.value);
+      if (!isbn) { f.err = 'Dit is geen geldig ISBN. Controleer de 10 of 13 cijfers.'; f.isbn = isbnDigits(isbnIn.value); openAdd(true); return; }
+      findIsbn(isbn, false);
+    };
+    $('isbn-go').addEventListener('click', go);
+    isbnIn.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); go(); } });
+    if ($('add-scan')) $('add-scan').addEventListener('click', function () { sync(); closeSheet(); openScanner(); });
+    $('add-no').addEventListener('click', function () { addForm = null; closeSheet(); });
+    var commit = function (andNext) {
+      sync();
+      var t = f.t.trim(); if (!t) return;
+      var m = f.dest;
+      var nb = { id: 'n' + (state.nextId++), t: t, a: f.a.trim(), m: m, status: 'open', done: false, started: null, finished: null, until: null, tags: f.tags.slice() };
+      if (f.isbn && toIsbn13(f.isbn)) nb.isbn = f.isbn;
+      if (f.info) { if (f.info.pages) nb.pages = f.info.pages; if (f.info.year) nb.year = f.info.year; if (f.info.publisher) nb.publisher = f.info.publisher; }
+      setStatus(nb, f.st);
       state.books.push(nb);
       state.tab = m === 'voorraad' ? 'stock' : 'plan';
       filter = { q: '', tags: [], author: '', status: 'all' }; $('q').value = '';
-      save(); closeSheet();
+      save();
+      var keepDest = m, keepTags = f.tags.slice(), keepSt = f.st;
+      addForm = null; closeSheet();
       if (m !== 'voorraad') jumpTo(m); else { render(); list.scrollTop = list.scrollHeight; }
       toast('Toegevoegd aan ' + destLabel(m));
+      if (andNext) {
+        addForm = newAddForm(); addForm.dest = keepDest; addForm.tags = keepTags; addForm.st = keepSt;
+        setTimeout(openScanner, 350);
+      }
+    };
+    if ($('add-next')) $('add-next').addEventListener('click', function () { commit(true); });
+    $('addform').addEventListener('submit', function (e) { e.preventDefault(); commit(false); });
+  }
+  // zoek een (geldig) ISBN op en toon het formulier, ingevuld als het lukt
+  function findIsbn(isbn, fromScan) {
+    if (!addForm) addForm = newAddForm();
+    var f = addForm;
+    f.isbn = isbn; f.err = ''; f.info = null; f.miss = false; f.busy = true; f.fromScan = f.fromScan || fromScan;
+    if (!fromScan) openAdd(true);
+    return lookupIsbn(isbn).then(function (info) {
+      f.busy = false;
+      if (info && info.t) { f.info = info; f.t = info.t; f.a = info.a; }
+      else { f.miss = true; }
+    }, function () {
+      f.busy = false;
+      f.err = navigator.onLine === false ? 'Geen internet. Vul titel en auteur zelf in; het ISBN wordt bewaard.' : 'Google Books gaf geen antwoord. Probeer het zo nog eens, of vul het zelf in.';
+    }).then(function () { if (addForm === f) openAdd(true); });
+  }
+
+  // ---------- scanner ----------
+  var BD_URL = 'https://fastly.jsdelivr.net/npm/barcode-detector@3.2.2/dist/es/ponyfill.js';
+  var scanner = null;
+  function getDetector() {
+    var make = function (C) { return new C({ formats: ['ean_13'] }); };
+    var native = window.BarcodeDetector;
+    var nativeOk = native && native.getSupportedFormats ? native.getSupportedFormats().then(function (f) { return f.indexOf('ean_13') >= 0; }, function () { return false; }) : Promise.resolve(false);
+    return nativeOk.then(function (ok) {
+      if (ok) return make(native);
+      return import(BD_URL).then(function (mod) { return make(mod.BarcodeDetector); });
     });
   }
+  function openScanner() {
+    var box = $('scan');
+    if (scanner) return;
+    scanner = { stream: null, timer: null, done: false, torch: false, busy: false };
+    var sc = scanner;
+    box.innerHTML =
+      '<video id="scan-video" playsinline muted autoplay aria-hidden="true"></video>' +
+      '<div class="scan-frame" id="scan-frame" aria-hidden="true"></div>' +
+      '<div class="scan-top"><button class="cbtn" id="scan-x" aria-label="Sluiten">' + ICON_X20 + '</button><b>Scan ISBN</b><button class="cbtn" id="scan-torch" aria-label="Lamp" aria-pressed="false" hidden>' + ICON_TORCH + '</button></div>' +
+      '<p class="scan-msg" id="scan-msg" role="status">Camera starten…</p>' +
+      '<div class="scan-foot"><button class="typebtn" id="scan-type">ISBN typen of handmatig invoeren</button></div>';
+    box.hidden = false;
+    $('scan-x').addEventListener('click', function () { closeScanner(); });
+    $('scan-type').addEventListener('click', function () { closeScanner(); openAdd(true); setTimeout(function () { var i = $('f-isbn'); if (i) i.focus(); }, 80); });
+    var msg = function (t) { var m = $('scan-msg'); if (m) m.innerHTML = t; };
+    var video = $('scan-video');
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }).then(function (stream) {
+      if (sc.done) { stream.getTracks().forEach(function (t) { t.stop(); }); return; }
+      sc.stream = stream; video.srcObject = stream;
+      var track = stream.getVideoTracks()[0];
+      try {
+        var caps = track.getCapabilities ? track.getCapabilities() : {};
+        if (caps.torch) {
+          var tb = $('scan-torch'); tb.hidden = false;
+          tb.addEventListener('click', function () {
+            sc.torch = !sc.torch;
+            track.applyConstraints({ advanced: [{ torch: sc.torch }] }).catch(function () {});
+            tb.classList.toggle('is-on', sc.torch); tb.setAttribute('aria-pressed', sc.torch);
+          });
+        }
+      } catch (e) {}
+      return video.play().catch(function () {}).then(function () {
+        msg('Scanner laden…');
+        return getDetector();
+      }).then(function (det) {
+        if (sc.done) return;
+        msg('Houd de streepjescode in het kader.');
+        var tick = function () {
+          if (sc.done || sc.busy || video.readyState < 2) return;
+          sc.busy = true;
+          det.detect(video).then(function (codes) {
+            sc.busy = false;
+            for (var i = 0; i < codes.length; i++) {
+              var v = String(codes[i].rawValue || '');
+              if (isbn13ok(v)) { hit(v); return; }
+            }
+            if (codes.length) msg('Dit is geen ISBN. Zoek de code die met 978 of 979 begint.');
+          }, function () { sc.busy = false; });
+        };
+        sc.timer = setInterval(tick, 200);
+      }, function () {
+        msg('De scanner kon niet laden. Heb je internet? <br>Je kunt het ISBN ook typen.');
+      });
+    }, function (err) {
+      msg(err && err.name === 'NotAllowedError' ? 'Ithaka mag de camera niet gebruiken. Geef toestemming in je browserinstellingen, of typ het ISBN.' : 'Er is geen camera beschikbaar. Typ het ISBN.');
+    });
+    function hit(isbn) {
+      if (sc.done) return;
+      try { if (navigator.vibrate) navigator.vibrate(30); } catch (e) {}
+      $('scan-frame').classList.add('is-hit');
+      clearInterval(sc.timer);
+      msg('<b>Gevonden</b> · ISBN ' + fmtIsbn(isbn) + '<br>gegevens ophalen…');
+      if (!addForm) addForm = newAddForm();
+      findIsbn(isbn, true).then(function () { closeScanner(); });
+    }
+  }
+  function closeScanner() {
+    var sc = scanner; if (!sc) return;
+    sc.done = true; clearInterval(sc.timer);
+    if (sc.stream) sc.stream.getTracks().forEach(function (t) { t.stop(); });
+    scanner = null;
+    var box = $('scan'); box.hidden = true; box.innerHTML = '';
+  }
+  document.addEventListener('visibilitychange', function () { if (document.hidden && scanner) closeScanner(); });
+  $('scan').addEventListener('keydown', function (e) { if (e.key === 'Escape') closeScanner(); });
 
   // nu bezig
   function openBezig() {
