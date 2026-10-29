@@ -159,6 +159,9 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .btn.primary:disabled{opacity:.45;cursor:not-allowed}
 .btn.danger{background:var(--danger);border-color:var(--danger);color:var(--surface)}
+.photorow{display:flex;gap:12px;flex-wrap:wrap}
+.linkbtn.sm{min-height:32px;font-size:13px}
+.linkbtn.muted{color:var(--muted)}
 .linkbtn{min-height:40px;border:0;background:transparent;color:var(--accent);font-weight:600;font-size:14px;cursor:pointer;align-self:flex-start;padding:0 2px}
 .linkdanger{min-height:44px;border:0;background:transparent;color:var(--danger);font-weight:600;font-size:14px;cursor:pointer;align-self:flex-start;padding:0 2px}
 .field{display:flex;flex-direction:column;gap:6px}
@@ -600,6 +603,67 @@ button.ayr{cursor:pointer}
   function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
   save();
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+
+  // ---------- eigen foto's van kaften (IndexedDB; in het geheugen gespiegeld) ----------
+  var photos = {};
+  var PH = (function () {
+    var dbp = null;
+    function db() {
+      if (!dbp) dbp = new Promise(function (res, rej) {
+        try {
+          var r = indexedDB.open('ithaka-photos', 1);
+          r.onupgradeneeded = function () { r.result.createObjectStore('p'); };
+          r.onsuccess = function () { res(r.result); }; r.onerror = function () { rej(r.error); };
+        } catch (e) { rej(e); }
+      });
+      return dbp;
+    }
+    function run(mode, fn) {
+      return db().then(function (d) {
+        return new Promise(function (res, rej) {
+          var t = d.transaction('p', mode), out; fn(t.objectStore('p'), function (v) { out = v; });
+          t.oncomplete = function () { res(out); }; t.onerror = function () { rej(t.error); }; t.onabort = function () { rej(t.error); };
+        });
+      });
+    }
+    return {
+      all: function () { return run('readonly', function (st, done) { var o = {}; var c = st.openCursor(); c.onsuccess = function () { var cur = c.result; if (cur) { o[cur.key] = cur.value; cur.continue(); } else done(o); }; }); },
+      put: function (id, v) { return run('readwrite', function (st) { st.put(v, id); }); },
+      del: function (id) { return run('readwrite', function (st) { st.delete(id); }); },
+      replace: function (map) { return run('readwrite', function (st) { st.clear(); Object.keys(map).forEach(function (k) { st.put(map[k], k); }); }); }
+    };
+  })();
+  PH.all().then(function (o) { if (o) photos = o; }).catch(function () {});
+  function setPhoto(id, url) {
+    if (url) photos[id] = url; else delete photos[id];
+    var b = find(id); if (b) { if (url) b.photo = true; else delete b.photo; save(); }
+    (url ? PH.put(id, url) : PH.del(id)).catch(function () { toast('Foto kon niet bewaard worden'); });
+  }
+  // camera openen (op de telefoon), foto verkleinen tot max. 480 px en als JPEG teruggeven
+  function takePhoto(cb) {
+    var inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'image/*'; inp.setAttribute('capture', 'environment');
+    inp.addEventListener('change', function () {
+      var f = inp.files && inp.files[0]; if (!f) return;
+      var url = URL.createObjectURL(f), img = new Image();
+      img.onload = function () {
+        var k = Math.min(1, 480 / Math.max(img.naturalWidth, img.naturalHeight));
+        var c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        try { cb(c.toDataURL('image/jpeg', 0.8)); } catch (e) { toast('Foto kon niet gelezen worden'); }
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); toast('Foto kon niet gelezen worden'); };
+      img.src = url;
+    });
+    inp.click();
+  }
+  function coverHTML(b, cls, own) {
+    var src = own || photos[b.id];
+    var img = src ? '<img src="' + esc(src) + '" alt="">' :
+      b.isbn ? '<img src="https://covers.openlibrary.org/b/isbn/' + esc(b.isbn) + '-M.jpg?default=false" alt="" referrerpolicy="no-referrer" onerror="this.remove()">' : '';
+    return '<span class="cover is-none' + (cls ? ' ' + cls : '') + '" aria-hidden="true">' + ICON_BOOK + img + '</span>';
+  }
 
   // ---------- hulpjes ----------
   var $ = function (id) { return document.getElementById(id); };
@@ -1053,11 +1117,13 @@ button.ayr{cursor:pointer}
   function openDetail(id) {
     var b = find(id); if (!b) return;
     var where = b.m === 'voorraad' ? 'Voorraad' : b.m === 'door' ? 'Doorlopend' : destLabel(b.m) + (b.until ? ' t/m ' + MONTHS[+b.until - 1].toLowerCase() : '');
-    var cover = '<span class="cover is-none dcover" aria-hidden="true">' + ICON_BOOK + (b.isbn ? '<img src="https://covers.openlibrary.org/b/isbn/' + esc(b.isbn) + '-M.jpg?default=false" alt="" referrerpolicy="no-referrer" onerror="this.remove()">' : '') + '</span>';
+    var cover = coverHTML(b, 'dcover');
+    var own = !!photos[b.id];
     var stSeg = ['open', 'bezig', 'done'].map(function (k) { return '<button type="button" data-dst="' + k + '" class="' + (b.status === k ? 'is-on' : '') + '">' + STATUS_LABEL[k] + '</button>'; }).join('');
     openSheet(b.t,
       '<div class="dhead">' + cover + '<div class="dmeta"><h3>' + esc(b.t) + '</h3>' + (b.a ? '<span class="a">' + esc(b.a) + '</span>' : '') +
-        (bookFacts(b) ? '<span class="facts">' + esc(bookFacts(b)) + '</span>' : '') + '<span class="dwhere">' + esc(where) + '</span></div></div>' +
+        (bookFacts(b) ? '<span class="facts">' + esc(bookFacts(b)) + '</span>' : '') + '<span class="dwhere">' + esc(where) + '</span>' +
+        '<span class="photorow"><button type="button" class="linkbtn sm" id="dd-photo">' + (own ? 'Andere foto' : 'Foto van de kaft maken') + '</button>' + (own ? '<button type="button" class="linkbtn sm muted" id="dd-photo-del">Foto weg</button>' : '') + '</span></div></div>' +
       '<div class="seg2">' + stSeg + '</div>' +
       '<div class="datefields">' +
         '<div class="field"><label for="dd-start">Begonnen op</label><input id="dd-start" type="date" value="' + esc(b.started || '') + '"></div>' +
@@ -1116,6 +1182,8 @@ button.ayr{cursor:pointer}
     bindStars();
     $('dd-rclear').addEventListener('click', function () { setRating(0); });
     $('dd-more').addEventListener('click', function () { flush(); openActions(id); });
+    $('dd-photo').addEventListener('click', function () { flush(); takePhoto(function (u) { setPhoto(id, u); openDetail(id); toast('Foto bewaard'); }); });
+    if ($('dd-photo-del')) $('dd-photo-del').addEventListener('click', function () { flush(); setPhoto(id, null); openDetail(id); });
     $('dd-done').addEventListener('click', function () { flush(); closeSheet(); });
     detailFlush = flush;
   }
@@ -1174,6 +1242,7 @@ button.ayr{cursor:pointer}
       $('del-no').addEventListener('click', closeSheet);
       $('del-yes').addEventListener('click', function () {
         state.books = state.books.filter(function (x) { return x.id !== id; });
+        if (photos[id]) setPhoto(id, null);
         save(); closeSheet(); renderKeep(); toast('Verwijderd');
       });
       $('del-yes').focus();
@@ -1627,7 +1696,7 @@ button.ayr{cursor:pointer}
   // ---------- toevoegen ----------
   var addForm = null;
   function newAddForm() {
-    return { isbn: '', t: '', a: '', pages: '', dest: state.tab === 'stock' ? 'voorraad' : (nowKey() || '1'), st: 'open', tags: [], info: null, miss: false, err: '', busy: false, fromScan: false };
+    return { isbn: '', t: '', a: '', pages: '', photo: null, dest: state.tab === 'stock' ? 'voorraad' : (nowKey() || '1'), st: 'open', tags: [], info: null, miss: false, err: '', busy: false, fromScan: false };
   }
   function openAdd(keep) {
     if (!keep || !addForm) addForm = newAddForm();
@@ -1638,13 +1707,14 @@ button.ayr{cursor:pointer}
     var stSeg = ['open', 'bezig', 'done'].map(function (k) { return '<button type="button" data-ast="' + k + '" class="' + (f.st === k ? 'is-on' : '') + '">' + STATUS_LABEL[k] + '</button>'; }).join('');
     var dup = (f.info || f.isbn) ? findDup(f.isbn, f.info ? f.info.t : '') : null;
     var found = '';
+    var photoBtn = '<button type="button" class="linkbtn sm" id="add-photo">' + (f.photo ? 'Andere foto' : 'Geen goede kaft? Maak een foto') + '</button>';
     if (f.info) {
       var facts = bookFacts({ edition: f.info.edition, pages: f.info.pages, year: f.info.year, publisher: f.info.publisher, isbn: f.isbn });
       found = '<div class="found">' +
-        '<span class="cover is-none" aria-hidden="true">' + ICON_BOOK + (f.info.cover ? '<img src="' + esc(f.info.cover) + '" alt="" referrerpolicy="no-referrer" onerror="this.remove()">' : '') + '</span>' +
-        '<span class="fmeta"><span class="src">via ' + esc(f.info.src) + '</span><span class="facts">' + esc(facts) + '</span></span></div>';
+        '<span class="cover is-none" aria-hidden="true">' + ICON_BOOK + (f.photo ? '<img src="' + esc(f.photo) + '" alt="">' : f.info.cover ? '<img src="' + esc(f.info.cover) + '" alt="" referrerpolicy="no-referrer" onerror="this.remove()">' : '') + '</span>' +
+        '<span class="fmeta"><span class="src">via ' + esc(f.info.src) + '</span><span class="facts">' + esc(facts) + '</span>' + photoBtn + '</span></div>';
     } else if (f.miss) {
-      found = '<div class="found"><span class="cover is-none" aria-hidden="true">' + ICON_BOOK + '</span><span class="fmeta"><span class="src is-miss">niet gevonden</span><span class="facts">ISBN ' + esc(fmtIsbn(f.isbn)) + ' staat niet bij de KB, Google Books of Open Library. Vul titel en auteur zelf in; het ISBN wordt bewaard.' + (f.missNote ? '<br><small>' + esc(f.missNote) + '</small>' : '') + '</span></span></div>';
+      found = '<div class="found"><span class="cover is-none" aria-hidden="true">' + ICON_BOOK + (f.photo ? '<img src="' + esc(f.photo) + '" alt="">' : '') + '</span><span class="fmeta"><span class="src is-miss">niet gevonden</span><span class="facts">ISBN ' + esc(fmtIsbn(f.isbn)) + ' staat niet bij de KB, Google Books of Open Library. Vul titel en auteur zelf in; het ISBN wordt bewaard.' + (f.missNote ? '<br><small>' + esc(f.missNote) + '</small>' : '') + '</span>' + photoBtn + '</span></div>';
     }
     openSheet('Boek toevoegen',
       '<h3>Boek toevoegen</h3>' +
@@ -1690,6 +1760,7 @@ button.ayr{cursor:pointer}
     isbnIn.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); go(); } });
     if ($('add-scan')) $('add-scan').addEventListener('click', function () { sync(); closeSheet(); openScanner(); });
     $('add-no').addEventListener('click', function () { addForm = null; closeSheet(); });
+    if ($('add-photo')) $('add-photo').addEventListener('click', function () { sync(); takePhoto(function (u) { f.photo = u; openAdd(true); }); });
     var commit = function (andNext) {
       sync();
       var t = f.t.trim(); if (!t) return;
@@ -1702,6 +1773,7 @@ button.ayr{cursor:pointer}
       setStatus(nb, f.st);
       if (m !== 'voorraad') nb.y = YEAR;
       state.books.push(nb);
+      if (f.photo) setPhoto(nb.id, f.photo);
       state.tab = m === 'voorraad' ? 'stock' : 'plan';
       filter = emptyFilter(); $('q').value = '';
       save();
@@ -2245,7 +2317,7 @@ button.ayr{cursor:pointer}
     for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
     return JSON.parse(new TextDecoder().decode(bytes));
   }
-  function backupData() { return { app: 'ithaka', v: 3, savedAt: new Date().toISOString(), books: state.books, tags: state.tags, years: state.years, imported: state.imported }; }
+  function backupData() { var d = { app: 'ithaka', v: 3, savedAt: new Date().toISOString(), books: state.books, tags: state.tags, years: state.years, imported: state.imported }; if (Object.keys(photos).length) d.photos = photos; return d; }
   function markBackup() { state.lastBackup = new Date().toISOString(); save(); }
   function backupAge() {
     if (!state.lastBackup) return 'Nog geen back-up gemaakt op dit apparaat.';
@@ -2294,7 +2366,7 @@ button.ayr{cursor:pointer}
     }
     var books = Array.isArray(d) ? d : d && d.books;
     if (!Array.isArray(books) || !books.every(function (b) { return b && typeof b.t === 'string' && typeof b.m === 'string'; })) throw new Error('vorm');
-    return { books: books, tags: (!Array.isArray(d) && Array.isArray(d.tags)) ? d.tags : null, savedAt: (d && d.savedAt) || null, years: (d && Array.isArray(d.years)) ? d.years : null, imported: (d && Array.isArray(d.imported)) ? d.imported : [] };
+    return { books: books, tags: (!Array.isArray(d) && Array.isArray(d.tags)) ? d.tags : null, savedAt: (d && d.savedAt) || null, years: (d && Array.isArray(d.years)) ? d.years : null, imported: (d && Array.isArray(d.imported)) ? d.imported : [], photos: (d && d.photos && typeof d.photos === 'object') ? d.photos : null };
   }
   function applyBackup(bk) {
     var books = bk.books;
@@ -2309,6 +2381,12 @@ button.ayr{cursor:pointer}
       state.nextTag = Math.max(state.nextTag, maxT + 1, bk.tags.length + 10);
     } else { state.tags = state.tags || defaultTags(); migrateTitles(state); }
     state.years = bk.years || []; state.year = null; state.imported = bk.imported || [];
+    var ph = {};
+    if (!bk.photos) Object.keys(photos).forEach(function (k) { if (books.some(function (b) { return b.id === k; })) ph[k] = photos[k]; });
+    else Object.keys(bk.photos).forEach(function (k) { if (/^data:image\//.test(String(bk.photos[k]))) ph[k] = bk.photos[k]; });
+    photos = ph;
+    books.forEach(function (b) { if (ph[b.id]) b.photo = true; else delete b.photo; });
+    PH.replace(ph).catch(function () {});
     fixYears();
     save(); closeSheet(); render(); list.scrollTop = 0; toast('Lijst hersteld');
   }
@@ -2402,7 +2480,7 @@ button.ayr{cursor:pointer}
     var n = bk.books.length, cur = state.books.length;
     openSheet('Back-up terugzetten',
       '<h3>Back-up terugzetten?</h3>' +
-      '<p class="note">Back-up van <b>' + esc(when) + '</b> met <b>' + n + (n === 1 ? ' boek' : ' boeken') + '</b>' + (bk.tags ? ' en ' + bk.tags.length + ' tags en lijnen' : '') + '.</p>' +
+      '<p class="note">Back-up van <b>' + esc(when) + '</b> met <b>' + n + (n === 1 ? ' boek' : ' boeken') + '</b>' + (bk.tags ? ' en ' + bk.tags.length + ' tags en lijnen' : '') + (bk.photos && Object.keys(bk.photos).length ? ', plus ' + Object.keys(bk.photos).length + ' eigen foto' + (Object.keys(bk.photos).length === 1 ? '' : '’s') : '') + '.</p>' +
       (cur ? '<p class="note">Dit vervangt wat nu op dit apparaat staat (' + cur + (cur === 1 ? ' boek' : ' boeken') + ').</p>' : '') +
       '<div class="btnrow"><button class="btn" id="rs-no">Annuleer</button><button class="btn primary" id="rs-yes">' + (cur ? 'Vervang' : 'Zet terug') + '</button></div>');
     $('rs-no').addEventListener('click', openBackup);
@@ -2432,7 +2510,7 @@ button.ayr{cursor:pointer}
       '<button class="btn primary" id="bk-save" style="flex:none">Bewaar back-up als bestand</button>' +
       '<button class="btn" id="bk-load" style="flex:none">Herstel uit bestand</button>' +
       (errMsg ? '<p class="err">' + esc(errMsg) + '</p>' : '') +
-      '<details class="codebox"><summary>Of met een code (kopiëren en plakken)</summary>' +
+      '<details class="codebox"><summary>Of met een code (kopiëren en plakken, zonder foto’s)</summary>' +
       '<div class="field"><label for="f-code">Jouw code</label><textarea id="f-code" readonly></textarea></div>' +
       '<button class="btn" id="copy">Kopieer code</button>' +
       '<div class="field"><label for="f-restore">Code plakken</label><textarea id="f-restore" placeholder="Plak hier een eerder gekopieerde code"></textarea></div>' +
