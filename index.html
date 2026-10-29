@@ -20,6 +20,7 @@
   --ok:#3C8A7A; --danger:#A3352B; --scrim:rgba(42,29,20,.45);
   --hd1:#3E2616; --hd2:#2A190E; --hd-ink:#F6EDE2; --hd-soft:#D9C9B6; --hd-glass:rgba(246,237,226,.09); --sun:#E0873A; --sun-soft:#F6C98A;
   --unplan:#2B4B7A; --tgt:#9C8A78;
+  --lib:#2B4B7A; --lib-soft:#EEF3FA; --lib-line:#C9D5E8; --lib-due:#A3352B;
   --f-title:'Literata', Georgia, 'Times New Roman', serif;
   --f-ui:'Public Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color-scheme:light;
@@ -31,6 +32,7 @@
     --accent:#E0873A; --accent-ink:#22150B; --accent-soft:#3A2414;
     --ok:#6FBFAE; --danger:#E38A80; --scrim:rgba(0,0,0,.55);
     --unplan:#8FB0E3; --tgt:#8C7B6B;
+    --lib:#8FB0E3; --lib-soft:#1B2330; --lib-line:#2E3B52; --lib-due:#E38A80;
     color-scheme:dark;
   }
   .tag,.tagopt:not(.is-on),.lnm b,.showbtn{color:var(--tag-c)!important}
@@ -56,6 +58,30 @@ h1{margin:0;min-width:0;font-family:var(--f-title);font-weight:600;font-size:23p
 .nowbar .list{flex:1;min-width:0;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nowbar .warn{flex:none;width:8px;height:8px;border-radius:50%;background:var(--danger)}
 .nowbar svg{flex:none;color:var(--muted)}
+.libbar{display:flex;align-items:center;gap:10px;min-height:44px;border:0;border-bottom:1px solid var(--line);background:var(--lib-soft);padding:0 max(14px,env(safe-area-inset-right,0px)) 0 max(14px,env(safe-area-inset-left,0px));cursor:pointer;text-align:left;width:100%;color:var(--ink)}
+.libbar .lab{flex:none;display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--lib)}
+.libbar .list{flex:1;min-width:0;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.libbar .warn{flex:none;width:8px;height:8px;border-radius:50%;background:var(--lib-due)}
+.libbar svg{flex:none}
+.lb{display:inline-flex;align-items:center;gap:4px;align-self:flex-start;margin-top:4px;font-size:11.5px;font-weight:700;line-height:1.3;border-radius:999px;padding:2px 8px 2px 6px;font-variant-numeric:tabular-nums}
+.lb.want{color:var(--lib);border:1.5px solid var(--lib-line)}
+.lb.loan{color:#FFFFFF;background:var(--lib)}
+.lb.loan.due{background:var(--lib-due)}
+@media (prefers-color-scheme: dark){ .lb.loan{color:#14100C} }
+.libbox{border:1px solid var(--lib-line);background:var(--lib-soft);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.libbox .lbl{color:var(--lib);display:flex;align-items:center;gap:6px;margin:0}
+.libbox .seg2{background:var(--lib-line)}
+.libbox .note{margin:0;font-size:13.5px}
+.libbox .linkbtn{color:var(--lib)}
+.lgrp{display:flex;align-items:baseline;gap:8px;margin:12px 0 2px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--lib)}
+.lgrp span{color:var(--muted);letter-spacing:0}
+.lrow2{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;border:0;border-top:1px solid var(--line);background:transparent;padding:8px 0;text-align:left;cursor:pointer;color:var(--ink)}
+.lrow2 .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.lrow2 .tx b{font-family:var(--f-title);font-weight:500;font-size:15px;line-height:1.25}
+.lrow2 .tx span{font-size:12.5px;color:var(--muted)}
+.lrow2 .r{flex:none;font-size:12.5px;font-weight:700;text-align:right;line-height:1.3;color:var(--soft)}
+.lrow2 .r.now{color:var(--lib)}
+.lrow2 .r.due{color:var(--lib-due)}
 .hbtn{position:relative;width:42px;height:42px;flex:none;border:0;border-radius:12px;background:var(--hd-glass);color:var(--hd-ink);display:flex;align-items:center;justify-content:center;cursor:pointer}
 .hbtn.is-on{background:var(--hd-ink);color:#2A1D14}
 .badge{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;border-radius:9px;background:var(--sun);color:#2A1D14;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px}
@@ -451,6 +477,13 @@ button.ayr{cursor:pointer}
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
   </button>
 
+  <button class="libbar" id="libbar" hidden>
+    <span class="lab" id="liblab"></span>
+    <span class="list" id="liblist"></span>
+    <span class="warn" id="libwarn" hidden aria-hidden="true"></span>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+  </button>
+
   <div class="fchips" id="fchips" hidden></div>
 
   <main id="list" aria-live="polite"></main>
@@ -567,7 +600,7 @@ button.ayr{cursor:pointer}
       if (raw) {
         var d = JSON.parse(raw);
         if (d && Array.isArray(d.books)) {
-          var st = { v: d.v || 1, tab: d.tab === 'stock' ? 'stock' : 'plan', nextId: d.nextId || 1000, nextTag: d.nextTag || 1, coll: d.coll || {}, books: d.books, tags: Array.isArray(d.tags) ? d.tags : null, lastBackup: d.lastBackup || null, year: d.year || null, years: Array.isArray(d.years) ? d.years : [], imported: Array.isArray(d.imported) ? d.imported : [] };
+          var st = { v: d.v || 1, tab: d.tab === 'stock' ? 'stock' : 'plan', nextId: d.nextId || 1000, nextTag: d.nextTag || 1, coll: d.coll || {}, books: d.books, tags: Array.isArray(d.tags) ? d.tags : null, lastBackup: d.lastBackup || null, year: d.year || null, years: Array.isArray(d.years) ? d.years : [], imported: Array.isArray(d.imported) ? d.imported : [], lib: d.lib && typeof d.lib === 'object' ? d.lib : null };
           normalizeBooks(st.books);
           st.books.forEach(function (b) { if (b.y) b.y = +b.y; });
           if (!st.tags) { st.tags = defaultTags(); migrateTitles(st); }
@@ -751,6 +784,98 @@ button.ayr{cursor:pointer}
   }
   var ICON_BOOK = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h6a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H3z"/><path d="M21 5h-6a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h7z"/></svg>';
   function stLabel(b) { return b.status === 'open' ? 'Te lezen. Tik om te beginnen' : b.status === 'bezig' ? 'Bezig. Tik als je het uit hebt' : 'Gelezen. Tik om terug te zetten'; }
+  // ---------- bibliotheek ----------
+  var ICON_LIB = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-5 9 5"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8"/><path d="M3 21h18"/></svg>';
+  var LIB_URL_DEFAULT = 'https://www.sambis.nl/iguana/www.main.cls?surl=RIV_SearchHF#searchterm={q}';
+  function libCfg() { var c = state.lib || {}; return { weeks: +c.weeks > 0 ? +c.weeks : 4, renew: +c.renew >= 0 && c.renew !== undefined && c.renew !== null && c.renew !== '' ? +c.renew : 1, url: typeof c.url === 'string' ? c.url : LIB_URL_DEFAULT }; }
+  function addDaysISO(iso, n) { var d = parseISO(iso); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function daysTo(iso) { return Math.round((parseISO(iso) - parseISO(todayISO())) / 86400000); }
+  function dueISO(b) { return b.lib === 'loan' && b.loanDate ? addDaysISO(b.loanDate, 7 * libCfg().weeks * (1 + (b.renewed || 0))) : null; }
+  function canRenew(b) { return (b.renewed || 0) < libCfg().renew; }
+  function planStart(b) { return +b.m >= 1 && b.y ? b.y + '-' + pad(+b.m) + '-01' : null; }
+  function reserveNow(b) { if (b.lib !== 'want' || b.status === 'done') return false; var st = planStart(b); return !!st && daysTo(st) <= 28; }
+  function libSearchURL(b) { var u = libCfg().url; if (!u) return ''; var q = b.isbn || (b.t + (b.a ? ' ' + b.a : '')); return u.indexOf('{q}') >= 0 ? u.replace('{q}', encodeURIComponent(q)) : u; }
+  function dShort(iso) { var d = parseISO(iso); return d.getDate() + ' ' + MON_SHORT[d.getMonth()]; }
+  function libBoxHTML(b) {
+    var cur = b.lib === 'want' || b.lib === 'loan' ? b.lib : 'own', c = libCfg();
+    var seg = [['own', 'Eigen boek'], ['want', 'Wil lenen'], ['loan', 'Geleend']].map(function (o) { return '<button type="button" data-lib="' + o[0] + '" class="' + (cur === o[0] ? 'is-on' : '') + '">' + o[1] + '</button>'; }).join('');
+    var body = '';
+    var url = libSearchURL(b);
+    var link = url ? '<a class="linkbtn" href="' + esc(url) + '" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>Zoek in de bibliotheekcatalogus</a>' : '';
+    if (cur === 'want') {
+      var st = planStart(b);
+      body = '<p class="note">' + (b.status === 'done' ? 'Al gelezen.' : !st ? 'Zonder geplande maand komt hij in je bibliotheekoverzicht onder "wil lenen".' : reserveNow(b) ? '<b>Reserveer hem nu</b>: hij staat gepland in ' + MONTHS[+b.m - 1].toLowerCase() + '.' : 'Vanaf ' + dShort(addDaysISO(st, -28)) + ' krijg je een seintje om te reserveren, vier weken voor ' + MONTHS[+b.m - 1].toLowerCase() + '.') + '</p>' + link;
+    } else if (cur === 'loan') {
+      var due = dueISO(b), n = daysTo(due);
+      body = '<div class="datefields"><div class="field"><label for="dd-loan">Geleend op</label><input id="dd-loan" type="date" value="' + esc(b.loanDate) + '"></div>' +
+        '<div class="field"><label>Inleveren</label><div class="isbnrow"><span style="min-height:44px;display:flex;align-items:center;font-weight:700;font-size:15px;color:' + (n <= 7 ? 'var(--lib-due)' : 'var(--ink)') + '">' + nlDate(due) + '</span></div></div></div>' +
+        '<p class="note">' + (n < 0 ? '<b style="color:var(--lib-due)">' + (-n) + (n === -1 ? ' dag' : ' dagen') + ' te laat.</b>' : n === 0 ? '<b style="color:var(--lib-due)">Vandaag inleveren.</b>' : '<b>Nog ' + n + (n === 1 ? ' dag' : ' dagen') + '.</b>') +
+          ' Leentermijn ' + c.weeks + ' weken' + (b.renewed ? ', al ' + (b.renewed === 1 ? 'een keer' : b.renewed + ' keer') + ' verlengd' : c.renew ? ', ' + (c.renew === 1 ? 'een keer' : c.renew + ' keer') + ' te verlengen' : '') + '.</p>' +
+        '<div class="btnrow">' + (canRenew(b) ? '<button type="button" class="btn" id="dd-renew">Verlengd (+' + c.weeks + ' wk)</button>' : '') + '<button type="button" class="btn" id="dd-return">Ingeleverd</button></div>';
+    }
+    return '<div class="libbox"><p class="lbl">' + ICON_LIB + 'Bibliotheek</p><div class="seg2 sm" role="group" aria-label="Bibliotheek">' + seg + '</div>' + body + '</div>';
+  }
+  function libBadge(b) {
+    if (b.lib === 'loan' && b.loanDate) {
+      var due = dueISO(b), n = daysTo(due);
+      return '<span class="lb loan' + (n <= 7 ? ' due' : '') + '">' + ICON_LIB + (n < 0 ? 'te laat · ' + dShort(due) : n === 0 ? 'vandaag inleveren' : 'geleend · tot ' + dShort(due)) + '</span>';
+    }
+    if (b.lib === 'want' && b.status !== 'done') return '<span class="lb want">' + ICON_LIB + (reserveNow(b) ? 'nu reserveren' : 'lenen') + '</span>';
+    return '';
+  }
+  function libLoans() { return state.books.filter(function (b) { return b.lib === 'loan' && b.loanDate; }).sort(function (x, y) { return dueISO(x) < dueISO(y) ? -1 : 1; }); }
+  function libWants() { return state.books.filter(function (b) { return b.lib === 'want' && b.status !== 'done'; }); }
+  function renderLibbar() {
+    var loans = libLoans(), now = libWants().filter(reserveNow);
+    var bar = $('libbar');
+    if (!loans.length && !now.length) { bar.hidden = true; return; }
+    var urgent = loans.filter(function (b) { return daysTo(dueISO(b)) <= 7; });
+    var parts = [];
+    if (urgent.length) parts.push('Inleveren ' + dShort(dueISO(urgent[0])) + ': ' + urgent.map(function (b) { return b.t; }).join(', '));
+    else if (loans.length) parts.push(loans.length + ' geleend · eerste inleveren ' + dShort(dueISO(loans[0])));
+    if (now.length) parts.push('Reserveer: ' + now.map(function (b) { return b.t; }).join(', '));
+    $('liblab').innerHTML = ICON_LIB + 'Bieb';
+    $('liblist').textContent = parts.join(' · ');
+    $('libwarn').hidden = !urgent.length && !now.length;
+    bar.setAttribute('aria-label', 'Bibliotheek: ' + parts.join('. '));
+    bar.hidden = false;
+  }
+  function openLib(msg) {
+    var c = libCfg();
+    var rowL = function (b, right, cls) {
+      var where = b.m === 'voorraad' ? 'voorraad' : b.m === 'door' ? 'doorlopend ' + (b.y || '') : 'gepland ' + MONTHS[+b.m - 1].toLowerCase() + (b.y && b.y !== YEAR ? ' ' + b.y : '');
+      return '<button class="lrow2" data-lopen="' + esc(b.id) + '"><span class="tx"><b>' + esc(b.t) + '</b><span>' + esc((b.a ? b.a + ' · ' : '') + where) + '</span></span><span class="r ' + (cls || '') + '">' + right + '</span></button>';
+    };
+    var loans = libLoans(), wants = libWants();
+    var now = wants.filter(reserveNow), later = wants.filter(function (b) { return !reserveNow(b) && planStart(b); }).sort(function (x, y) { return planStart(x) < planStart(y) ? -1 : 1; });
+    var loose = wants.filter(function (b) { return !planStart(b); });
+    var html = '';
+    if (loans.length) html += '<div class="lgrp">Geleend <span>' + loans.length + '</span></div>' + loans.map(function (b) {
+      var due = dueISO(b), n = daysTo(due);
+      return rowL(b, (n < 0 ? 'te laat<br>' : 'inleveren<br>') + dShort(due) + (b.renewed ? '<br><small style="font-weight:500">verlengd</small>' : ''), n <= 7 ? 'due' : '');
+    }).join('');
+    if (now.length) html += '<div class="lgrp">Nu reserveren <span>' + now.length + '</span></div>' + now.map(function (b) { return rowL(b, 'reserveer<br>nu', 'now'); }).join('');
+    if (later.length) html += '<div class="lgrp">Later <span>' + later.length + '</span></div>' + later.map(function (b) { return rowL(b, 'reserveren<br>vanaf ' + dShort(addDaysISO(planStart(b), -28))); }).join('');
+    if (loose.length) html += '<div class="lgrp">Wil lenen, zonder maand <span>' + loose.length + '</span></div>' + loose.map(function (b) { return rowL(b, ''); }).join('');
+    if (!html) html = '<p class="note">Nog niets geleend of gemarkeerd. Open een boek en kies bij <b>Bibliotheek</b> "Wil lenen" of "Geleend".</p>';
+    openSheet('Bibliotheek',
+      '<div class="sheethead"><h3>Bibliotheek</h3><button class="linkbtn" id="lib-done" style="align-self:center">Klaar</button></div>' +
+      '<div>' + html + '</div>' +
+      '<details class="codebox"><summary>Leenregels en catalogus</summary>' +
+        '<div class="datefields"><div class="field"><label for="lib-weeks">Leentermijn (weken)</label><input id="lib-weeks" type="number" inputmode="numeric" min="1" max="26" value="' + c.weeks + '"></div>' +
+        '<div class="field"><label for="lib-renew">Keer verlengen</label><input id="lib-renew" type="number" inputmode="numeric" min="0" max="9" value="' + c.renew + '"></div></div>' +
+        '<div class="field"><label for="lib-url">Zoeklink catalogus <span style="font-weight:400;color:var(--muted)">({q} = ISBN of titel)</span></label><input id="lib-url" type="text" autocomplete="off" spellcheck="false" value="' + esc(c.url) + '"></div>' +
+        '<button class="btn" id="lib-save" style="flex:none">Bewaar</button></details>' +
+      (msg ? '<p class="note" style="color:var(--ok)">' + esc(msg) + '</p>' : '') +
+      '<p class="note" style="font-size:12.5px;color:var(--muted)">Seintje om te reserveren vanaf vier weken voor de geplande maand. Leentermijn ' + c.weeks + ' weken' + (c.renew ? ', ' + c.renew + '× verlengen' : '') + '.</p>');
+    $('lib-done').addEventListener('click', closeSheet);
+    sheet.querySelectorAll('[data-lopen]').forEach(function (el) { el.addEventListener('click', function () { openDetail(el.dataset.lopen); }); });
+    $('lib-save').addEventListener('click', function () {
+      var w = parseInt($('lib-weeks').value, 10), r = parseInt($('lib-renew').value, 10);
+      state.lib = { weeks: w > 0 && w <= 26 ? w : 4, renew: r >= 0 && r <= 9 ? r : 1, url: $('lib-url').value.trim() };
+      save(); renderKeep(); openLib('Bewaard');
+    });
+  }
   function rowHTML(b, o) {
     var tags = tagsHTML(b.tags, b);
     if (o && o.month && !b.until && b.m !== 'voorraad') {
@@ -760,7 +885,7 @@ button.ayr{cursor:pointer}
     return '<div class="row' + (b.done ? ' is-done' : '') + (o && o.month ? ' no-drag' : '') + '" data-id="' + esc(b.id) + '">' +
       '<span class="grip" aria-hidden="true">' + ICON_GRIP + '</span>' +
       '<button class="st st-' + b.status + '" data-act="status" aria-label="' + esc(b.t) + ': ' + stLabel(b) + '"><i>' + (b.status === 'done' ? ICON_CHECK : b.status === 'bezig' ? ICON_BOOK : '') + '</i></button>' +
-      '<span class="txt"><span class="t">' + esc(b.t) + '</span>' + (b.a || b.pages || b.rating ? '<span class="a">' + esc(b.a || '') + (b.pages ? '<span class="apg">' + (b.a ? ' · ' : '') + nlNum(b.pages) + ' blz.</span>' : '') + (b.rating ? '<span class="arate">★ ' + fmtRating(b.rating) + '</span>' : '') + (b.notes ? '<span class="anote" title="Aantekeningen">' + ICON_NOTE + '</span>' : '') + '</span>' : (b.notes ? '<span class="a"><span class="anote">' + ICON_NOTE + '</span></span>' : '')) + tags + '</span>' +
+      '<span class="txt"><span class="t">' + esc(b.t) + '</span>' + (b.a || b.pages || b.rating ? '<span class="a">' + esc(b.a || '') + (b.pages ? '<span class="apg">' + (b.a ? ' · ' : '') + nlNum(b.pages) + ' blz.</span>' : '') + (b.rating ? '<span class="arate">★ ' + fmtRating(b.rating) + '</span>' : '') + (b.notes ? '<span class="anote" title="Aantekeningen">' + ICON_NOTE + '</span>' : '') + '</span>' : (b.notes ? '<span class="a"><span class="anote">' + ICON_NOTE + '</span></span>' : '')) + tags + libBadge(b) + '</span>' +
       symsHTML(b) +
       '<button class="iconbtn" data-act="more" aria-label="Opties voor ' + esc(b.t) + '">' + ICON_MORE + '</button>' +
       '</div>';
@@ -869,7 +994,7 @@ button.ayr{cursor:pointer}
     $('nowwarn').hidden = !bz.some(function (b) { return (daysSince(b.started) || 0) > 60; });
   }
   function render() {
-    renderHeader(); renderChips(); renderNowbar();
+    renderHeader(); renderChips(); renderNowbar(); renderLibbar();
     var f = filtering();
     var html = '';
     if (f) {
@@ -1004,6 +1129,7 @@ button.ayr{cursor:pointer}
   $('q-clear').addEventListener('click', function () { filter.q = ''; $('q').value = ''; render(); $('q').focus(); });
   $('btn-filter').addEventListener('click', openFilter);
   $('nowbar').addEventListener('click', openBezig);
+  $('libbar').addEventListener('click', function () { openLib(); });
   $('btn-stats').addEventListener('click', function () { statsSel = null; statsAll = false; statsFives = false; openStats(); });
   $('btn-add').addEventListener('click', function () { openAdd(false); });
   $('btn-backup').addEventListener('click', openBackup);
@@ -1124,6 +1250,7 @@ button.ayr{cursor:pointer}
       '<div class="dhead">' + cover + '<div class="dmeta"><h3>' + esc(b.t) + '</h3>' + (b.a ? '<span class="a">' + esc(b.a) + '</span>' : '') +
         (bookFacts(b) ? '<span class="facts">' + esc(bookFacts(b)) + '</span>' : '') + '<span class="dwhere">' + esc(where) + '</span>' +
         '<span class="photorow"><button type="button" class="linkbtn sm" id="dd-photo">' + (own ? 'Andere foto' : 'Foto van de kaft maken') + '</button>' + (own ? '<button type="button" class="linkbtn sm muted" id="dd-photo-del">Foto weg</button>' : '') + '</span></div></div>' +
+      libBoxHTML(b) +
       '<div class="seg2">' + stSeg + '</div>' +
       '<div class="datefields">' +
         '<div class="field"><label for="dd-start">Begonnen op</label><input id="dd-start" type="date" value="' + esc(b.started || '') + '"></div>' +
@@ -1182,6 +1309,18 @@ button.ayr{cursor:pointer}
     bindStars();
     $('dd-rclear').addEventListener('click', function () { setRating(0); });
     $('dd-more').addEventListener('click', function () { flush(); openActions(id); });
+    sheet.querySelectorAll('[data-lib]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var v = el.dataset.lib; flush();
+        if (v === 'loan') { if (b.lib !== 'loan') { b.loanDate = todayISO(); b.renewed = 0; } }
+        else { delete b.loanDate; delete b.renewed; }
+        if (v === 'own') delete b.lib; else b.lib = v;
+        save(); renderKeep(); openDetail(id);
+      });
+    });
+    if ($('dd-loan')) $('dd-loan').addEventListener('change', function () { if (this.value) { b.loanDate = this.value; flush(); save(); renderKeep(); openDetail(id); } });
+    if ($('dd-renew')) $('dd-renew').addEventListener('click', function () { flush(); b.renewed = (b.renewed || 0) + 1; save(); renderKeep(); openDetail(id); toast('Verlengd tot ' + dShort(dueISO(b))); });
+    if ($('dd-return')) $('dd-return').addEventListener('click', function () { flush(); delete b.lib; delete b.loanDate; delete b.renewed; save(); renderKeep(); openDetail(id); toast('Ingeleverd'); });
     $('dd-photo').addEventListener('click', function () { flush(); takePhoto(function (u) { setPhoto(id, u); openDetail(id); toast('Foto bewaard'); }); });
     if ($('dd-photo-del')) $('dd-photo-del').addEventListener('click', function () { flush(); setPhoto(id, null); openDetail(id); });
     $('dd-done').addEventListener('click', function () { flush(); closeSheet(); });
