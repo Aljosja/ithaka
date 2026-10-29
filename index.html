@@ -335,6 +335,22 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .tbook b{font-family:var(--f-title);font-weight:500;font-size:14.5px}
 .tbook span{font-size:12px;color:var(--muted)}
 .tstar{font-family:var(--f-ui);font-size:12px;font-weight:600;color:var(--accent);white-space:nowrap}
+.irows{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.irow{display:grid;grid-template-columns:52px minmax(0,1fr) auto;align-items:center;column-gap:10px;min-height:40px;border-bottom:1px solid var(--line);font-size:14px}
+.irow b{font-family:var(--f-title);font-weight:600;font-size:16px;font-variant-numeric:tabular-nums}
+.irow span{color:var(--soft)}
+.imptag{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:1px 5px;vertical-align:1px}
+.ayrs{display:flex;flex-direction:column}
+.ayr{display:grid;grid-template-columns:44px minmax(0,1fr) 26px 72px 40px;column-gap:8px;align-items:center;min-height:40px;border:0;border-top:1px solid var(--line);background:transparent;padding:0;text-align:left;color:var(--ink);font-size:12.5px;font-variant-numeric:tabular-nums;width:100%}
+button.ayr{cursor:pointer}
+.ayr b{font-family:var(--f-title);font-weight:600;font-size:15px}
+.ayr .bar{height:9px;border-radius:5px;background:var(--track);overflow:hidden}
+.ayr .bar i{display:block;height:100%;background:var(--accent);border-radius:5px}
+.ayr .an{text-align:right;font-weight:700}
+.ayr .ap,.ayr .ar{text-align:right;color:var(--muted)}
+.ycells i{opacity:1}
+.alanes .lct{min-width:74px;text-align:right}
+.yaxis{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:0 122px 0 42px;font-variant-numeric:tabular-nums}
 .tempo{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px}
 .tempo div{background:var(--ground);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column}
 .tempo b{font-family:var(--f-title);font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
@@ -548,7 +564,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       if (raw) {
         var d = JSON.parse(raw);
         if (d && Array.isArray(d.books)) {
-          var st = { v: d.v || 1, tab: d.tab === 'stock' ? 'stock' : 'plan', nextId: d.nextId || 1000, nextTag: d.nextTag || 1, coll: d.coll || {}, books: d.books, tags: Array.isArray(d.tags) ? d.tags : null, lastBackup: d.lastBackup || null, year: d.year || null, years: Array.isArray(d.years) ? d.years : [] };
+          var st = { v: d.v || 1, tab: d.tab === 'stock' ? 'stock' : 'plan', nextId: d.nextId || 1000, nextTag: d.nextTag || 1, coll: d.coll || {}, books: d.books, tags: Array.isArray(d.tags) ? d.tags : null, lastBackup: d.lastBackup || null, year: d.year || null, years: Array.isArray(d.years) ? d.years : [], imported: Array.isArray(d.imported) ? d.imported : [] };
           normalizeBooks(st.books);
           st.books.forEach(function (b) { if (b.y) b.y = +b.y; });
           if (!st.tags) { st.tags = defaultTags(); migrateTitles(st); }
@@ -573,9 +589,12 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       state.year = ys.indexOf(cy) >= 0 ? cy : ys.filter(function (y) { return y > cy; })[0] || ys[ys.length - 1];
     }
     state.year = +state.year; YEAR = state.year;
+    state.imported = (Array.isArray(state.imported) ? state.imported : []).map(Number).filter(function (y) { return ys.indexOf(y) >= 0; });
   }
   fixYears();
   function ck(key) { return key === 'voorraad' ? key : YEAR + ':' + key; }   // inklappen onthouden per jaar
+  // geïmporteerd jaar (uit Goodreads): leesgeschiedenis zonder planning
+  function isImp(y) { return state.imported.indexOf(y === undefined ? YEAR : +y) >= 0; }
   function inYear(b) { return b.m === 'voorraad' || +b.y === YEAR; }
   function YB() { return state.books.filter(inYear); }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
@@ -921,7 +940,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   $('q-clear').addEventListener('click', function () { filter.q = ''; $('q').value = ''; render(); $('q').focus(); });
   $('btn-filter').addEventListener('click', openFilter);
   $('nowbar').addEventListener('click', openBezig);
-  $('btn-stats').addEventListener('click', function () { statsSel = null; openStats(); });
+  $('btn-stats').addEventListener('click', function () { statsSel = null; statsAll = false; statsFives = false; openStats(); });
   $('btn-add').addEventListener('click', function () { openAdd(false); });
   $('btn-backup').addEventListener('click', openBackup);
 
@@ -978,9 +997,9 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     var rows = state.years.slice().sort(function (a, b) { return b - a; }).map(function (y) {
       var pl = state.books.filter(function (b) { return +b.y === y && b.m !== 'voorraad'; });
       var dn = pl.filter(function (b) { return b.status === 'done'; }).length;
-      var cur = y === YEAR;
+      var cur = y === YEAR, imp = isImp(y);
       return '<div class="yrow' + (cur ? ' is-cur' : '') + '"><button class="ypick" data-y="' + y + '"' + (cur ? ' aria-current="true"' : '') + '>' +
-        '<span class="yy">' + y + '</span><span class="yt"><b>' + (pl.length ? dn + ' van ' + pl.length + ' gelezen' : 'Nog leeg') + '</b><span>' + (cur ? 'nu open' : 'tik om te openen') + '</span></span></button>' +
+        '<span class="yy">' + y + '</span><span class="yt"><b>' + (imp ? dn + ' gelezen <span class="imptag">import</span>' : pl.length ? dn + ' van ' + pl.length + ' gelezen' : 'Nog leeg') + '</b><span>' + (cur ? 'nu open' : imp ? 'leesgeschiedenis, zonder planning' : 'tik om te openen') + '</span></span></button>' +
         (!pl.length && state.years.length > 1 ? '<button class="iconbtn" data-ydel="' + y + '" aria-label="Leesjaar ' + y + ' verwijderen">' + ICON_TRASH + '</button>' : '') + '</div>';
     }).join('');
     var next = state.years[state.years.length - 1] + 1, prev = state.years[0] - 1;
@@ -990,7 +1009,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       '<p class="lbl">Leesjaar toevoegen</p>' +
       '<div class="btnrow"><button class="btn" data-yadd="' + prev + '">+ ' + prev + '</button><button class="btn" data-yadd="' + next + '">+ ' + next + '</button></div>' +
       (msg ? '<p class="err">' + esc(msg) + '</p>' : '') +
-      '<p class="note" style="font-size:13px;color:var(--muted)">Je voorraad, tags en lijnen horen bij alle jaren. Een leesjaar uit Goodreads importeer je via de back-upknop → Herstel uit bestand.</p>');
+      '<p class="note" style="font-size:13px;color:var(--muted)">Je voorraad, tags en lijnen horen bij alle jaren. Leesjaren uit Goodreads importeer je via de back-upknop → Herstel uit bestand. Die krijgen het label import.</p>');
     $('yr-done').addEventListener('click', closeSheet);
     sheet.querySelectorAll('[data-y]').forEach(function (el) {
       el.addEventListener('click', function () { switchYear(+el.dataset.y); closeSheet(); });
@@ -1829,7 +1848,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   }
 
   // statistieken
-  var statsSel = null, statsLine;
+  var statsSel = null, statsLine, statsAll = false, statsAllLine, statsFives = false;
   // telt een gelezen boek mee in het bekeken jaar? (op uitleesdatum; zonder datum: het jaar waar het in staat)
   function readThisYear(b) {
     if (b.status !== 'done') return false;
@@ -1860,8 +1879,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   function ratedThisYear() { return YB().filter(function (b) { return b.rating && readThisYear(b); }); }
   function avgR(bs) { return bs.length ? bs.reduce(function (t, b) { return t + b.rating; }, 0) / bs.length : null; }
   function f1(x) { return x === null ? '–' : x.toFixed(1).replace('.', ','); }
-  function ratingCardHTML() {
-    var rated = ratedThisYear();
+  function ratingCardHTML(rated, unrated, all) {
     if (rated.length < 3) return '';
     var avg = avgR(rated);
     var pos = function (v) { return Math.max(0, Math.min(100, (v - 2) / 3 * 100)).toFixed(1); };
@@ -1882,7 +1900,6 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     var distHTML = dist.map(function (x) {
       return '<div class="sr"><span>★ ' + fmtRating(x.st) + '</span><span class="bar"><i style="width:' + Math.round(x.n / maxN * 100) + '%"></i></span><span class="c">' + x.n + '</span></div>';
     }).join('');
-    var unrated = YB().filter(function (b) { return !b.rating && readThisYear(b); }).length;
     // vaste-regel-conclusie: hoogste en laagste groep met minstens 3 boeken
     var big = groups.filter(function (g) { return g.n >= 3; }).sort(function (a, b) { return b.v - a.v; });
     var insight = '';
@@ -1894,6 +1911,9 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     }).join('');
     var fives = rated.filter(function (b) { return b.rating === 5; });
     var top = fives.length ? fives : rated.filter(function (b) { return b.rating >= 4.5; });
+    if (all) top = top.slice().sort(function (x, y) { return (readYearOf(y) || 0) - (readYearOf(x) || 0); });
+    var more = all && !statsFives && top.length > 12 ? top.length - 12 : 0;
+    if (more) top = top.slice(0, 12);
     return '<div class="card"><h4>Waardering</h4>' +
       '<div class="big"><b>' + f1(avg) + '</b><span>gemiddeld ★ over ' + rated.length + ' boeken' + (unrated ? ' · ' + unrated + ' zonder sterren' : '') + '</span></div>' +
       '<div>' + distHTML + '</div>' +
@@ -1901,13 +1921,15 @@ body.dragging,body.dragging *{cursor:grabbing!important}
         '<p class="pgnote">Streepje = je gemiddelde. Alleen tags en lijnen met minstens twee boeken met sterren.</p>' : '<p class="pgnote">Koppel tags of lijnen aan je boeken om je waardering per thema te zien.</p>') +
       (insight ? '<p class="insight">' + insight + '</p>' : '') +
       (top.length ? '<p class="lbl" style="margin-top:4px">' + (fives.length ? 'Vijf sterren' : 'Hoogst gewaardeerd') + '</p><div class="toplist">' + top.map(function (b) {
-        return '<button class="tbook" data-detail="' + esc(b.id) + '"><b>' + esc(b.t) + '</b><span>' + esc(b.a || '') + (fives.length ? '' : ' · ★ ' + fmtRating(b.rating)) + '</span></button>';
-      }).join('') + '</div>' : '') +
+        return '<button class="tbook" data-detail="' + esc(b.id) + '"><b>' + esc(b.t) + '</b><span>' + esc(b.a || '') + (all && readYearOf(b) ? ' · ' + readYearOf(b) : '') + (fives.length ? '' : ' · ★ ' + fmtRating(b.rating)) + '</span></button>';
+      }).join('') + (more ? '<button class="showbtn" id="fives-more" style="--tag-c:var(--line);--tag-d:var(--ink)">Toon alle ' + (top.length + more) + '</button>' : '') + '</div>' : '') +
       '</div>';
   }
   function pagesCardHTML(nowM) {
+    var imp = isImp();
     var AX = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
-    var yb = YB(), known = yb.filter(function (b) { return b.pages; }).length, all = yb.length;
+    var yb = YB(), base = imp ? yb.filter(readThisYear) : yb;
+    var known = base.filter(function (b) { return b.pages; }).length, all = base.length;
     var readTotal = 0, toRead = 0;
     yb.forEach(function (b) {
       if (!b.pages) return;
@@ -1919,6 +1941,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       var mp = monthPages(m);
       var rd = 0;
       yb.forEach(function (b) { if (b.pages && b.status === 'done' && monthOfYear(b.finished) === m) rd += b.pages; });
+      if (imp) { mp.sum = 0; mp.unknown = 0; }
       rows.push({ m: m, plan: mp.sum, unk: mp.unknown, read: rd });
       max = Math.max(max, mp.sum, rd);
       if (!peak || mp.sum > peak.plan) peak = rows[rows.length - 1];
@@ -1931,11 +1954,17 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     }).join('');
     var axis = rows.map(function (r) { return '<span class="' + (r.m === nowM ? 'is-now' : '') + '">' + AX[r.m - 1] + '</span>'; }).join('');
     var anyPlan = rows.some(function (r) { return r.plan > 0; });
+    if (imp) {
+      anyPlan = false;
+      chart = rows.map(function (r) { return '<div class="col" role="img" aria-label="' + MONTHS[r.m - 1] + ': ' + nlNum(r.read) + ' bladzijden gelezen" style="cursor:default"><span class="p" style="height:' + Math.round(r.read / max * H) + 'px;border-radius:3px 3px 0 0"></span></div>'; }).join('');
+    }
     return '<div class="card"><h4>Bladzijden</h4>' +
       '<div class="kv">' +
         '<div><b>' + nlNum(readTotal) + '</b><span>gelezen</span></div>' +
-        '<div><b>' + nlNum(toRead) + '</b><span>nog te lezen in je planning</span></div>' +
+        (imp ? '<div><b>' + nlNum(readTotal / Math.max(1, yb.filter(function (b) { return b.pages && readThisYear(b); }).length)) + '</b><span>blz. per boek gemiddeld</span></div>'
+          : '<div><b>' + nlNum(toRead) + '</b><span>nog te lezen in je planning</span></div>') +
       '</div>' +
+      (imp ? '<div class="chart">' + chart + '</div><div class="axis" aria-hidden="true">' + axis + '</div>' : '') +
       (anyPlan ? '<div class="chart">' + chart + '</div><div class="axis" aria-hidden="true">' + axis + '</div>' +
         '<div class="legend"><span><i class="tgt"></i>gepland per maand</span><span><i style="background:var(--accent)"></i>gelezen</span></div>' +
         (peak && peak.plan ? '<p class="pgnote">Zwaarste maand in je planning: <b>' + MONTHS[peak.m - 1].toLowerCase() + '</b>, ≈ ' + nlNum(peak.plan) + ' blz.' + (peak.unk ? ' (plus ' + peak.unk + ' zonder bladzijden)' : '') + ' Periodes zijn over hun maanden verdeeld, doorlopende boeken over het hele jaar.</p>' : '') : '') +
@@ -1986,7 +2015,83 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     var pm = +b.m, pe = b.until ? +b.until : pm;
     return fm < pm ? 'eerder' : fm > pe ? 'later' : 'tijd';
   }
+  // ---------- alle jaren ----------
+  // leesjaar van een gelezen boek: jaar van de uitleesdatum, anders het leesjaar waarin het staat
+  function readYearOf(b) {
+    if (b.status !== 'done') return null;
+    if (b.finished) return +b.finished.slice(0, 4);
+    return b.m !== 'voorraad' && b.y ? +b.y : null;
+  }
+  function allStatsHTML() {
+    var read = state.books.filter(function (b) { return b.status === 'done'; });
+    if (!read.length) return '<div class="card"><p class="note">Nog niets uitgelezen.</p></div>';
+    var ys = [];
+    read.forEach(function (b) { var y = readYearOf(b); if (y && ys.indexOf(y) < 0) ys.push(y); });
+    ys.sort(function (a, b) { return a - b; });
+    var span = ys.length ? ys[ys.length - 1] - ys[0] + 1 : 1;
+    var allYs = []; for (var y0 = ys[0]; y0 <= ys[ys.length - 1]; y0++) allYs.push(y0);
+    var per = allYs.map(function (y) {
+      var bs = read.filter(function (b) { return readYearOf(b) === y; });
+      return { y: y, n: bs.length, p: bs.reduce(function (t, b) { return t + (b.pages || 0); }, 0), r: avgR(bs.filter(function (b) { return b.rating; })) };
+    });
+    var maxN = Math.max.apply(null, per.map(function (x) { return x.n; }).concat([1]));
+    var pages = read.reduce(function (t, b) { return t + (b.pages || 0); }, 0);
+    var full = per.filter(function (x) { return x.n > 0; });
+    var yrRows = per.slice().reverse().map(function (x) {
+      var known = state.years.indexOf(x.y) >= 0;
+      return '<' + (known ? 'button data-ayear="' + x.y + '"' : 'div') + ' class="ayr">' +
+        '<b>' + x.y + '</b><span class="bar"><i style="width:' + Math.round(x.n / maxN * 100) + '%"></i></span>' +
+        '<span class="an">' + x.n + '</span><span class="ap">' + (x.p ? nlNum(x.p) + ' blz.' : '') + '</span><span class="ar">' + (x.r !== null ? '★ ' + f1(x.r) : '') + '</span>' +
+        '</' + (known ? 'button' : 'div') + '>';
+    }).join('');
+    var card1 = '<div class="card"><h4>Per jaar</h4>' +
+      '<div class="big"><b>' + read.length + '</b><span>boeken uit sinds ' + ys[0] + '</span></div>' +
+      '<div class="kv"><div><b>' + nlNum(pages) + '</b><span>bladzijden</span></div><div><b>' + nlNum(read.length / Math.max(1, full.length)) + '</b><span>boeken per jaar gemiddeld</span></div></div>' +
+      '<div class="ayrs">' + yrRows + '</div>' +
+      '<p class="pgnote">Tik op een jaar voor de statistieken van dat jaar. Geteld op uitleesdatum.</p></div>';
+    var rated = read.filter(function (b) { return b.rating; });
+    var card2 = ratingCardHTML(rated, read.length - rated.length, true);
+    // lijnen over de jaren
+    var ls = lineTags().map(function (L) {
+      var bs = read.filter(function (b) { return b.tags.indexOf(L.id) >= 0; });
+      return { L: L, bs: bs };
+    }).filter(function (x) { return x.bs.length; }).sort(function (a, b) { return b.bs.length - a.bs.length; });
+    var card3 = '';
+    if (ls.length) {
+      card3 = '<div class="card"><h4>Lijnen door de jaren</h4><div class="lanes alanes">' + ls.map(function (x) {
+        var L = x.L, open = statsAllLine === L.id;
+        var cnt = allYs.map(function (y) { return x.bs.filter(function (b) { return readYearOf(b) === y; }).length; });
+        var mx = Math.max.apply(null, cnt.concat([1]));
+        var cells = cnt.map(function (c, i) { return '<i style="opacity:' + (c ? (0.3 + 0.7 * c / mx).toFixed(2) : '0.08') + '" title="' + allYs[i] + ': ' + c + '"></i>'; }).join('');
+        var rs = x.bs.filter(function (b) { return b.rating; });
+        var bs = x.bs.slice().sort(function (a, b) { return (readYearOf(b) || 0) - (readYearOf(a) || 0) || ((b.finished || '') < (a.finished || '') ? -1 : 1); });
+        var body = !open ? '' : '<div class="lbody">' + bs.map(function (b) {
+          return '<div class="drow is-done"><span class="d is-done"></span><span class="bt">' + esc(b.t) + '</span><span class="m">' + (readYearOf(b) || '') + (b.rating ? ' · ★ ' + fmtRating(b.rating) : '') + '</span></div>';
+        }).join('') + '<button class="showbtn" data-lshow="' + esc(L.id) + '">Toon in lijst</button></div>';
+        return '<div class="lane" style="' + tagVars(L) + '">' +
+          '<button class="lh' + (open ? ' is-open' : '') + '" data-alane="' + esc(L.id) + '" aria-expanded="' + open + '" aria-label="' + esc(L.name) + ': ' + x.bs.length + ' boeken gelezen">' +
+          '<span class="lic">' + iconSVG(L, 18) + '</span>' +
+          '<span class="lnm"><b>' + esc(L.name) + '</b><span class="segs ycells" aria-hidden="true">' + cells + '</span></span>' +
+          '<span class="lct">' + x.bs.length + (rs.length ? ' · ★ ' + f1(avgR(rs)) : '') + '</span>' +
+          '<span class="chev' + (open ? ' is-open' : '') + '">' + ICON_CHEV + '</span></button>' + body + '</div>';
+      }).join('') + '</div><div class="yaxis" aria-hidden="true"><span>' + allYs[0] + '</span><span>' + allYs[allYs.length - 1] + '</span></div>' +
+      '<p class="pgnote">Elk blokje is een jaar; hoe donkerder, hoe meer boeken uit die lijn.</p></div>';
+    }
+    // schrijvers
+    var byA = {};
+    read.forEach(function (b) { var a = (b.a || '').trim(); if (!a) return; var k = norm(a).trim(); (byA[k] = byA[k] || { a: a, bs: [] }).bs.push(b); });
+    var authors = Object.keys(byA).map(function (k) { return byA[k]; }).filter(function (x) { return x.bs.length >= 2; })
+      .sort(function (p, q) { return q.bs.length - p.bs.length || (avgR(q.bs.filter(function (b) { return b.rating; })) || 0) - (avgR(p.bs.filter(function (b) { return b.rating; })) || 0); }).slice(0, 10);
+    var card4 = authors.length ? '<div class="card"><h4>Meest gelezen schrijvers</h4><div class="toplist">' + authors.map(function (x) {
+      var rs = x.bs.filter(function (b) { return b.rating; });
+      var yy = x.bs.map(readYearOf).filter(Boolean).sort(); var yr = yy.length ? (yy[0] === yy[yy.length - 1] ? yy[0] : yy[0] + '–' + yy[yy.length - 1]) : '';
+      return '<button class="tbook arow" data-author="' + esc(x.a) + '"><b>' + esc(x.a) + '</b><span>' + x.bs.length + ' boeken' + (yr ? ' · ' + yr : '') + (rs.length ? ' · ★ ' + f1(avgR(rs)) : '') + '</span></button>';
+    }).join('') + '</div></div>' : '';
+    return card1 + card2 + card3 + card4;
+  }
   function openStats() {
+    if (statsAll) return renderStatsBox('Alle jaren', allStatsHTML());
+    var imp = isImp();
     var ML = MONTHS.map(function (m) { return m.toLowerCase(); });
     var AX = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
     var yb = YB();
@@ -2022,7 +2127,11 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     }).join('');
     var axis = rows.map(function (r) { return '<span class="' + (r.m === nowM ? 'is-now' : '') + '">' + AX[r.m - 1] + '</span>'; }).join('');
     var sr = rows[sel - 1];
-    var detail = MONTHS[sel - 1] + (sel > nowM ? ' (nog niet begonnen)' : '') + ': ' +
+    if (imp) chart = rows.map(function (r) {
+      var n = r.pr + r.ur;
+      return '<button class="col' + (r.m === sel ? ' is-sel' : '') + '" data-col="' + r.m + '" aria-label="' + MONTHS[r.m - 1] + ': ' + n + ' gelezen"><span class="p" style="height:' + Math.round(n / maxV * H) + 'px;border-radius:3px 3px 0 0"></span></button>';
+    }).join('');
+    var detail = imp ? MONTHS[sel - 1] + ': ' + (sr.pr + sr.ur) + (sr.pr + sr.ur === 1 ? ' boek' : ' boeken') + ' gelezen.' : MONTHS[sel - 1] + (sel > nowM ? ' (nog niet begonnen)' : '') + ': ' +
       sr.pr + (sr.pr === 1 ? ' boek' : ' boeken') + ' uit je planning gelezen' +
       (sr.er ? ' (waarvan ' + sr.er + ' eerder dan gepland)' : '') + ', ' +
       sr.ur + ' daarbuiten. Voor deze maand stonden er ' + sr.tgt + ' gepland.';
@@ -2031,6 +2140,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       .sort(function (x, y) { return x.finished < y.finished ? 1 : x.finished > y.finished ? -1 : 0; });
     var noDate = planDone.concat(unplanDone).filter(function (b) { return !b.finished; });
     var kindOf = function (b) {
+      if (imp) return '';
       if (b.m === 'voorraad') return 'buiten de planning';
       if (b.m === 'door') return 'gepland · doorlopend';
       var s = sched(b);
@@ -2043,23 +2153,20 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       if (key !== lastKey) { tl += '<div class="tlm">' + MONTHS[d.getMonth()] + (d.getFullYear() !== YEAR ? ' ' + d.getFullYear() : '') + '</div>'; lastKey = key; }
       tl += '<div class="tli"><span class="line" aria-hidden="true"><i></i></span><span class="d">' + d.getDate() + ' ' + MON_SHORT[d.getMonth()] + '</span>' +
         '<span class="dot" style="background:' + (b.m === 'voorraad' ? 'var(--unplan)' : 'var(--accent)') + '"></span>' +
-        '<span class="bt"><b>' + esc(b.t) + (b.rating ? ' <span class="tstar">★ ' + fmtRating(b.rating) + '</span>' : '') + '</b>' + (b.a ? '<span>' + esc(b.a) + '</span>' : '') + '<em>' + kindOf(b) + '</em></span></div>';
+        '<span class="bt"><b>' + esc(b.t) + (b.rating ? ' <span class="tstar">★ ' + fmtRating(b.rating) + '</span>' : '') + '</b>' + (b.a ? '<span>' + esc(b.a) + '</span>' : '') + (kindOf(b) ? '<em>' + kindOf(b) + '</em>' : '') + '</span></div>';
     });
     if (noDate.length) {
       tl += '<div class="tlm">Datum onbekend</div><p class="note" style="font-size:13px;color:var(--muted);margin:0 0 6px">Gelezen zonder datum. Voeg die toe via ⋯ bij het boek.</p>';
       noDate.forEach(function (b) {
         tl += '<div class="tli"><span class="line" aria-hidden="true"><i></i></span><span class="d">—</span><span class="dot" style="background:' + (b.m === 'voorraad' ? 'var(--unplan)' : 'var(--accent)') + '"></span>' +
-          '<span class="bt"><b>' + esc(b.t) + (b.rating ? ' <span class="tstar">★ ' + fmtRating(b.rating) + '</span>' : '') + '</b>' + (b.a ? '<span>' + esc(b.a) + '</span>' : '') + '<em>' + (b.m === 'voorraad' ? 'buiten de planning' : 'gepland') + '</em></span></div>';
+          '<span class="bt"><b>' + esc(b.t) + (b.rating ? ' <span class="tstar">★ ' + fmtRating(b.rating) + '</span>' : '') + '</b>' + (b.a ? '<span>' + esc(b.a) + '</span>' : '') + (imp ? '' : '<em>' + (b.m === 'voorraad' ? 'buiten de planning' : 'gepland') + '</em>') + '</span></div>';
       });
     }
     if (!tl) tl = '<p class="note">Nog niets uitgelezen. Tik op het rondje voor een boek om te beginnen; nog een keer tikken is uitgelezen.</p>';
 
-    var box = $('stats');
-    var prev = box.querySelector('.sbody'), prevTop = prev ? prev.scrollTop : 0, wasOpen = !box.hidden;
-    box.innerHTML =
-      '<div class="shead"><button class="hbtn" id="stats-back" aria-label="Terug"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button><h2>Jouw leesjaar ' + YEAR + '</h2></div>' +
-      '<div class="sbody">' +
-        '<div class="card"><h4>Gelezen</h4>' +
+    var gelezenHTML = imp
+      ? '<div class="card"><h4>Gelezen</h4><div class="big"><b>' + total + '</b><span>' + (total === 1 ? 'boek uit' : 'boeken uit') + '</span></div><p class="pgnote"><span class="imptag">import</span> Leesgeschiedenis uit Goodreads, zonder planning.</p></div>'
+      : '<div class="card"><h4>Gelezen</h4>' +
           '<div class="big"><b>' + total + '</b><span>' + (total === 1 ? 'boek uit' : 'boeken uit') + '</span></div>' +
           '<div class="ratio" role="img" aria-label="' + planPct + '% van wat je las stond in je planning"><i style="width:' + planPct + '%;background:var(--accent)"></i><i style="width:' + (total ? 100 - planPct : 0) + '%;background:var(--unplan)"></i></div>' +
           '<div class="legend"><span><i style="background:var(--accent)"></i>' + planDone.length + ' gepland (' + planPct + '%)</span><span><i style="background:var(--unplan)"></i>' + unplanDone.length + ' buiten de planning (' + (total ? 100 - planPct : 0) + '%)</span></div>' +
@@ -2068,16 +2175,26 @@ body.dragging,body.dragging *{cursor:grabbing!important}
             '<div><b>' + (onTime + early) + '/' + known.length + '</b><span>op schema (in of vóór de geplande maand)</span></div>' +
             '<div><b>' + early + '</b><span>eerder dan gepland</span></div>' +
             '<div><b>' + late + '</b><span>later dan gepland</span></div>' +
-          '</div></div>' +
+          '</div></div>';
+    renderStatsBox('Jouw leesjaar ' + YEAR,
+        gelezenHTML +
         pagesCardHTML(nowM) +
-        ratingCardHTML() +
+        ratingCardHTML(ratedThisYear(), YB().filter(function (b) { return !b.rating && readThisYear(b); }).length, false) +
         linesCardHTML() +
         '<div class="card"><h4>Per maand</h4>' +
           '<div class="chart">' + chart + '</div><div class="axis" aria-hidden="true">' + axis + '</div>' +
-          '<div class="legend"><span><i style="background:var(--accent)"></i>gepland gelezen</span><span><i style="background:var(--unplan)"></i>buiten de planning</span><span><i class="tgt"></i>gepland</span></div>' +
+          (imp ? '' : '<div class="legend"><span><i style="background:var(--accent)"></i>gepland gelezen</span><span><i style="background:var(--unplan)"></i>buiten de planning</span><span><i class="tgt"></i>gepland</span></div>') +
           '<div class="detail">' + detail + '</div></div>' +
-        '<div class="card"><h4>Tijdlijn</h4><div>' + tl + '</div></div>' +
-      '</div>';
+        '<div class="card"><h4>Tijdlijn</h4><div>' + tl + '</div></div>');
+  }
+  function renderStatsBox(title, cardsHTML) {
+    var box = $('stats');
+    var prev = box.querySelector('.sbody'), prevTop = prev ? prev.scrollTop : 0, wasOpen = !box.hidden;
+    box.innerHTML =
+      '<div class="shead"><button class="hbtn" id="stats-back" aria-label="Terug"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button><h2>' + title + '</h2></div>' +
+      '<div class="sbody">' +
+        '<div class="seg2 sm" role="group" aria-label="Statistieken van"><button data-sall="0" class="' + (statsAll ? '' : 'is-on') + '">' + YEAR + '</button><button data-sall="1" class="' + (statsAll ? 'is-on' : '') + '">Alle jaren</button></div>' +
+        cardsHTML + '</div>';
     box.hidden = false;
     if (wasOpen) box.querySelector('.sbody').scrollTop = prevTop;
     $('stats-back').addEventListener('click', closeStats);
@@ -2092,10 +2209,26 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     });
     box.querySelectorAll('[data-lshow]').forEach(function (el) {
       el.addEventListener('click', function () {
-        filter = (function () { var f = emptyFilter(); f.tags = [el.dataset.lshow]; return f; })(); $('q').value = '';
+        filter = (function () { var f = emptyFilter(); f.tags = [el.dataset.lshow]; if (statsAll) f.scope = 'all'; return f; })(); $('q').value = '';
         closeStats(); render(); list.scrollTop = 0;
       });
     });
+    box.querySelectorAll('[data-sall]').forEach(function (el) {
+      el.addEventListener('click', function () { var v = el.dataset.sall === '1'; if (v === statsAll) return; statsAll = v; box.querySelector('.sbody').scrollTop = 0; openStats(); box.querySelector('.sbody').scrollTop = 0; });
+    });
+    box.querySelectorAll('[data-ayear]').forEach(function (el) {
+      el.addEventListener('click', function () { statsAll = false; statsSel = null; switchYear(+el.dataset.ayear); openStats(); box.querySelector('.sbody').scrollTop = 0; });
+    });
+    box.querySelectorAll('[data-alane]').forEach(function (el) {
+      el.addEventListener('click', function () { statsAllLine = statsAllLine === el.dataset.alane ? null : el.dataset.alane; openStats(); });
+    });
+    box.querySelectorAll('[data-author]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        filter = (function () { var f = emptyFilter(); f.author = el.dataset.author; f.scope = 'all'; return f; })(); $('q').value = '';
+        closeStats(); render(); list.scrollTop = 0;
+      });
+    });
+    if ($('fives-more')) $('fives-more').addEventListener('click', function () { statsFives = true; openStats(); });
   }
   function closeStats() { $('stats').hidden = true; $('stats').innerHTML = ''; try { $('btn-stats').focus(); } catch (e) {} }
   $('stats').addEventListener('keydown', function (e) { if (e.key === 'Escape') closeStats(); });
@@ -2112,7 +2245,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
     return JSON.parse(new TextDecoder().decode(bytes));
   }
-  function backupData() { return { app: 'ithaka', v: 3, savedAt: new Date().toISOString(), books: state.books, tags: state.tags, years: state.years }; }
+  function backupData() { return { app: 'ithaka', v: 3, savedAt: new Date().toISOString(), books: state.books, tags: state.tags, years: state.years, imported: state.imported }; }
   function markBackup() { state.lastBackup = new Date().toISOString(); save(); }
   function backupAge() {
     if (!state.lastBackup) return 'Nog geen back-up gemaakt op dit apparaat.';
@@ -2147,14 +2280,21 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     text = String(text || '').trim();
     var d;
     try { d = JSON.parse(text); } catch (e) { d = decode(text); }
-    if (d && d.kind === 'jaar') {
-      var yr = +d.year;
-      if (!(yr > 1900 && yr < 3000) || !Array.isArray(d.books) || !d.books.every(function (b) { return b && typeof b.t === 'string'; })) throw new Error('vorm');
-      return { kind: 'jaar', year: yr, books: d.books, tags: Array.isArray(d.tags) ? d.tags : [], note: d.note || '' };
+    var okYear = function (y) { return +y > 1900 && +y < 3000; };
+    if (d && (d.kind === 'jaar' || d.kind === 'jaren')) {
+      if (!Array.isArray(d.books) || !d.books.every(function (b) { return b && typeof b.t === 'string'; })) throw new Error('vorm');
+      var books = d.books;
+      if (d.kind === 'jaar') {
+        if (!okYear(d.year)) throw new Error('vorm');
+        books = books.map(function (b) { var c = {}; for (var k in b) c[k] = b[k]; c.y = +d.year; return c; });
+      } else if (!books.every(function (b) { return okYear(b.y); })) throw new Error('vorm');
+      var ys = []; books.forEach(function (b) { if (ys.indexOf(+b.y) < 0) ys.push(+b.y); }); ys.sort(function (a, b) { return a - b; });
+      return { kind: 'import', years: ys, books: books, tags: Array.isArray(d.tags) ? d.tags : [], note: d.note || '',
+        imported: Array.isArray(d.imported) ? d.imported.map(Number).filter(okYear) : [] };
     }
     var books = Array.isArray(d) ? d : d && d.books;
     if (!Array.isArray(books) || !books.every(function (b) { return b && typeof b.t === 'string' && typeof b.m === 'string'; })) throw new Error('vorm');
-    return { books: books, tags: (!Array.isArray(d) && Array.isArray(d.tags)) ? d.tags : null, savedAt: (d && d.savedAt) || null, years: (d && Array.isArray(d.years)) ? d.years : null };
+    return { books: books, tags: (!Array.isArray(d) && Array.isArray(d.tags)) ? d.tags : null, savedAt: (d && d.savedAt) || null, years: (d && Array.isArray(d.years)) ? d.years : null, imported: (d && Array.isArray(d.imported)) ? d.imported : [] };
   }
   function applyBackup(bk) {
     var books = bk.books;
@@ -2168,11 +2308,26 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       var maxT = 0; bk.tags.forEach(function (t) { var n = parseInt(String(t.id).replace(/\D/g, ''), 10); if (n > maxT) maxT = n; });
       state.nextTag = Math.max(state.nextTag, maxT + 1, bk.tags.length + 10);
     } else { state.tags = state.tags || defaultTags(); migrateTitles(state); }
-    state.years = bk.years || []; state.year = null;
+    state.years = bk.years || []; state.year = null; state.imported = bk.imported || [];
     fixYears();
     save(); closeSheet(); render(); list.scrollTop = 0; toast('Lijst hersteld');
   }
-  // jaarimport: boeken toevoegen aan één leesjaar; tags en lijnen koppelen op naam
+  // import (een of meer leesjaren): nieuwe boeken toevoegen; een boek dat er in dat jaar al staat
+  // (zelfde titel en schrijver, of zelfde ISBN) aanvullen: tags en lijnen erbij, lege velden invullen.
+  // Wat je zelf al invulde blijft staan. Tags en lijnen worden op naam gekoppeld.
+  function importKey(t, a) { return norm(t).trim() + '|' + norm(a || '').trim(); }
+  function importPlan(bk) {
+    var have = {}, isb = {};
+    state.books.forEach(function (b) {
+      if (b.m === 'voorraad' || !b.y) return;
+      have[+b.y + '#' + importKey(b.t, b.a)] = b;
+      if (b.isbn) isb[+b.y + '#' + b.isbn] = b;
+    });
+    return bk.books.map(function (x) {
+      var i13 = x.isbn ? toIsbn13(x.isbn) : null;
+      return { x: x, old: have[+x.y + '#' + importKey(x.t, x.a)] || (i13 && isb[+x.y + '#' + i13]) || null };
+    });
+  }
   function applyImport(bk) {
     var byName = {};
     state.tags.forEach(function (t) { byName[norm(t.name).trim()] = t; });
@@ -2184,39 +2339,54 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       if (nt.line) nt.icon = (spec && spec.icon) || 'zeil';
       state.tags.push(nt); byName[k] = nt; return nt.id;
     };
-    var have = {};
-    state.books.forEach(function (b) { if (+b.y === bk.year && b.m !== 'voorraad') have[norm(b.t).trim() + '|' + norm(b.a).trim()] = true; });
-    var added = 0, skipped = 0;
-    bk.books.forEach(function (x) {
-      var key = norm(x.t).trim() + '|' + norm(x.a || '').trim();
-      if (have[key]) { skipped++; return; }
-      var m = String(x.m || ''); if (!(m === 'door' || (+m >= 1 && +m <= 12))) m = x.finished ? String(+x.finished.slice(5, 7)) : '1';
-      var nb = { id: 'n' + (state.nextId++), y: bk.year, m: m, t: x.t, a: x.a || '', status: x.status === 'open' || x.status === 'bezig' ? x.status : 'done',
-        started: x.started || null, finished: x.finished || null, until: null, tags: [] };
-      nb.done = nb.status === 'done';
-      (x.tagNames || []).forEach(function (n) { var id = tagId(n); if (id && nb.tags.indexOf(id) < 0) nb.tags.push(id); });
-      if (x.rating > 0 && x.rating <= 5) nb.rating = Math.round(x.rating * 2) / 2;
-      var pg = parseInt(x.pages, 10); if (pg > 0 && pg < 20000) nb.pages = pg;
-      if (x.isbn && toIsbn13(x.isbn)) nb.isbn = toIsbn13(x.isbn);
-      if (x.notes) nb.notes = String(x.notes);
-      ['year', 'publisher', 'edition'].forEach(function (k) { if (x[k]) nb[k] = String(x[k]); });
-      state.books.push(nb); have[key] = true; added++;
+    var added = 0, filled = 0, same = 0;
+    importPlan(bk).forEach(function (p) {
+      var x = p.x, b = p.old, isNew = !b;
+      if (isNew) {
+        var m = String(x.m || ''); if (!(m === 'door' || (+m >= 1 && +m <= 12))) m = x.finished ? String(+x.finished.slice(5, 7)) : '1';
+        b = { id: 'n' + (state.nextId++), y: +x.y, m: m, t: x.t, a: x.a || '', status: x.status === 'open' || x.status === 'bezig' ? x.status : 'done',
+          started: null, finished: null, until: null, tags: [] };
+        b.done = b.status === 'done';
+      }
+      var changed = false;
+      var setIf = function (k, v) { if (v !== undefined && v !== null && v !== '' && (b[k] === undefined || b[k] === null || b[k] === '')) { b[k] = v; changed = true; } };
+      (x.tagNames || []).forEach(function (n) { var id = tagId(n); if (id && b.tags.indexOf(id) < 0) { b.tags.push(id); changed = true; } });
+      if (x.rating > 0 && x.rating <= 5) setIf('rating', Math.round(x.rating * 2) / 2);
+      var pg = parseInt(x.pages, 10); if (pg > 0 && pg < 20000) setIf('pages', pg);
+      if (x.isbn && toIsbn13(x.isbn)) setIf('isbn', toIsbn13(x.isbn));
+      setIf('finished', x.finished || null);
+      if (x.started && (!b.finished || x.started <= b.finished)) setIf('started', x.started);
+      if (x.notes) setIf('notes', String(x.notes));
+      ['year', 'publisher', 'edition'].forEach(function (k) { if (x[k]) setIf(k, String(x[k])); });
+      if (isNew) { state.books.push(b); added++; } else if (changed) filled++; else same++;
     });
-    if (state.years.indexOf(bk.year) < 0) { state.years.push(bk.year); state.years.sort(function (a, b) { return a - b; }); }
-    state.year = bk.year; YEAR = bk.year; state.tab = 'plan';
+    bk.years.forEach(function (y) { if (state.years.indexOf(y) < 0) state.years.push(y); });
+    state.years.sort(function (a, b) { return a - b; });
+    (bk.imported || []).forEach(function (y) { if (state.imported.indexOf(y) < 0) state.imported.push(y); });
+    state.imported.sort(function (a, b) { return a - b; });
+    var last = bk.years[bk.years.length - 1];
+    state.year = last; YEAR = last; state.tab = 'plan';
     save(); closeSheet(); render(); list.scrollTop = 0;
-    toast(added + (added === 1 ? ' boek' : ' boeken') + ' toegevoegd aan ' + bk.year + (skipped ? ' · ' + skipped + ' stond er al' : ''));
+    toast([added ? added + (added === 1 ? ' boek' : ' boeken') + ' toegevoegd' : '', filled ? filled + ' aangevuld' : '', same ? same + ' ongewijzigd' : ''].filter(Boolean).join(' · ') || 'Niets te importeren');
   }
   // eerst laten zien wat er komt, dan pas vervangen
   function confirmRestore(bk) {
-    if (bk.kind === 'jaar') {
-      var existing = state.books.filter(function (b) { return +b.y === bk.year && b.m !== 'voorraad'; }).length;
+    if (bk.kind === 'import') {
+      var plan = importPlan(bk);
       var newTags = bk.tags.filter(function (t) { return !state.tags.some(function (x) { return norm(x.name).trim() === norm(t.name).trim(); }); });
-      openSheet('Leesjaar importeren',
-        '<h3>Leesjaar ' + bk.year + ' importeren?</h3>' +
-        '<p class="note"><b>' + bk.books.length + (bk.books.length === 1 ? ' boek' : ' boeken') + '</b> voor leesjaar ' + bk.year + '. ' +
-          (existing ? 'Er staan al ' + existing + ' boeken in ' + bk.year + '; dubbele titels slaat de app over.' : 'Je huidige boeken blijven gewoon staan.') + '</p>' +
-        (newTags.length ? '<p class="note">Nieuwe tags en lijnen: ' + newTags.map(function (t) { return esc(t.name); }).join(', ') + '.</p>' : '') +
+      var yrRows = bk.years.map(function (y) {
+        var ps = plan.filter(function (p) { return +p.x.y === y; });
+        var nn = ps.filter(function (p) { return !p.old; }).length, ex = ps.length - nn;
+        return '<div class="irow"><b>' + y + '</b><span>' + (nn ? nn + ' nieuw' : '') + (nn && ex ? ' · ' : '') + (ex ? ex + ' aanvullen' : '') + '</span>' +
+          (bk.imported.indexOf(y) >= 0 ? '<span class="imptag">import</span>' : '<span></span>') + '</div>';
+      }).join('');
+      var title = bk.years.length === 1 ? 'Leesjaar ' + bk.years[0] + ' importeren?' : 'Leesjaren ' + bk.years[0] + '–' + bk.years[bk.years.length - 1] + ' importeren?';
+      openSheet('Importeren',
+        '<h3>' + title + '</h3>' +
+        '<div class="irows">' + yrRows + '</div>' +
+        '<p class="note" style="font-size:13.5px">Boeken die er al staan vult de app aan: tags en lijnen erbij, en lege velden zoals sterren of bladzijden ingevuld. Wat je zelf al invulde blijft staan.' +
+          (bk.imported.length ? ' Jaren met <span class="imptag">import</span> zijn leesgeschiedenis: de statistieken laten daar de planning weg.' : '') + '</p>' +
+        (newTags.length ? '<p class="note" style="font-size:13.5px">Nieuw: ' + newTags.map(function (t) { return (t.line ? 'lijn ' : 'tag ') + '<b>' + esc(t.name) + '</b>'; }).join(', ') + '.</p>' : '') +
         (bk.note ? '<p class="note" style="color:var(--muted);font-size:13px">' + esc(bk.note) + '</p>' : '') +
         '<div class="btnrow"><button class="btn" id="rs-no">Annuleer</button><button class="btn primary" id="rs-yes">Importeer</button></div>');
       $('rs-no').addEventListener('click', openBackup);
@@ -2250,7 +2420,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   }
   function openBackup(errMsg) {
     if (typeof errMsg !== 'string') errMsg = '';
-    var code = encode({ v: 2, books: state.books, tags: state.tags, years: state.years });
+    var code = encode({ v: 2, books: state.books, tags: state.tags, years: state.years, imported: state.imported });
     openSheet('Back-up',
       '<h3>Back-up</h3>' +
       '<p class="note">Je lijst staat alleen op dit apparaat. Bewaar af en toe een back-up als bestand, bijvoorbeeld in iCloud Drive, Google Drive of je downloads. ' + esc(backupAge()) + '</p>' +
