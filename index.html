@@ -339,6 +339,12 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .tempo div{background:var(--ground);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column}
 .tempo b{font-family:var(--f-title);font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
 .tempo span{font-size:12px;color:var(--muted);line-height:1.3}
+/* zoeken over jaren */
+.scoperow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between}
+.seg2.sm{padding:2px}
+.seg2.sm button{min-height:34px;font-size:12.5px;padding:0 10px}
+.sechead.is-static{cursor:default}
+.row.no-drag .grip{visibility:hidden}
 /* statistieken */
 .stats{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;background:var(--ground);max-width:560px;margin:0 auto}
 .shead{background:linear-gradient(180deg,var(--hd1),var(--hd2));color:var(--hd-ink);padding:calc(12px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 12px max(12px,env(safe-area-inset-left,0px));display:flex;align-items:center;gap:8px}
@@ -622,7 +628,11 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   var ICON_TRASH = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/></svg>';
 
   // ---------- zoeken & filter (niet bewaard) ----------
-  var filter = { q: '', tags: [], author: '', status: 'all' };
+  function emptyFilter() { return { q: '', tags: [], author: '', status: 'all', scope: 'auto' }; }
+  var filter = emptyFilter();
+  // zoeken op tekst: standaard alle jaren; filteren op tag/lijn/status: standaard dit jaar
+  function scopeAll() { return filter.scope === 'all' || (filter.scope !== 'year' && filter.q.trim() !== ''); }
+  function filterPool() { return scopeAll() ? state.books : YB(); }
   var searchOpen = false;
   var sessionOpen = {};   // maanden die deze sessie open moeten blijven
   function norm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
@@ -638,11 +648,11 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   }
   function authors() {
     var names = [];
-    YB().forEach(function (b) { if (b.a && names.indexOf(b.a) < 0) names.push(b.a); });
+    state.books.forEach(function (b) { if (b.a && names.indexOf(b.a) < 0) names.push(b.a); });
     return names.sort(function (x, y) { return x.localeCompare(y, 'nl'); });
   }
   function clearFilters() {
-    filter = { q: '', tags: [], author: '', status: 'all' };
+    filter = emptyFilter();
     $('q').value = '';
     render(); list.scrollTop = 0;
   }
@@ -658,11 +668,16 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   }
   var ICON_BOOK = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h6a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H3z"/><path d="M21 5h-6a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h7z"/></svg>';
   function stLabel(b) { return b.status === 'open' ? 'Te lezen. Tik om te beginnen' : b.status === 'bezig' ? 'Bezig. Tik als je het uit hebt' : 'Gelezen. Tik om terug te zetten'; }
-  function rowHTML(b) {
-    return '<div class="row' + (b.done ? ' is-done' : '') + '" data-id="' + esc(b.id) + '">' +
+  function rowHTML(b, o) {
+    var tags = tagsHTML(b.tags, b);
+    if (o && o.month && !b.until && b.m !== 'voorraad') {
+      var lab = '<span class="span">' + (b.m === 'door' ? 'doorlopend' : MON_SHORT[+b.m - 1]) + '</span>';
+      tags = tags ? tags.replace('<span class="tags">', '<span class="tags">' + lab) : '<span class="tags">' + lab + '</span>';
+    }
+    return '<div class="row' + (b.done ? ' is-done' : '') + (o && o.month ? ' no-drag' : '') + '" data-id="' + esc(b.id) + '">' +
       '<span class="grip" aria-hidden="true">' + ICON_GRIP + '</span>' +
       '<button class="st st-' + b.status + '" data-act="status" aria-label="' + esc(b.t) + ': ' + stLabel(b) + '"><i>' + (b.status === 'done' ? ICON_CHECK : b.status === 'bezig' ? ICON_BOOK : '') + '</i></button>' +
-      '<span class="txt"><span class="t">' + esc(b.t) + '</span>' + (b.a || b.pages || b.rating ? '<span class="a">' + esc(b.a || '') + (b.pages ? '<span class="apg">' + (b.a ? ' · ' : '') + nlNum(b.pages) + ' blz.</span>' : '') + (b.rating ? '<span class="arate">★ ' + fmtRating(b.rating) + '</span>' : '') + (b.notes ? '<span class="anote" title="Aantekeningen">' + ICON_NOTE + '</span>' : '') + '</span>' : (b.notes ? '<span class="a"><span class="anote">' + ICON_NOTE + '</span></span>' : '')) + tagsHTML(b.tags, b) + '</span>' +
+      '<span class="txt"><span class="t">' + esc(b.t) + '</span>' + (b.a || b.pages || b.rating ? '<span class="a">' + esc(b.a || '') + (b.pages ? '<span class="apg">' + (b.a ? ' · ' : '') + nlNum(b.pages) + ' blz.</span>' : '') + (b.rating ? '<span class="arate">★ ' + fmtRating(b.rating) + '</span>' : '') + (b.notes ? '<span class="anote" title="Aantekeningen">' + ICON_NOTE + '</span>' : '') + '</span>' : (b.notes ? '<span class="a"><span class="anote">' + ICON_NOTE + '</span></span>' : '')) + tags + '</span>' +
       symsHTML(b) +
       '<button class="iconbtn" data-act="more" aria-label="Opties voor ' + esc(b.t) + '">' + ICON_MORE + '</button>' +
       '</div>';
@@ -775,9 +790,11 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     var f = filtering();
     var html = '';
     if (f) {
-      var n = YB().filter(matches).length;
-      html += '<p class="results">' + (n ? n + (n === 1 ? ' boek' : ' boeken') + ' in planning en voorraad' : 'Niets gevonden') + '</p>';
-      html += DESTS.map(function (d) { return secHTML(d, true); }).join('');
+      var all = scopeAll(), pool = filterPool().filter(matches), n = pool.length;
+      html += '<div class="results scoperow"><span>' + (n ? n + (n === 1 ? ' boek' : ' boeken') : 'Niets gevonden') + '</span>' +
+        '<div class="seg2 sm" role="group" aria-label="Zoeken in"><button data-scope="year" class="' + (all ? '' : 'is-on') + '">' + YEAR + ' + voorraad</button><button data-scope="all" class="' + (all ? 'is-on' : '') + '">Alle jaren</button></div></div>';
+      if (all) html += allYearsHTML(pool);
+      else html += DESTS.map(function (d) { return secHTML(d, true); }).join('');
     } else if (state.tab === 'plan') {
       if (!state.books.length) html += welcomeHTML();
       else if (!YB().some(function (b) { return b.m !== 'voorraad'; })) html += '<p class="results">Nog niets gepland voor ' + YEAR + '. Voeg boeken toe met + of sleep ze uit je voorraad.</p>';
@@ -787,12 +804,31 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     }
     list.innerHTML = html;
   }
+  // zoekresultaten over alle jaren: per jaar (nieuwste eerst), dan de voorraad; zonder slepen
+  function allYearsHTML(pool) {
+    var ord = function (b) { return b.m === 'door' ? 0 : +b.m; };
+    var html = '';
+    state.years.slice().sort(function (a, b) { return b - a; }).forEach(function (y) {
+      var bs = pool.filter(function (b) { return b.m !== 'voorraad' && +b.y === y; })
+        .map(function (b, i) { return { b: b, i: i }; }).sort(function (x, z) { return (ord(x.b) - ord(z.b)) || (x.i - z.i); }).map(function (x) { return x.b; });
+      if (!bs.length) return;
+      var dn = bs.filter(function (b) { return b.done; }).length;
+      html += '<section class="sec"><div class="sechead is-static"><span class="h">' + y + '</span>' + (y === YEAR ? '<span class="nowtag">open</span>' : '') + '<span class="sp"></span><span class="cnt">' + dn + '/' + bs.length + '</span></div>' +
+        bs.map(function (b) { return rowHTML(b, { month: true }); }).join('') + '</section>';
+    });
+    var st = pool.filter(function (b) { return b.m === 'voorraad'; });
+    if (st.length) html += '<section class="sec"><div class="sechead is-static"><span class="h">Voorraad</span><span class="sp"></span><span class="cnt">' + st.filter(function (b) { return b.done; }).length + '/' + st.length + '</span></div>' +
+      st.map(function (b) { return rowHTML(b, { month: true }); }).join('') + '</section>';
+    return html;
+  }
   function welcomeHTML() {
     return '<div class="welcome"><h2>Welkom bij Ithaka</h2>' +
       '<p>Plan je leesjaar per maand, houd een voorraad bij voor spontaan lezen en vink af wat je uit hebt. Boeken toevoegen gaat met + , of door de streepjescode achterop te scannen.</p>' +
       '<div class="btnrow"><button class="btn primary" data-w="add">Eerste boek toevoegen</button><button class="btn" data-w="restore">Back-up terugzetten</button></div></div>';
   }
   list.addEventListener('click', function (e) {
+    var sc = e.target.closest && e.target.closest('[data-scope]');
+    if (sc) { filter.scope = sc.dataset.scope; render(); list.scrollTop = 0; return; }
     var w = e.target.closest && e.target.closest('[data-w]'); if (!w) return;
     if (w.dataset.w === 'add') openAdd(false); else pickBackupFile();
   });
@@ -802,7 +838,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     state.tab = tab; save(); render(); list.scrollTop = 0;
   }
   function goTab(t) {
-    if (filtering()) { filter = { q: '', tags: [], author: '', status: 'all' }; $('q').value = ''; }
+    if (filtering()) { filter = emptyFilter(); $('q').value = ''; }
     state.tab = t; save(); render(); list.scrollTop = 0;
   }
   function swipeTo(t, cls) {
@@ -1151,7 +1187,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 
   // filters
   function openFilter() {
-    var n = YB().filter(matches).length;
+    var n = filterPool().filter(matches).length, all = scopeAll();
     var opts = tagGroupsHTML(function (tid) { return filter.tags.indexOf(tid) >= 0; }, 'data-ftag');
     var status = [['all', 'Alles'], ['open', 'Te lezen'], ['bezig', 'Bezig'], ['done', 'Gelezen']].map(function (o) {
       return '<button data-status="' + o[0] + '" class="' + (filter.status === o[0] ? 'is-on' : '') + '">' + o[1] + '</button>';
@@ -1162,6 +1198,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       opts +
       '<button class="linkbtn" id="tags-manage">Tags en lijnen beheren</button>' +
       '<p class="lbl">Status</p><div class="seg2">' + status + '</div>' +
+      '<p class="lbl">Zoeken in</p><div class="seg2"><button data-fscope="year" class="' + (all ? '' : 'is-on') + '">' + YEAR + ' + voorraad</button><button data-fscope="all" class="' + (all ? 'is-on' : '') + '">Alle jaren</button></div>' +
       '<div class="field"><label for="f-auth">Schrijver</label><select id="f-auth">' + auth + '</select></div>' +
       '<div class="btnrow"><button class="btn" id="f-clear">Wis filters</button><button class="btn primary" id="f-show">Toon ' + n + (n === 1 ? ' boek' : ' boeken') + '</button></div>');
     var refresh = function () { render(); list.scrollTop = 0; openFilter(); };
@@ -1174,6 +1211,9 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     });
     sheet.querySelectorAll('[data-status]').forEach(function (el) {
       el.addEventListener('click', function () { filter.status = el.dataset.status; refresh(); });
+    });
+    sheet.querySelectorAll('[data-fscope]').forEach(function (el) {
+      el.addEventListener('click', function () { filter.scope = el.dataset.fscope; refresh(); });
     });
     $('f-auth').addEventListener('change', function () { filter.author = this.value; refresh(); });
     $('tags-manage').addEventListener('click', function () { openTags({ kind: 'filter' }); });
@@ -1644,7 +1684,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       if (m !== 'voorraad') nb.y = YEAR;
       state.books.push(nb);
       state.tab = m === 'voorraad' ? 'stock' : 'plan';
-      filter = { q: '', tags: [], author: '', status: 'all' }; $('q').value = '';
+      filter = emptyFilter(); $('q').value = '';
       save();
       var keepDest = m, keepTags = f.tags.slice(), keepSt = f.st;
       addForm = null; closeSheet();
@@ -2052,7 +2092,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     });
     box.querySelectorAll('[data-lshow]').forEach(function (el) {
       el.addEventListener('click', function () {
-        filter = { q: '', tags: [el.dataset.lshow], author: '', status: 'all' }; $('q').value = '';
+        filter = (function () { var f = emptyFilter(); f.tags = [el.dataset.lshow]; return f; })(); $('q').value = '';
         closeStats(); render(); list.scrollTop = 0;
       });
     });
@@ -2339,7 +2379,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   list.addEventListener('touchstart', function (e) {
     if (e.touches.length !== 1) return;
     if (e.target.closest('button')) return;
-    var row = e.target.closest('.row'); if (!row) return;
+    var row = e.target.closest('.row'); if (!row || row.classList.contains('no-drag')) return;
     var t = e.touches[0]; startCandidate(row, t.clientX, t.clientY, true);
     if (e.target.closest('.grip')) { clearTimeout(drag.timer); activate(); }
   }, { passive: true });
@@ -2358,7 +2398,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 
   list.addEventListener('mousedown', function (e) {
     if (e.button !== 0 || e.target.closest('button,input')) return;
-    var row = e.target.closest('.row'); if (!row) return;
+    var row = e.target.closest('.row'); if (!row || row.classList.contains('no-drag')) return;
     startCandidate(row, e.clientX, e.clientY, false);
   });
   document.addEventListener('mousemove', function (e) {
