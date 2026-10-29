@@ -385,7 +385,9 @@ button.ayr{cursor:pointer}
 .mode button{min-height:34px;border:0;border-radius:999px;background:transparent;color:var(--hd-soft);font-weight:600;font-size:13px;padding:0 12px;display:inline-flex;align-items:center;gap:6px;cursor:pointer}
 .mode button.is-on{background:var(--hd-ink);color:#2A1D14}
 .flist{display:flex;flex-direction:column;gap:6px}
-.fseg{padding:10px 2px 2px}
+.fseg{padding:10px 2px 2px;display:flex;flex-direction:column;gap:8px}
+.fsort{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);font-weight:600}
+.fsort select{flex:1;min-height:40px;border:1px solid var(--line2);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;font-weight:600;font-size:14px;padding:0 10px}
 .frow{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:6px 10px 6px 6px;min-height:56px}
 .frow .poster{width:34px;height:48px;border-radius:4px;flex:none;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.8)}
 .frow .fst{width:34px;height:44px;flex:none;border:0;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--line2);padding:0}
@@ -435,6 +437,26 @@ button.ayr{cursor:pointer}
 .lsplit .n{grid-column:2;font-size:12px;color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums}
 .col .cn{position:absolute;top:-2px;font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums}
 @media (prefers-color-scheme: dark){ .mode button.is-on{color:#14100C} .lsplit b{color:var(--tag-c)} }
+.ynav{display:flex;align-items:center;justify-content:center;gap:16px}
+.ynav b{font-family:var(--f-title);font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
+.ynav .iconbtn:disabled{opacity:.3}
+.duo2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.duo2 div{display:flex;flex-direction:column}
+.duo2 b{font-family:var(--f-title);font-size:36px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
+.duo2 span{font-size:13px;color:var(--soft)}
+.col.duo{flex-direction:row;align-items:flex-end;justify-content:center;gap:2px}
+.col.duo .p,.col.duo .u{width:calc(50% - 4px);border-radius:3px 3px 0 0}
+.duolist{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.duolist.hd{margin-bottom:-6px}
+.duolist .tbook b{font-size:13.5px;display:flex;align-items:flex-start}
+.syrs{display:flex;flex-direction:column}
+.syr{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;column-gap:8px;align-items:center;border:0;border-top:1px solid var(--line);background:transparent;padding:6px 0;text-align:left;cursor:pointer;color:var(--ink);width:100%}
+.syr b{font-family:var(--f-title);font-weight:600;font-size:15px}
+.syr .bars{display:flex;flex-direction:column;gap:3px}
+.syr .bars span{display:flex;align-items:center;gap:6px}
+.syr .bars i{display:block;height:8px;border-radius:4px;min-width:2px}
+.syr .bars em{font-style:normal;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+.syr .rr{display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
 .tempo{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px}
 .tempo div{background:var(--ground);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column}
 .tempo b{font-family:var(--f-title);font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
@@ -662,7 +684,7 @@ button.ayr{cursor:pointer}
         var d = JSON.parse(raw);
         if (d && Array.isArray(d.books)) {
           var st = { v: d.v || 1, tab: d.tab === 'stock' ? 'stock' : 'plan', nextId: d.nextId || 1000, nextTag: d.nextTag || 1, coll: d.coll || {}, books: d.books, tags: Array.isArray(d.tags) ? d.tags : null, lastBackup: d.lastBackup || null, year: d.year || null, years: Array.isArray(d.years) ? d.years : [], imported: Array.isArray(d.imported) ? d.imported : [], lib: d.lib && typeof d.lib === 'object' ? d.lib : null,
-            films: Array.isArray(d.films) ? d.films : [], nextFilm: d.nextFilm || 1, mode: d.mode === 'films' ? 'films' : 'books', fyear: d.fyear || null, ftab: d.ftab === 'watch' ? 'watch' : 'seen', best: d.best && typeof d.best === 'object' ? d.best : {} };
+            films: Array.isArray(d.films) ? d.films : [], nextFilm: d.nextFilm || 1, mode: d.mode === 'films' ? 'films' : 'books', fyear: d.fyear === 0 ? 0 : (d.fyear || null), fsort: d.fsort || 'title', ftab: d.ftab === 'watch' ? 'watch' : 'seen', best: d.best && typeof d.best === 'object' ? d.best : {} };
           normalizeBooks(st.books);
           st.books.forEach(function (b) { if (b.y) b.y = +b.y; });
           if (!st.tags) { st.tags = defaultTags(); migrateTitles(st); }
@@ -695,7 +717,8 @@ button.ayr{cursor:pointer}
     if (!state.best || typeof state.best !== 'object') state.best = {};
     if (state.mode !== 'films') state.mode = 'books';
     if (state.ftab !== 'watch') state.ftab = 'seen';
-    state.fyear = +state.fyear || new Date().getFullYear();
+    state.fyear = state.fyear === 0 ? 0 : (+state.fyear || new Date().getFullYear());
+    if (['title', 'dur-asc', 'dur-desc', 'yr-asc', 'yr-desc', 'added'].indexOf(state.fsort) < 0) state.fsort = 'title';
   }
   fixYears();
   function ck(key) { return key === 'voorraad' ? key : YEAR + ':' + key; }   // inklappen onthouden per jaar
@@ -1023,9 +1046,9 @@ button.ayr{cursor:pointer}
     $('q').placeholder = fm ? 'Zoek op titel of regisseur' : 'Zoek op titel of schrijver';
     if (fm) {
       var nS = seenIn(FY()).length, nW = watchList().length;
-      $('yeartitle').textContent = 'Filmjaar ' + FY(); document.title = 'Ithaka · Filmjaar ' + FY();
+      $('yeartitle').textContent = FY() ? 'Filmjaar ' + FY() : 'Eerder gezien'; document.title = 'Ithaka · ' + $('yeartitle').textContent;
       $('pill').textContent = nS + (nS === 1 ? ' film' : ' films');
-      $('btn-stats').setAttribute('aria-label', 'Statistieken. ' + nS + ' films gezien in ' + FY());
+      $('btn-stats').setAttribute('aria-label', 'Statistieken. ' + nS + ' films gezien in ' + fyLabel(FY()));
       $('progline').style.width = '0%';
       $('lab-plan').textContent = 'Gezien'; $('lab-stock').textContent = 'Kijklijst';
       $('n-plan').textContent = nS; $('n-stock').textContent = nW;
@@ -1225,7 +1248,7 @@ button.ayr{cursor:pointer}
   $('btn-filter').addEventListener('click', openFilter);
   $('nowbar').addEventListener('click', openBezig);
   $('libbar').addEventListener('click', function () { openLib(); });
-  $('btn-stats').addEventListener('click', function () { statsSel = null; statsAll = false; statsFives = false; openStats(); });
+  $('btn-stats').addEventListener('click', function () { statsSel = null; statsAll = false; statsFives = false; statsKind = null; statsYear = isFilms() ? (FY() || new Date().getFullYear()) : YEAR; openStats(); });
   $('btn-add').addEventListener('click', function () { if (isFilms()) openAddFilm(); else openAdd(false); });
   $('btn-backup').addEventListener('click', openBackup);
 
@@ -1532,7 +1555,9 @@ button.ayr{cursor:pointer}
       var nf = state.films.filter(matchesFilm).length;
       openSheet('Filters', '<h3>Filters</h3>' + tagGroupsHTML(function (tid) { return filter.tags.indexOf(tid) >= 0; }, 'data-ftag', '', 'film') +
         '<button class="linkbtn" id="tags-manage">Tags en lijnen beheren</button>' +
+        '<div class="field"><label for="f-dir">Regisseur</label><select id="f-dir"><option value="">Alle regisseurs</option>' + directors().map(function (d) { return '<option value="' + esc(d) + '"' + (d === filter.author ? ' selected' : '') + '>' + esc(d) + '</option>'; }).join('') + '</select></div>' +
         '<div class="btnrow"><button class="btn" id="f-clear">Wis filters</button><button class="btn primary" id="f-show">Toon ' + nf + (nf === 1 ? ' film' : ' films') + '</button></div>');
+      $('f-dir').addEventListener('change', function () { filter.author = this.value; render(); list.scrollTop = 0; openFilter(); });
       sheet.querySelectorAll('[data-ftag]').forEach(function (el) {
         el.addEventListener('click', function () { var id = el.dataset.ftag; filter.tags = filter.tags.indexOf(id) >= 0 ? filter.tags.filter(function (x) { return x !== id; }) : filter.tags.concat([id]); render(); list.scrollTop = 0; openFilter(); });
       });
@@ -2223,7 +2248,9 @@ button.ayr{cursor:pointer}
   }
 
   // statistieken
-  var statsSel = null, statsLine, statsAll = false, statsAllLine, statsFives = false;
+  var statsSel = null, statsLine, statsAll = false, statsAllLine, statsFives = false, statsKind = null, statsYear = null;
+  function statsKindNow() { return statsKind || (isFilms() ? 'films' : 'books'); }
+  function statsYearLabel() { var k = statsKindNow(); return k === 'samen' ? String(statsYear) : k === 'films' ? fyLabel(FY()) : String(YEAR); }
   // telt een gelezen boek mee in het bekeken jaar? (op uitleesdatum; zonder datum: het jaar waar het in staat)
   function readThisYear(b) {
     if (b.status !== 'done') return false;
@@ -2469,7 +2496,9 @@ button.ayr{cursor:pointer}
     return card1 + (bestAll ? '<div class="card"><h4>Beste per jaar</h4>' + bestAll + '</div>' : '') + card2 + card3 + card4 + samenCardsHTML();
   }
   function openStats() {
-    if (isFilms()) return renderStatsBox(statsAll ? 'Alle filmjaren' : 'Jouw filmjaar ' + FY(), statsAll ? filmAllStatsHTML() : filmYearStatsHTML());
+    var kind = statsKindNow();
+    if (kind === 'samen') return renderStatsBox(statsAll ? 'Samen, alle jaren' : 'Samen in ' + statsYear, statsAll ? samenAllHTML() : samenYearHTML(statsYear));
+    if (kind === 'films') return renderStatsBox(statsAll ? 'Alle filmjaren' : FY() ? 'Jouw filmjaar ' + FY() : 'Eerder gezien', statsAll ? filmAllStatsHTML() : filmYearStatsHTML());
     if (statsAll) return renderStatsBox('Alle jaren', allStatsHTML());
     var imp = isImp();
     var ML = MONTHS.map(function (m) { return m.toLowerCase(); });
@@ -2574,7 +2603,8 @@ button.ayr{cursor:pointer}
     box.innerHTML =
       '<div class="shead"><button class="hbtn" id="stats-back" aria-label="Terug"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button><h2>' + title + '</h2></div>' +
       '<div class="sbody">' +
-        '<div class="seg2 sm" role="group" aria-label="Statistieken van"><button data-sall="0" class="' + (statsAll ? '' : 'is-on') + '">' + (isFilms() ? FY() : YEAR) + '</button><button data-sall="1" class="' + (statsAll ? 'is-on' : '') + '">Alle jaren</button></div>' +
+        '<div class="seg2 sm" role="group" aria-label="Soort"><button data-skind="books" class="' + (statsKindNow() === 'books' ? 'is-on' : '') + '">Boeken</button><button data-skind="films" class="' + (statsKindNow() === 'films' ? 'is-on' : '') + '">Films</button><button data-skind="samen" class="' + (statsKindNow() === 'samen' ? 'is-on' : '') + '">Samen</button></div>' +
+        '<div class="seg2 sm" role="group" aria-label="Statistieken van"><button data-sall="0" class="' + (statsAll ? '' : 'is-on') + '">' + statsYearLabel() + '</button><button data-sall="1" class="' + (statsAll ? 'is-on' : '') + '">Alle jaren</button></div>' +
         cardsHTML + '</div>';
     box.hidden = false;
     if (wasOpen) box.querySelector('.sbody').scrollTop = prevTop;
@@ -2611,6 +2641,9 @@ button.ayr{cursor:pointer}
     });
     if ($('fives-more')) $('fives-more').addEventListener('click', function () { statsFives = true; openStats(); });
     bindFilmStats(box);
+    box.querySelectorAll('[data-skind]').forEach(function (el) { el.addEventListener('click', function () { statsKind = el.dataset.skind; openStats(); box.querySelector('.sbody').scrollTop = 0; }); });
+    box.querySelectorAll('[data-syear]').forEach(function (el) { el.addEventListener('click', function () { statsYear = +el.dataset.syear; openStats(); }); });
+    box.querySelectorAll('[data-sayear]').forEach(function (el) { el.addEventListener('click', function () { statsAll = false; statsYear = +el.dataset.sayear; openStats(); box.querySelector('.sbody').scrollTop = 0; }); });
   }
   function closeStats() { $('stats').hidden = true; $('stats').innerHTML = ''; try { $('btn-stats').focus(); } catch (e) {} }
   $('stats').addEventListener('keydown', function (e) { if (e.key === 'Escape') closeStats(); });
@@ -2665,7 +2698,7 @@ button.ayr{cursor:pointer}
     var okYear = function (y) { return +y > 1900 && +y < 3000; };
     if (d && d.kind === 'films') {
       if (!Array.isArray(d.films) || !d.films.every(function (f) { return f && typeof f.t === 'string'; })) throw new Error('vorm');
-      return { kind: 'films', films: d.films, note: d.note || '' };
+      return { kind: 'films', films: d.films, note: d.note || '', tags: Array.isArray(d.tags) ? d.tags : [], best: d.best && typeof d.best === 'object' ? d.best : {}, bookTags: Array.isArray(d.bookTags) ? d.bookTags : [] };
     }
     if (d && (d.kind === 'jaar' || d.kind === 'jaren')) {
       if (!Array.isArray(d.books) || !d.books.every(function (b) { return b && typeof b.t === 'string'; })) throw new Error('vorm');
@@ -2997,10 +3030,11 @@ button.ayr{cursor:pointer}
   function findFilm(id) { for (var i = 0; i < state.films.length; i++) if (state.films[i].id === id) return state.films[i]; return null; }
   function fkey(f) { return f.lb ? 'lb:' + f.lb : f.wd ? 'wd:' + f.wd : 'tt:' + norm(f.t).trim() + '|' + (f.yr || ''); }
   function sameFilm(k) { return state.films.filter(function (x) { return fkey(x) === k; }); }
-  function seenYear(f) { return f.st === 'seen' && f.d ? +f.d.slice(0, 4) : f.st === 'seen' && f.y ? +f.y : null; }
+  function seenYear(f) { return f.st !== 'seen' ? null : f.d ? +f.d.slice(0, 4) : f.y ? +f.y : 0; }
+  function fyLabel(y) { return y ? String(y) : 'Eerder'; }
   function filmYears() {
     var ys = [new Date().getFullYear()];
-    state.films.forEach(function (f) { var y = seenYear(f); if (y && ys.indexOf(y) < 0) ys.push(y); });
+    state.films.forEach(function (f) { var y = seenYear(f); if (y !== null && ys.indexOf(y) < 0) ys.push(y); });
     if (ys.indexOf(FY()) < 0) ys.push(FY());
     return ys.sort(function (a, b) { return a - b; });
   }
@@ -3038,13 +3072,33 @@ button.ayr{cursor:pointer}
       '<span class="fr">' + (f.st === 'seen' && f.rating ? '<span class="arate">★ ' + fmtRating(f.rating) + '</span>' : '') + filmSymsHTML(f) + '</span>' +
       '</div>';
   }
+  function directors() {
+    var names = [];
+    state.films.forEach(function (f) { if (f.dir) f.dir.split(' & ').forEach(function (d) { d = d.trim(); if (d && names.indexOf(d) < 0) names.push(d); }); });
+    return names.sort(function (x, y) { return x.localeCompare(y, 'nl'); });
+  }
   function matchesFilm(f) {
+    if (filter.author && (f.dir || '').split(' & ').map(function (d) { return d.trim(); }).indexOf(filter.author) < 0) return false;
     if (filter.tags.length && !(f.tags || []).some(function (t) { return filter.tags.indexOf(t) >= 0; })) return false;
     var q = norm(filter.q.trim());
     if (q) { var hay = norm(f.t + ' ' + (f.dir || '') + ' ' + (f.yr || '')); if (!q.split(/\s+/).every(function (w) { return hay.indexOf(w) >= 0; })) return false; }
     return true;
   }
   var fwatchAvail = false;
+  function sortKeyTitle(t) { return norm(t).replace(/^(the|a|an|de|het|een|le|la|les|el|il|der|die|das)\s+/, '').trim(); }
+  function sortWatch(arr) {
+    var k = state.fsort, big = 1e9;
+    var cmpT = function (a, b) { return sortKeyTitle(a.t).localeCompare(sortKeyTitle(b.t), 'nl'); };
+    return arr.sort(function (a, b) {
+      if (k === 'dur-asc') return ((a.min || big) - (b.min || big)) || cmpT(a, b);
+      if (k === 'dur-desc') return ((b.min || -1) - (a.min || -1)) || cmpT(a, b);
+      if (k === 'yr-asc') return ((a.yr || big) - (b.yr || big)) || cmpT(a, b);
+      if (k === 'yr-desc') return ((b.yr || -1) - (a.yr || -1)) || cmpT(a, b);
+      if (k === 'added') return (b.added || '') < (a.added || '') ? -1 : (b.added || '') > (a.added || '') ? 1 : cmpT(a, b);
+      return cmpT(a, b);
+    });
+  }
+  list.addEventListener('change', function (e) { if (e.target && e.target.id === 'fsort') { state.fsort = e.target.value; save(); renderKeep(); } });
   function filmListHTML() {
     var html = '';
     if (filtering()) {
@@ -3052,7 +3106,7 @@ button.ayr{cursor:pointer}
       html += '<div class="results scoperow"><span>' + (n ? n + (n === 1 ? ' film' : ' films') : 'Niets gevonden') + ' · alle jaren</span></div>';
       filmYears().slice().reverse().forEach(function (y) {
         var fs = pool.filter(function (f) { return seenYear(f) === y; }).sort(function (a, b) { return (b.d || '') < (a.d || '') ? -1 : 1; });
-        if (fs.length) html += '<section class="sec"><div class="sechead is-static"><span class="h">' + y + '</span><span class="sp"></span><span class="cnt">' + fs.length + '</span></div><div class="flist">' + fs.map(function (f) { return filmRowHTML(f, { date: true }); }).join('') + '</div></section>';
+        if (fs.length) html += '<section class="sec"><div class="sechead is-static"><span class="h">' + fyLabel(y) + '</span><span class="sp"></span><span class="cnt">' + fs.length + '</span></div><div class="flist">' + fs.map(function (f) { return filmRowHTML(f, { date: true }); }).join('') + '</div></section>';
       });
       var wl = pool.filter(function (f) { return f.st === 'watch'; });
       if (wl.length) html += '<section class="sec"><div class="sechead is-static"><span class="h">Kijklijst</span><span class="sp"></span><span class="cnt">' + wl.length + '</span></div><div class="flist">' + wl.map(function (f) { return filmRowHTML(f); }).join('') + '</div></section>';
@@ -3060,16 +3114,17 @@ button.ayr{cursor:pointer}
     }
     if (state.ftab === 'watch') {
       var all = watchList(), av = all.filter(function (f) { return f.avail; });
-      var ag = againList();
-      html += '<div class="fseg"><div class="seg2 sm" role="group" aria-label="Kijklijst"><button data-favail="0" class="' + (fwatchAvail ? '' : 'is-on') + '">Alles · ' + all.length + '</button><button data-favail="1" class="' + (fwatchAvail ? 'is-on' : '') + '">Beschikbaar · ' + av.length + '</button></div></div>';
-      var shown = (fwatchAvail ? av : all).slice().sort(function (a, b) { return (b.added || '') < (a.added || '') ? -1 : 1; });
+      var ag = sortWatch(againList());
+      html += '<div class="fseg"><div class="seg2 sm" role="group" aria-label="Kijklijst"><button data-favail="0" class="' + (fwatchAvail ? '' : 'is-on') + '">Alles · ' + all.length + '</button><button data-favail="1" class="' + (fwatchAvail ? 'is-on' : '') + '">Beschikbaar · ' + av.length + '</button></div>' +
+        '<label class="fsort"><span>Sorteer</span><select id="fsort" aria-label="Sorteer de kijklijst">' + [['title', 'Titel (A–Z)'], ['dur-asc', 'Duur: kort eerst'], ['dur-desc', 'Duur: lang eerst'], ['yr-desc', 'Jaar: nieuw eerst'], ['yr-asc', 'Jaar: oud eerst'], ['added', 'Laatst toegevoegd']].map(function (o) { return '<option value="' + o[0] + '"' + (state.fsort === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label></div>';
+      var shown = sortWatch((fwatchAvail ? av : all).slice());
       if (ag.length && !fwatchAvail) html += '<section class="sec"><div class="sechead is-static"><span class="h">Herkijken</span><span class="sp"></span><span class="cnt">' + ag.length + '</span></div><div class="flist">' + ag.map(function (f) { return filmRowHTML(f); }).join('') + '</div></section>';
       html += '<section class="sec"><div class="sechead is-static"><span class="h">' + (fwatchAvail ? 'Beschikbaar' : 'Kijklijst') + '</span><span class="sp"></span><span class="cnt">' + shown.length + '</span></div>' +
         (shown.length ? '<div class="flist">' + shown.map(function (f) { return filmRowHTML(f); }).join('') + '</div>' : '<p class="results">' + (fwatchAvail ? 'Nog niets als beschikbaar gemarkeerd. Open een film op je kijklijst en zet "Beschikbaar" aan.' : 'Je kijklijst is leeg. Voeg films toe met +.') + '</p>') + '</section>';
       return html;
     }
     var seen = seenIn(FY()).sort(function (a, b) { return (b.d || '') < (a.d || '') ? -1 : (b.d || '') > (a.d || '') ? 1 : 0; });
-    if (!seen.length) return '<p class="results">Nog geen films gezien in ' + FY() + '. Voeg er een toe met +, of importeer je Letterboxd-dagboek via de back-upknop.</p>';
+    if (!seen.length) return '<p class="results">Nog geen films gezien in ' + fyLabel(FY()) + '. Voeg er een toe met +, of importeer je Letterboxd-dagboek via de back-upknop.</p>';
     var cur = null, grp = [];
     var flush = function () {
       if (!grp.length) return;
@@ -3340,6 +3395,7 @@ button.ayr{cursor:pointer}
           sameFilm(k).forEach(function (x) { x.dir = hit.dir; if (hit.min && !x.min) x.min = hit.min; if (!x.wd) x.wd = hit.wd; });
           filled++;
         });
+        save();
       }, function () { failed = true; }).then(function () { setTimeout(step, 250); });
     };
     step();
@@ -3429,7 +3485,7 @@ button.ayr{cursor:pointer}
   function openFilmYears() {
     var rows = filmYears().slice().reverse().map(function (y) {
       var fs = seenIn(y), cur = y === FY();
-      return '<div class="yrow' + (cur ? ' is-cur' : '') + '"><button class="ypick" data-fy="' + y + '"' + (cur ? ' aria-current="true"' : '') + '><span class="yy">' + y + '</span><span class="yt"><b>' + (fs.length ? fs.length + ' gezien' : 'Nog leeg') + '</b><span>' + (cur ? 'nu open' : 'tik om te openen') + '</span></span></button></div>';
+      return '<div class="yrow' + (cur ? ' is-cur' : '') + '"><button class="ypick" data-fy="' + y + '"' + (cur ? ' aria-current="true"' : '') + '><span class="yy"' + (y ? '' : ' style="font-size:17px"') + '>' + fyLabel(y) + '</span><span class="yt"><b>' + (fs.length ? fs.length + ' gezien' : 'Nog leeg') + '</b><span>' + (cur ? 'nu open' : y ? 'tik om te openen' : 'zonder kijkdatum') + '</span></span></button></div>';
     }).join('');
     return rows;
   }
@@ -3549,7 +3605,7 @@ button.ayr{cursor:pointer}
     var per = ys.map(function (y) { var fs = seenIn(y), mins = 0; fs.forEach(function (f) { mins += f.min || 0; }); return { y: y, n: fs.length, h: mins / 60, r: avgF(fs) }; });
     var mx = Math.max.apply(null, per.map(function (x) { return x.n; }).concat([1]));
     var rows = per.slice().reverse().map(function (x) {
-      return '<button data-fayear="' + x.y + '" class="ayr"><b>' + x.y + '</b><span class="bar"><i style="width:' + Math.round(x.n / mx * 100) + '%"></i></span><span class="an">' + x.n + '</span><span class="ap">' + (x.h ? nlNum(x.h) + ' uur' : '') + '</span><span class="ar">' + (x.r !== null ? '★ ' + f1(x.r) : '') + '</span></button>';
+      return '<button data-fayear="' + x.y + '" class="ayr"><b' + (x.y ? '' : ' style="font-size:13px"') + '>' + fyLabel(x.y) + '</b><span class="bar"><i style="width:' + Math.round(x.n / mx * 100) + '%"></i></span><span class="an">' + x.n + '</span><span class="ap">' + (x.h ? nlNum(x.h) + ' uur' : '') + '</span><span class="ar">' + (x.r !== null ? '★ ' + f1(x.r) : '') + '</span></button>';
     }).join('');
     var keys = {}; seen.forEach(function (f) { keys[fkey(f)] = 1; });
     var bestAll = ys.slice().reverse().map(function (y) {
@@ -3592,7 +3648,7 @@ button.ayr{cursor:pointer}
     box.querySelectorAll('[data-fdetail]').forEach(function (el) { el.addEventListener('click', function () { closeStats(); openFilm(el.dataset.fdetail); }); });
     box.querySelectorAll('[data-bestedit]').forEach(function (el) { el.addEventListener('click', function () { var p = el.dataset.bestedit.split(':'); openBest(p[0], +p[1]); }); });
     box.querySelectorAll('[data-fayear]').forEach(function (el) { el.addEventListener('click', function () { statsAll = false; state.fyear = +el.dataset.fayear; save(); render(); openStats(); box.querySelector('.sbody').scrollTop = 0; }); });
-    box.querySelectorAll('[data-fdir]').forEach(function (el) { el.addEventListener('click', function () { filter = emptyFilter(); filter.q = el.dataset.fdir; $('q').value = filter.q; searchOpen = true; closeStats(); render(); list.scrollTop = 0; }); });
+    box.querySelectorAll('[data-fdir]').forEach(function (el) { el.addEventListener('click', function () { filter = emptyFilter(); filter.author = el.dataset.fdir; $('q').value = ''; if (!isFilms()) state.mode = 'films'; closeStats(); render(); list.scrollTop = 0; }); });
     box.querySelectorAll('[data-flshow]').forEach(function (el) { el.addEventListener('click', function () { filter = emptyFilter(); filter.tags = [el.dataset.flshow]; $('q').value = ''; closeStats(); render(); list.scrollTop = 0; }); });
     if ($('wd-fill')) $('wd-fill').addEventListener('click', function () { this.disabled = true; this.textContent = 'Bezig met aanvullen…'; wdEnrich(function () { if (!$('stats').hidden) openStats(); }); });
   }
@@ -3605,31 +3661,162 @@ button.ayr{cursor:pointer}
   }
   function confirmFilmImport(bk) {
     var plan = filmImportPlan(bk), ys = {};
-    plan.forEach(function (p) { var y = p.x.st === 'watch' ? 'Kijklijst' : (p.x.d || '').slice(0, 4) || '?'; ys[y] = ys[y] || { n: 0, e: 0 }; if (p.old) ys[y].e++; else ys[y].n++; });
-    var rows = Object.keys(ys).sort().reverse().map(function (y) { return '<div class="irow"><b' + (y.length > 4 ? ' style="font-size:14px"' : '') + '>' + esc(y) + '</b><span>' + (ys[y].n ? ys[y].n + ' nieuw' : '') + (ys[y].n && ys[y].e ? ' · ' : '') + (ys[y].e ? ys[y].e + ' stond er al' : '') + '</span><span></span></div>'; }).join('');
+    plan.forEach(function (p) { var y = p.x.st === 'watch' ? 'Kijklijst' : (p.x.d || '').slice(0, 4) || 'Eerder'; ys[y] = ys[y] || { n: 0, e: 0 }; if (p.old) ys[y].e++; else ys[y].n++; });
+    var order = Object.keys(ys).sort(function (a, b) { var r = function (k) { return k === 'Kijklijst' ? 9999 : k === 'Eerder' ? 0 : +k; }; return r(b) - r(a); });
+    var rows = order.map(function (y) { return '<div class="irow"><b' + (y.length > 4 ? ' style="font-size:14px"' : '') + '>' + esc(y) + '</b><span>' + (ys[y].n ? ys[y].n + ' nieuw' : '') + (ys[y].n && ys[y].e ? ' · ' : '') + (ys[y].e ? ys[y].e + ' aanvullen' : '') + '</span><span></span></div>'; }).join('');
+    var newTags = (bk.tags || []).filter(function (t) { return !state.tags.some(function (x) { return norm(x.name).trim() === norm(t.name).trim(); }); });
+    var nBest = Object.keys(bk.best || {}).length;
     openSheet('Films importeren',
       '<h3>Films importeren?</h3><div class="irows">' + rows + '</div>' +
-      '<p class="note" style="font-size:13.5px">Kijkbeurten die er al staan slaat de app over. Daarna haalt hij regisseur en speelduur op bij Wikidata.</p>' +
+      '<p class="note" style="font-size:13.5px">Kijkbeurten die er al staan vult de app aan met tags, lijnen en koppelingen; wat je zelf invulde blijft staan. Daarna haalt hij regisseur en speelduur op bij Wikidata.</p>' +
+      (newTags.length ? '<p class="note" style="font-size:13.5px">Nieuw: ' + newTags.map(function (t) { return (t.line ? 'lijn ' : 'tag ') + '<b>' + esc(t.name) + '</b>'; }).join(', ') + '.</p>' : '') +
+      (nBest ? '<p class="note" style="font-size:13.5px">Lijsten "beste van" voor ' + Object.keys(bk.best).sort().join(', ') + ' (vervangen wat er nu staat).</p>' : '') +
+      ((bk.bookTags || []).length ? '<p class="note" style="font-size:13.5px">Ook ' + bk.bookTags.length + ' boeken krijgen een lijn erbij.</p>' : '') +
       (bk.note ? '<p class="note" style="color:var(--muted);font-size:13px">' + esc(bk.note) + '</p>' : '') +
       '<div class="btnrow"><button class="btn" id="rs-no">Annuleer</button><button class="btn primary" id="rs-yes">Importeer</button></div>');
     $('rs-no').addEventListener('click', openBackup);
-    $('rs-yes').addEventListener('click', function () {
-      var added = 0, last = null;
-      filmImportPlan(bk).forEach(function (p) {
-        if (p.old) return; var x = p.x;
-        var f = { id: 'f' + (state.nextFilm++), t: String(x.t), st: x.st === 'watch' ? 'watch' : 'seen', tags: [], links: [], added: x.added || todayISO() };
+    $('rs-yes').addEventListener('click', function () { applyFilmImport(bk); });
+  }
+  function tagIdByName(name, specs) {
+    var k = norm(name).trim(); if (!k) return null;
+    for (var i = 0; i < state.tags.length; i++) if (norm(state.tags[i].name).trim() === k) return state.tags[i].id;
+    var spec = null; (specs || []).forEach(function (t) { if (norm(t.name).trim() === k) spec = t; });
+    var nt = { id: 't' + (state.nextTag++), name: (spec && spec.name) || name, color: spec && spec.color >= 0 && spec.color < PALETTE.length ? spec.color : 4, line: !!(spec && spec.line) };
+    if (nt.line) nt.icon = (spec && spec.icon) || 'zeil'; else if (spec && (spec.scope === 'films' || spec.scope === 'both')) nt.scope = spec.scope;
+    state.tags.push(nt); return nt.id;
+  }
+  function applyFilmImport(bk) {
+    var added = 0, filled = 0, last = null;
+    filmImportPlan(bk).forEach(function (p) {
+      var x = p.x, f = p.old, isNew = !f, changed = false;
+      if (isNew) {
+        f = { id: 'f' + (state.nextFilm++), t: String(x.t), st: x.st === 'watch' ? 'watch' : 'seen', tags: [], links: [], added: x.added || todayISO() };
         if (+x.yr > 1800) f.yr = +x.yr;
-        ['lb', 'dir', 'wd', 'notes'].forEach(function (k) { if (x[k]) f[k] = String(x[k]); });
+        ['lb', 'dir', 'wd'].forEach(function (k) { if (x[k]) f[k] = String(x[k]); });
         if (+x.min > 0) f.min = +x.min;
-        if (f.st === 'seen') { if (/^\d{4}-\d\d-\d\d$/.test(x.d || '')) f.d = x.d; if (x.rating > 0 && x.rating <= 5) f.rating = Math.round(x.rating * 2) / 2; if (x.re) f.re = true; if (f.d && (!last || f.d > last)) last = f.d; }
+        if (f.st === 'seen') { if (/^\d{4}-\d\d-\d\d$/.test(x.d || '')) f.d = x.d; if (x.re) f.re = true; if (f.d && (!last || f.d > last)) last = f.d; }
         else if (x.avail) f.avail = true;
         state.films.push(f); added++;
-      });
-      state.mode = 'films'; state.ftab = 'seen'; if (last) state.fyear = +last.slice(0, 4);
-      save(); closeSheet(); render(); list.scrollTop = 0;
-      toast(added + (added === 1 ? ' kijkbeurt' : ' kijkbeurten') + ' toegevoegd');
-      if (added) setTimeout(function () { wdEnrich(); }, 1200);
+      }
+      if (x.notes && !f.notes) { f.notes = String(x.notes); changed = true; }
+      if (f.st === 'seen' && x.rating > 0 && x.rating <= 5 && !f.rating) { f.rating = Math.round(x.rating * 2) / 2; changed = true; }
+      if (x.again && f.st === 'seen' && !f.again) { f.again = true; changed = true; }
+      (x.tagNames || []).forEach(function (n) { var id = tagIdByName(n, bk.tags); if (id && f.tags.indexOf(id) < 0) { f.tags.push(id); changed = true; } });
+      (x.links || []).forEach(function (l) { var k = importKey(l.t, l.a); if (f.links.indexOf(k) < 0) { f.links.push(k); changed = true; } });
+      if (!isNew && changed) filled++;
     });
+    // beste van: Letterboxd-link → de kijkbeurt in dat jaar (de laatste)
+    Object.keys(bk.best || {}).forEach(function (y) {
+      var ids = [];
+      bk.best[y].forEach(function (lb) {
+        var cands = state.films.filter(function (f) { return f.lb === lb && f.st === 'seen'; });
+        var inY = cands.filter(function (f) { return seenYear(f) === +y; }).sort(function (a, b) { return (b.d || '') < (a.d || '') ? -1 : 1; });
+        var pick = inY[0] || cands[0]; if (pick && ids.indexOf(pick.id) < 0) ids.push(pick.id);
+      });
+      if (ids.length) state.best['f' + y] = ids;
+    });
+    // lijnen bij boeken
+    var bt = 0;
+    (bk.bookTags || []).forEach(function (x) {
+      var key = importKey(x.t, x.a);
+      state.books.forEach(function (b) {
+        if (importKey(b.t, b.a) !== key) return;
+        if (x.y && +b.y !== +x.y && b.m !== 'voorraad') return;
+        (x.tagNames || []).forEach(function (n) { var id = tagIdByName(n, bk.tags); if (id && b.tags.indexOf(id) < 0) { b.tags.push(id); bt++; } });
+      });
+    });
+    state.mode = 'films'; state.ftab = 'seen'; if (last) state.fyear = +last.slice(0, 4);
+    save(); closeSheet(); render(); list.scrollTop = 0;
+    toast([added ? added + (added === 1 ? ' kijkbeurt' : ' kijkbeurten') + ' toegevoegd' : '', filled ? filled + ' aangevuld' : '', bt ? bt + '× lijn bij een boek' : ''].filter(Boolean).join(' · ') || 'Niets te importeren');
+    if (added) setTimeout(function () { wdEnrich(); }, 1500);
+  }
+
+
+
+  // ---------- statistieken: boeken en films samen ----------
+  function samenYears() {
+    var ys = [];
+    state.books.forEach(function (b) { var y = readYearOf(b); if (y && ys.indexOf(y) < 0) ys.push(y); });
+    state.films.forEach(function (f) { var y = seenYear(f); if (y && ys.indexOf(y) < 0) ys.push(y); });
+    return ys.sort(function (a, b) { return a - b; });
+  }
+  function booksReadIn(y) { return state.books.filter(function (b) { return readYearOf(b) === y; }); }
+  function lineSplitHTML(bs, fs, title, note) {
+    var ls = lineTags().map(function (L) {
+      return { L: L, nb: bs.filter(function (b) { return b.tags.indexOf(L.id) >= 0; }).length, nf: fs.filter(function (f) { return (f.tags || []).indexOf(L.id) >= 0; }).length };
+    }).filter(function (x) { return x.nb + x.nf > 0; }).sort(function (a, b) { return (b.nb + b.nf) - (a.nb + a.nf); });
+    if (!ls.length) return '';
+    return '<div class="card"><h4>' + title + '</h4>' + ls.map(function (x) {
+      var tot = x.nb + x.nf, p = pal(x.L);
+      return '<div class="lsplit" style="' + tagVars(x.L) + '"><span class="li">' + iconSVG(x.L, 18, p.c) + '</span><b>' + esc(x.L.name) + '</b><span class="split"><i style="width:' + (x.nb / tot * 100).toFixed(0) + '%;background:' + p.c + '"></i><i class="f" style="width:' + (x.nf / tot * 100).toFixed(0) + '%;background-color:' + p.c + '"></i></span><span class="n">' + x.nb + (x.nb === 1 ? ' boek' : ' boeken') + ' · ' + x.nf + (x.nf === 1 ? ' film' : ' films') + '</span></div>';
+    }).join('') + (note ? '<p class="pgnote">' + note + '</p>' : '') + '</div>';
+  }
+  function pairsIn(y) {
+    var out = [], done = {};
+    state.films.forEach(function (f) {
+      var k = fkey(f); if (done[k] || !(f.links || []).length) return; done[k] = 1;
+      var views = sameFilm(k).filter(function (x) { return x.st === 'seen'; });
+      filmBooks(f).forEach(function (b) {
+        var bookIn = state.books.some(function (x) { return bookKeyOf(x) === bookKeyOf(b) && readYearOf(x) === y; });
+        var filmIn = views.some(function (x) { return seenYear(x) === y; });
+        if (y === undefined || bookIn || filmIn) out.push({ b: b, f: f, when: bookIn && filmIn ? 'allebei in ' + y : bookIn ? 'boek in ' + y : filmIn ? 'film in ' + y : '' });
+      });
+    });
+    return out;
+  }
+  function samenYearHTML(y) {
+    var ys = samenYears(), i = ys.indexOf(y);
+    var prev = i > 0 ? ys[i - 1] : (i < 0 && ys.length ? ys.filter(function (x) { return x < y; }).pop() : null), next = i >= 0 && i < ys.length - 1 ? ys[i + 1] : (i < 0 ? ys.filter(function (x) { return x > y; })[0] : null);
+    var bs = booksReadIn(y), fs = seenIn(y);
+    var pages = bs.reduce(function (t, b) { return t + (b.pages || 0); }, 0), mins = fs.reduce(function (t, f) { return t + (f.min || 0); }, 0);
+    var ab = avgR(bs.filter(function (b) { return b.rating; })), af = avgF(fs);
+    var nav = '<div class="ynav"><button class="iconbtn" ' + (prev ? 'data-syear="' + prev + '"' : 'disabled') + ' aria-label="Vorig jaar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button><b>' + y + '</b><button class="iconbtn" ' + (next ? 'data-syear="' + next + '"' : 'disabled') + ' aria-label="Volgend jaar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button></div>';
+    var AX = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'], cb = [], cf = [], mx = 1;
+    for (var m = 1; m <= 12; m++) {
+      var nb = bs.filter(function (b) { return b.finished && +b.finished.slice(5, 7) === m && +b.finished.slice(0, 4) === y; }).length;
+      var nf = fs.filter(function (f) { return f.d && +f.d.slice(5, 7) === m; }).length;
+      cb.push(nb); cf.push(nf); mx = Math.max(mx, nb, nf);
+    }
+    var chart = cb.map(function (nb, k) { var nf = cf[k]; return '<div class="col duo" role="img" aria-label="' + MONTHS[k] + ': ' + nb + ' boeken, ' + nf + ' films" style="cursor:default"><span class="p" style="height:' + Math.round(nb / mx * 124) + 'px"></span><span class="u" style="height:' + Math.round(nf / mx * 124) + 'px"></span></div>'; }).join('');
+    var bestB = bestItems('book', y), bestF = bestItems('film', y);
+    var bestHTML = (bestB.length || bestF.length) ? '<div class="card"><h4>Beste van ' + y + '</h4><div class="duolist">' +
+      '<div><p class="lbl">Boeken</p>' + (bestB.length ? '<div class="toplist">' + bestB.slice(0, 5).map(function (b, i) { return '<button class="tbook" data-detail="' + esc(b.id) + '"><b><span class="bn">' + (i + 1) + '</span>' + esc(b.t) + '</b></button>'; }).join('') + '</div>' : '<p class="pgnote">Nog geen lijst.</p>') + '</div>' +
+      '<div><p class="lbl">Films</p>' + (bestF.length ? '<div class="toplist">' + bestF.slice(0, 5).map(function (f, i) { return '<button class="tbook" data-fdetail="' + esc(f.id) + '"><b><span class="bn">' + (i + 1) + '</span>' + esc(f.t) + '</b></button>'; }).join('') + '</div>' : '<p class="pgnote">Nog geen lijst.</p>') + '</div>' +
+      '</div></div>' : '';
+    var pairs = pairsIn(y);
+    var pairsHTML = pairs.length ? '<div class="card"><h4>Boek en film</h4>' + pairs.map(function (p) {
+      var fr = sameFilm(fkey(p.f)).filter(function (x) { return x.rating; })[0];
+      return '<div class="pair"><button class="t" data-detail="' + esc(p.b.id) + '"><b>' + esc(p.b.t) + '</b><span>' + esc(p.f.t) + ' · ' + p.when + '</span></button><span class="v">' + (p.b.rating ? fmtRating(p.b.rating) : '–') + '</span><span class="v">' + (fr ? fmtRating(fr.rating) : '–') + '</span></div>';
+    }).join('') + '</div>' : '';
+    return nav +
+      '<div class="card"><h4>Samen</h4><div class="duo2"><div><b>' + bs.length + '</b><span>' + (bs.length === 1 ? 'boek gelezen' : 'boeken gelezen') + '</span></div><div><b>' + fs.length + '</b><span>keer een film gekeken</span></div></div>' +
+        '<div class="kv"><div><b>' + nlNum(pages) + '</b><span>bladzijden</span></div><div><b>' + (mins ? nlNum(mins / 60) : '–') + '</b><span>uur film</span></div>' +
+        '<div><b>' + f1(ab) + '</b><span>gemiddeld ★ boeken</span></div><div><b>' + f1(af) + '</b><span>gemiddeld ★ films</span></div></div></div>' +
+      '<div class="card"><h4>Per maand</h4><div class="chart">' + chart + '</div><div class="axis" aria-hidden="true">' + AX.map(function (x) { return '<span>' + x + '</span>'; }).join('') + '</div>' +
+        '<div class="legend"><span><i style="background:var(--accent)"></i>boeken uit</span><span><i style="background:var(--unplan)"></i>films gezien</span></div></div>' +
+      bestHTML +
+      lineSplitHTML(bs, fs, 'Lijnen in ' + y, 'Volle kleur: boeken · gestreept: films.') +
+      pairsHTML;
+  }
+  function samenAllHTML() {
+    var ys = samenYears();
+    if (!ys.length) return '<div class="card"><p class="note">Nog niets gelezen of gezien.</p></div>';
+    var per = ys.map(function (y) { var bs = booksReadIn(y), fs = seenIn(y); return { y: y, nb: bs.length, nf: fs.length, rb: avgR(bs.filter(function (b) { return b.rating; })), rf: avgF(fs) }; });
+    var mx = Math.max.apply(null, per.map(function (x) { return Math.max(x.nb, x.nf); }).concat([1]));
+    var rows = per.slice().reverse().map(function (x) {
+      return '<button class="syr" data-sayear="' + x.y + '"><b>' + x.y + '</b><span class="bars"><span><i style="width:' + Math.round(x.nb / mx * 100) + '%;background:var(--accent)"></i><em>' + x.nb + '</em></span><span><i style="width:' + Math.round(x.nf / mx * 100) + '%;background:var(--unplan)"></i><em>' + x.nf + '</em></span></span>' +
+        '<span class="rr"><span>' + (x.rb !== null ? '★ ' + f1(x.rb) : '') + '</span><span>' + (x.rf !== null ? '★ ' + f1(x.rf) : '') + '</span></span></button>';
+    }).join('');
+    var bestAll = ys.slice().reverse().map(function (y) {
+      var b = bestItems('book', y), f = bestItems('film', y); if (!b.length && !f.length) return '';
+      var none = '<p class="pgnote" style="border-top:1px solid var(--line);padding-top:8px">Nog geen lijst</p>';
+      return '<p class="lbl" style="margin-top:6px">' + y + '</p><div class="duolist"><div class="toplist">' + (b.length ? b.slice(0, 3).map(function (x, i) { return '<button class="tbook" data-detail="' + esc(x.id) + '"><b><span class="bn">' + (i + 1) + '</span>' + esc(x.t) + '</b></button>'; }).join('') : none) + '</div><div class="toplist">' + (f.length ? f.slice(0, 3).map(function (x, i) { return '<button class="tbook" data-fdetail="' + esc(x.id) + '"><b><span class="bn">' + (i + 1) + '</span>' + esc(x.t) + '</b></button>'; }).join('') : none) + '</div></div>';
+    }).join('');
+    var allB = state.books.filter(function (b) { return b.status === 'done'; }), allF = state.films.filter(function (f) { return f.st === 'seen'; });
+    return '<div class="card"><h4>Per jaar</h4><div class="legend"><span><i style="background:var(--accent)"></i>boeken</span><span><i style="background:var(--unplan)"></i>films</span></div><div class="syrs">' + rows + '</div><p class="pgnote">Tik op een jaar om het samen te bekijken.</p></div>' +
+      (bestAll ? '<div class="card"><h4>Beste per jaar</h4><div class="duolist hd"><p class="lbl">Boeken</p><p class="lbl">Films</p></div>' + bestAll + '</div>' : '') +
+      lineSplitHTML(allB, allF, 'Lijnen in boeken en films', 'Volle kleur: boeken · gestreept: films.') +
+      samenCardsHTML().replace(/<div class="card"><h4>Lijnen in boeken en films<\/h4>[\s\S]*$/, '');
   }
 
   // ---------- start ----------
