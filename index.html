@@ -271,6 +271,14 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .ed .ep{flex:none;text-align:right;font-family:var(--f-title);font-size:20px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
 .ed .ep small{display:block;font-family:var(--f-ui);font-size:11px;font-weight:500;color:var(--muted);line-height:1.3}
 .pgnote{margin:0;font-size:13px;line-height:1.45;color:var(--soft)}
+/* welkom & back-up */
+.welcome{margin:12px 0 4px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.welcome h2{margin:0;font-family:var(--f-title);font-weight:600;font-size:20px}
+.welcome p{margin:0;font-size:14px;line-height:1.5;color:var(--soft)}
+.codebox{border:1px solid var(--line);border-radius:12px;padding:0 12px}
+.codebox summary{min-height:46px;display:flex;align-items:center;font-size:14px;font-weight:600;color:var(--soft);cursor:pointer}
+.codebox[open]{padding-bottom:12px}
+.codebox[open] > *:not(summary){margin-top:10px}
 /* statistieken */
 .stats{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;background:var(--ground);max-width:560px;margin:0 auto}
 .shead{background:linear-gradient(180deg,var(--hd1),var(--hd2));color:var(--hd-ink);padding:calc(12px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 12px max(12px,env(safe-area-inset-left,0px));display:flex;align-items:center;gap:8px}
@@ -423,71 +431,8 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   }
   function defaultTags() { return [{ id: 'opt', name: 'optioneel', color: 1 }, { id: 'her', name: 'herlezen', color: 3 }]; }
 
-  var SEED = [
-    ['door','De brief aan de Romeinen','Karl Barth'],
-    ['door','De vrolijke wetenschap','Friedrich Nietzsche'],
-    ['1','Ilias','Homerus'],
-    ['1','Woeste Hoogten','Emily Brontë'],
-    ['1','Wat ik geloof','Lev Tolstoj'],
-    ['1','Terwijl ik al heenging','William Faulkner',['her','opt']],
-    ['2','Odyssee','Homerus'],
-    ['2','Metamorphosen XII–XIII','Ovidius'],
-    ['2','Het geluid en de drift','William Faulkner'],
-    ['2','Het martyrium','Elias Canetti'],
-    ['2','De vraag naar de mens','Martin Buber'],
-    ['3','Aeneis','Vergilius'],
-    ['3','Metamorphosen XIII–XIV','Ovidius'],
-    ['3','Radetzkymars','Joseph Roth'],
-    ['3','Ik en Jij','Martin Buber'],
-    ['3','De goddelijke komedie (26 mrt – 16 mei)','Dante'],
-    ['4','De wereld van gisteren','Stefan Zweig'],
-    ['4','Filosofische onderzoekingen (t/m juni)','Ludwig Wittgenstein'],
-    ['5','De Aleph (titelverhaal, na Dante)','Jorge Luis Borges'],
-    ['5','Hamlet','William Shakespeare'],
-    ['5','Ulysses (uit op 16 juni)','James Joyce'],
-    ['6','Bekentenissen van Zeno','Italo Svevo'],
-    ['6','Mevrouw Dalloway','Virginia Woolf'],
-    ['6','De geboorte van de tragedie','Friedrich Nietzsche'],
-    ['7','Jouw gezicht morgen','Javier Marías'],
-    ['7','Gödel, Escher, Bach (t/m augustus)','Douglas Hofstadter'],
-    ['8','De medeplichtige','György Konrád'],
-    ['8','Tonio Kröger & De dood in Venetië','Thomas Mann'],
-    ['8','De meester en zijn afgezant (t/m september)','Iain McGilchrist'],
-    ['9','Doktor Faustus','Thomas Mann'],
-    ['9','Gesprekken met de duivel','Leszek Kolakowski'],
-    ['9','De kapiteinsdochter','Aleksandr Poesjkin'],
-    ['9','De mantel / De neus / Dagboek van een gek','Nikolaj Gogol'],
-    ['10','Lucifer','Connie Palmen'],
-    ['10','Dode zielen','Nikolaj Gogol'],
-    ['10','Roedin & Een adelsnest','Ivan Toergenjev'],
-    ['10','Het Koninkrijk Gods is binnen in u','Lev Tolstoj'],
-    ['11','Opstanding','Lev Tolstoj'],
-    ['11','De meester van Petersburg','J.M. Coetzee'],
-    ['11','2666','Roberto Bolaño'],
-    ['12','Metamorphosen I','Ovidius'],
-    ['12','De zondvloed','Jeroen Brouwers'],
-    ['12','De genealogie van de moraal','Friedrich Nietzsche'],
-    ['12','Bijbels ABC','K.H. Miskotte',['opt']],
-    ['voorraad','Elizabeth Costello','J.M. Coetzee'],
-    ['voorraad','Dagboek van een slecht jaar','J.M. Coetzee'],
-    ['voorraad','Zomertijd','J.M. Coetzee'],
-    ['voorraad','Genezen verklaard','Graham Greene'],
-    ['voorraad','Het leven op aarde','J. Slauerhoff'],
-    ['voorraad','De man zonder eigenschappen (na april)','Robert Musil'],
-    ['voorraad','Een liefde van Swann','Marcel Proust'],
-    ['voorraad','Reis naar het einde van de nacht','Louis-Ferdinand Céline'],
-    ['voorraad','De stad der zienden','José Saramago'],
-    ['voorraad','Een zeeman door de zee verstoten','Yukio Mishima'],
-    ['voorraad','Kapitein Michalis','Nikos Kazantzakis'],
-    ['voorraad','Het achtste leven (voor Brilka)','Nino Haratischwili'],
-    ['voorraad','Zelfportretten','Osamu Dazai'],
-    ['voorraad','De tranen der acacia’s','Willem Frederik Hermans'],
-    ['voorraad','Het sadistische universum','Willem Frederik Hermans'],
-    ['voorraad','De zaak 40/61','Harry Mulisch'],
-    ['voorraad','In Babylon','Marcel Möring'],
-    ['voorraad','Max, Mischa & het Tet-offensief','Johan Harstad'],
-    ['voorraad','De ideale staat','Plato']
-  ];
+  // Nieuwe gebruikers beginnen met een leeg leesjaar; je eigen lijst staat op je apparaat (en in je back-up).
+  var SEED = [];
 
   // ---------- opslag ----------
   function seedState() {
@@ -536,7 +481,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       if (raw) {
         var d = JSON.parse(raw);
         if (d && Array.isArray(d.books)) {
-          var st = { v: d.v || 1, tab: d.tab === 'stock' ? 'stock' : 'plan', nextId: d.nextId || 1000, nextTag: d.nextTag || 1, coll: d.coll || {}, books: d.books, tags: Array.isArray(d.tags) ? d.tags : null };
+          var st = { v: d.v || 1, tab: d.tab === 'stock' ? 'stock' : 'plan', nextId: d.nextId || 1000, nextTag: d.nextTag || 1, coll: d.coll || {}, books: d.books, tags: Array.isArray(d.tags) ? d.tags : null, lastBackup: d.lastBackup || null };
           normalizeBooks(st.books);
           if (!st.tags) { st.tags = defaultTags(); migrateTitles(st); }
           if (st.v < 3) { migrateUntil(st); st.v = 3; }
@@ -750,12 +695,22 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       html += '<p class="results">' + (n ? n + (n === 1 ? ' boek' : ' boeken') + ' in planning en voorraad' : 'Niets gevonden') + '</p>';
       html += DESTS.map(function (d) { return secHTML(d, true); }).join('');
     } else if (state.tab === 'plan') {
+      if (!state.books.length) html += welcomeHTML();
       html += monthbarHTML() + DESTS.slice(0, 13).map(function (d) { return secHTML(d, false); }).join('');
     } else {
       html += '<div style="height:8px"></div>' + secHTML(DESTS[13], false);
     }
     list.innerHTML = html;
   }
+  function welcomeHTML() {
+    return '<div class="welcome"><h2>Welkom bij Ithaka</h2>' +
+      '<p>Plan je leesjaar per maand, houd een voorraad bij voor spontaan lezen en vink af wat je uit hebt. Boeken toevoegen gaat met + , of door de streepjescode achterop te scannen.</p>' +
+      '<div class="btnrow"><button class="btn primary" data-w="add">Eerste boek toevoegen</button><button class="btn" data-w="restore">Back-up terugzetten</button></div></div>';
+  }
+  list.addEventListener('click', function (e) {
+    var w = e.target.closest && e.target.closest('[data-w]'); if (!w) return;
+    if (w.dataset.w === 'add') openAdd(false); else pickBackupFile();
+  });
   function renderKeep() { var st = list.scrollTop; render(); list.scrollTop = st; }
   function setTab(tab) {
     if (state.tab === tab && !filtering()) return;
@@ -1794,21 +1749,108 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
     return JSON.parse(new TextDecoder().decode(bytes));
   }
-  function openBackup() {
+  function backupData() { return { app: 'ithaka', v: 3, savedAt: new Date().toISOString(), books: state.books, tags: state.tags }; }
+  function markBackup() { state.lastBackup = new Date().toISOString(); save(); }
+  function backupAge() {
+    if (!state.lastBackup) return 'Nog geen back-up gemaakt op dit apparaat.';
+    var d = daysSince(state.lastBackup.slice(0, 10));
+    return 'Laatste back-up: ' + (d === 0 ? 'vandaag' : d === 1 ? 'gisteren' : d + ' dagen geleden') + '.';
+  }
+  function saveBackupFile() {
+    var name = 'ithaka-backup-' + todayISO() + '.json';
+    var text = JSON.stringify(backupData());
+    var download = function () {
+      var url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+      var a = document.createElement('a'); a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+      markBackup(); openBackup(); toast('Back-up gedownload');
+    };
+    var file = null;
+    try { file = new File([text], name, { type: 'application/json' }); } catch (e) {}
+    if (file && navigator.canShare && navigator.share) {
+      var ok = false; try { ok = navigator.canShare({ files: [file] }); } catch (e) {}
+      if (ok) {
+        navigator.share({ files: [file], title: 'Ithaka back-up' }).then(function () { markBackup(); openBackup(); toast('Back-up bewaard'); }, function (e) {
+          if (!e || e.name !== 'AbortError') download();
+        });
+        return;
+      }
+    }
+    download();
+  }
+  // leest een back-up (bestand of code) en geeft {books, tags, savedAt} terug, of gooit
+  function parseBackup(text) {
+    text = String(text || '').trim();
+    var d;
+    try { d = JSON.parse(text); } catch (e) { d = decode(text); }
+    var books = Array.isArray(d) ? d : d && d.books;
+    if (!Array.isArray(books) || !books.every(function (b) { return b && typeof b.t === 'string' && typeof b.m === 'string'; })) throw new Error('vorm');
+    return { books: books, tags: (!Array.isArray(d) && Array.isArray(d.tags)) ? d.tags : null, savedAt: (d && d.savedAt) || null };
+  }
+  function applyBackup(bk) {
+    var books = bk.books;
+    normalizeBooks(books);
+    migrateUntil({ books: books });
+    var maxN = 0;
+    books.forEach(function (b) { var n = parseInt(String(b.id).replace(/\D/g, ''), 10); if (n > maxN) maxN = n; });
+    state.books = books; state.nextId = Math.max(state.nextId, maxN + 1);
+    if (bk.tags) {
+      state.tags = bk.tags;
+      var maxT = 0; bk.tags.forEach(function (t) { var n = parseInt(String(t.id).replace(/\D/g, ''), 10); if (n > maxT) maxT = n; });
+      state.nextTag = Math.max(state.nextTag, maxT + 1, bk.tags.length + 10);
+    } else { state.tags = state.tags || defaultTags(); migrateTitles(state); }
+    save(); closeSheet(); render(); list.scrollTop = 0; toast('Lijst hersteld');
+  }
+  // eerst laten zien wat er komt, dan pas vervangen
+  function confirmRestore(bk) {
+    var when = bk.savedAt ? nlDate(bk.savedAt.slice(0, 10)) + (bk.savedAt.slice(0, 4) !== String(YEAR) ? '' : '') : 'onbekende datum';
+    var n = bk.books.length, cur = state.books.length;
+    openSheet('Back-up terugzetten',
+      '<h3>Back-up terugzetten?</h3>' +
+      '<p class="note">Back-up van <b>' + esc(when) + '</b> met <b>' + n + (n === 1 ? ' boek' : ' boeken') + '</b>' + (bk.tags ? ' en ' + bk.tags.length + ' tags en lijnen' : '') + '.</p>' +
+      (cur ? '<p class="note">Dit vervangt wat nu op dit apparaat staat (' + cur + (cur === 1 ? ' boek' : ' boeken') + ').</p>' : '') +
+      '<div class="btnrow"><button class="btn" id="rs-no">Annuleer</button><button class="btn primary" id="rs-yes">' + (cur ? 'Vervang' : 'Zet terug') + '</button></div>');
+    $('rs-no').addEventListener('click', openBackup);
+    $('rs-yes').addEventListener('click', function () { applyBackup(bk); });
+  }
+  function pickBackupFile() {
+    var inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = '.json,.txt,application/json,text/plain';
+    inp.addEventListener('change', function () {
+      var f = inp.files && inp.files[0]; if (!f) return;
+      var r = new FileReader();
+      r.onload = function () {
+        try { confirmRestore(parseBackup(r.result)); }
+        catch (e) { openBackup('Dit bestand is geen Ithaka-back-up.'); }
+      };
+      r.onerror = function () { openBackup('Het bestand kon niet gelezen worden.'); };
+      r.readAsText(f);
+    });
+    inp.click();
+  }
+  function openBackup(errMsg) {
+    if (typeof errMsg !== 'string') errMsg = '';
     var code = encode({ v: 2, books: state.books, tags: state.tags });
     openSheet('Back-up',
       '<h3>Back-up</h3>' +
-      '<p class="note">Je lijst staat alleen op deze telefoon. Kopieer de code en bewaar hem in een notitie. Plak hem hieronder om je lijst terug te zetten, ook op een nieuwe telefoon.</p>' +
+      '<p class="note">Je lijst staat alleen op dit apparaat. Bewaar af en toe een back-up als bestand, bijvoorbeeld in iCloud Drive, Google Drive of je downloads. ' + esc(backupAge()) + '</p>' +
+      '<button class="btn primary" id="bk-save" style="flex:none">Bewaar back-up als bestand</button>' +
+      '<button class="btn" id="bk-load" style="flex:none">Herstel uit bestand</button>' +
+      (errMsg ? '<p class="err">' + esc(errMsg) + '</p>' : '') +
+      '<details class="codebox"><summary>Of met een code (kopiëren en plakken)</summary>' +
       '<div class="field"><label for="f-code">Jouw code</label><textarea id="f-code" readonly></textarea></div>' +
-      '<button class="btn primary" id="copy">Kopieer code</button>' +
+      '<button class="btn" id="copy">Kopieer code</button>' +
       '<div class="field"><label for="f-restore">Code plakken</label><textarea id="f-restore" placeholder="Plak hier een eerder gekopieerde code"></textarea></div>' +
       '<p class="err" id="restore-err" hidden></p>' +
-      '<button class="btn" id="restore">Herstel deze code</button>' +
+      '<button class="btn" id="restore">Herstel deze code</button></details>' +
       '<p class="lbl" style="margin-top:8px">ISBN opzoeken</p>' +
       '<div class="field"><label for="f-gbkey">Eigen Google Books-sleutel (optioneel)</label><div class="isbnrow"><input id="f-gbkey" type="text" autocomplete="off" spellcheck="false" placeholder="AIza…"><button type="button" class="btn" id="gbkey-save">Bewaar</button></div></div>' +
-      '<p class="note" style="font-size:13px;color:var(--muted)">Nederlandse boeken zoekt de app eerst bij de KB (Nederlandse Bibliografie). Daarna Google Books (zonder sleutel met een gedeeld quotum) en Open Library. De sleutel blijft op deze telefoon en zit niet in je back-upcode.</p>');
+      '<p class="note" style="font-size:13px;color:var(--muted)">Nederlandse boeken zoekt de app eerst bij de KB (Nederlandse Bibliografie). Daarna Google Books (zonder sleutel met een gedeeld quotum) en Open Library. De sleutel blijft op dit apparaat en zit niet in je back-up.</p>');
     $('f-code').value = code;
     $('f-gbkey').value = gbKey();
+    $('bk-save').addEventListener('click', saveBackupFile);
+    $('bk-load').addEventListener('click', pickBackupFile);
     $('gbkey-save').addEventListener('click', function () {
       var v = $('f-gbkey').value.trim();
       try { if (v) localStorage.setItem(GB_KEY_STORE, v); else localStorage.removeItem(GB_KEY_STORE); } catch (e) {}
@@ -1818,28 +1860,13 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       var btn = this;
       var fallback = function () { var el = $('f-code'); el.focus(); el.select(); btn.textContent = 'Geselecteerd, kopieer met je toetsenbord'; };
       try {
-        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(function () { btn.textContent = 'Gekopieerd'; }, fallback);
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(function () { btn.textContent = 'Gekopieerd'; markBackup(); }, fallback);
         else fallback();
       } catch (e) { fallback(); }
     });
     $('restore').addEventListener('click', function () {
-      var err = $('restore-err');
-      try {
-        var d = decode($('f-restore').value.trim());
-        var books = Array.isArray(d) ? d : d.books;
-        if (!Array.isArray(books) || !books.every(function (b) { return b && typeof b.t === 'string' && typeof b.m === 'string'; })) throw new Error('vorm');
-        normalizeBooks(books);
-        migrateUntil({ books: books });
-        var tags = (!Array.isArray(d) && Array.isArray(d.tags)) ? d.tags : null;
-        var maxN = 0;
-        books.forEach(function (b) { var n = parseInt(String(b.id).replace(/\D/g, ''), 10); if (n > maxN) maxN = n; });
-        state.books = books; state.nextId = Math.max(state.nextId, maxN + 1);
-        if (tags) { state.tags = tags; state.nextTag = Math.max(state.nextTag, tags.length + 10); }
-        else { state.tags = state.tags || defaultTags(); migrateTitles(state); }
-        save(); closeSheet(); render(); toast('Lijst hersteld');
-      } catch (e) {
-        err.textContent = 'Deze code klopt niet. Kopieer hem opnieuw, helemaal.'; err.hidden = false;
-      }
+      try { confirmRestore(parseBackup($('f-restore').value)); }
+      catch (e) { var err = $('restore-err'); err.textContent = 'Deze code klopt niet. Kopieer hem opnieuw, helemaal.'; err.hidden = false; }
     });
   }
 
