@@ -1119,7 +1119,19 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   }
   // KB: Nederlandse Bibliografie Totaal, via de openbare zoekvraag "ISBN zoeken in NBT".
   // label = "Titel / Auteur ; vertaald door …"
+  // oudere boeken staan bij de KB vaak met hun 10-cijferige ISBN: probeer allebei
+  function toIsbn10(d) {
+    if (!/^978\d{10}$/.test(d)) return null;
+    var core = d.slice(3, 12), sum = 0;
+    for (var i = 0; i < 9; i++) sum += (+core[i]) * (10 - i);
+    var c = (11 - sum % 11) % 11;
+    return core + (c === 10 ? 'X' : String(c));
+  }
   function kbRecord(isbn) {
+    var alt = toIsbn10(isbn);
+    return kbRecordOne(isbn).then(function (r) { return r || !alt ? r : kbRecordOne(alt); });
+  }
+  function kbRecordOne(isbn) {
     return fetch('https://api.bibliotheken.nl/queries/KB/ISBN-zoeken-in-NBT/4/run?ISBN=' + isbn, { cache: 'no-store', headers: { Accept: 'application/json' } }).then(function (r) {
       if (!r.ok) throw httpErr('KB', r.status);
       return r.json();
