@@ -1101,21 +1101,59 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     return null;
   }
   function fmtIsbn(d) { return d || ''; }
-  var GB_URL = 'https://www.googleapis.com/books/v1/volumes?q=isbn:';
-  function lookupIsbn(isbn) {
-    return fetch(GB_URL + isbn, { cache: 'no-store' }).then(function (r) {
-      if (!r.ok) throw new Error('http ' + r.status);
+  // Eerst Google Books (met eigen sleutel als die is ingesteld), anders Open Library.
+  var GB_KEY_STORE = 'ithaka.gbkey';
+  function gbKey() { try { return localStorage.getItem(GB_KEY_STORE) || ''; } catch (e) { return ''; } }
+  function httpErr(src, status) { var e = new Error(src + ' ' + status); e.src = src; e.status = status; return e; }
+  function fromGoogle(isbn) {
+    var k = gbKey();
+    return fetch('https://www.googleapis.com/books/v1/volumes?q=isbn:' + isbn + (k ? '&key=' + encodeURIComponent(k) : ''), { cache: 'no-store' }).then(function (r) {
+      if (!r.ok) throw httpErr('Google Books', r.status);
       return r.json();
-    }).then(function (d) {
+    }, function () { throw httpErr('Google Books', 0); }).then(function (d) {
       if (!d || !d.totalItems || !d.items || !d.items.length) return null;
       var v = d.items[0].volumeInfo || {};
       var img = v.imageLinks && (v.imageLinks.thumbnail || v.imageLinks.smallThumbnail);
       return {
-        t: (v.title || '').trim(), a: (v.authors || []).join(', '),
+        src: 'Google Books', t: (v.title || '').trim(), a: (v.authors || []).join(', '),
         pages: v.pageCount || null, year: (v.publishedDate || '').slice(0, 4) || null,
         publisher: v.publisher || '', cover: img ? img.replace(/^http:/, 'https:') : ''
       };
     });
+  }
+  function fromOpenLibrary(isbn) {
+    return fetch('https://openlibrary.org/api/books?bibkeys=ISBN:' + isbn + '&format=json&jscmd=data', { cache: 'no-store' }).then(function (r) {
+      if (!r.ok) throw httpErr('Open Library', r.status);
+      return r.json();
+    }, function () { throw httpErr('Open Library', 0); }).then(function (d) {
+      var v = d && d['ISBN:' + isbn];
+      if (!v || !v.title) return null;
+      var y = String(v.publish_date || '').match(/\d{4}/);
+      return {
+        src: 'Open Library', t: (v.title + (v.subtitle ? '' : '')).trim(), a: (v.authors || []).map(function (x) { return x.name; }).join(', '),
+        pages: v.number_of_pages || null, year: y ? y[0] : null,
+        publisher: (v.publishers && v.publishers[0] && v.publishers[0].name) || '',
+        cover: (v.cover && (v.cover.medium || v.cover.small)) || ''
+      };
+    });
+  }
+  // geeft {info} of {info:null, errs:[...]} terug; gooit nooit
+  function lookupIsbn(isbn) {
+    var errs = [];
+    var tryOne = function (fn) { return fn(isbn).then(function (x) { return x; }, function (e) { errs.push(e); return null; }); };
+    return tryOne(fromGoogle).then(function (info) {
+      if (info && info.t) return info;
+      return tryOne(fromOpenLibrary);
+    }).then(function (info) { return { info: info && info.t ? info : null, errs: errs }; });
+  }
+  function errText(errs) {
+    return errs.map(function (e) {
+      if (!e.status) return e.src + ': geen verbinding';
+      if (e.status === 429) return e.src + ': foutcode 429 (quotum op)';
+      if (e.status === 403) return e.src + ': foutcode 403 (sleutel geweigerd)';
+      if (e.status === 400) return e.src + ': foutcode 400 (ongeldige sleutel?)';
+      return e.src + ': foutcode ' + e.status;
+    }).join(' · ');
   }
   function findDup(isbn, t) {
     var nt = norm(t).trim();
@@ -1152,9 +1190,9 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       var facts = bookFacts({ pages: f.info.pages, year: f.info.year, publisher: f.info.publisher, isbn: f.isbn });
       found = '<div class="found">' +
         '<span class="cover is-none" aria-hidden="true">' + ICON_BOOK + (f.info.cover ? '<img src="' + esc(f.info.cover) + '" alt="" referrerpolicy="no-referrer" onerror="this.remove()">' : '') + '</span>' +
-        '<span class="fmeta"><span class="src">via Google Books</span><span class="facts">' + esc(facts) + '</span></span></div>';
+        '<span class="fmeta"><span class="src">via ' + esc(f.info.src) + '</span><span class="facts">' + esc(facts) + '</span></span></div>';
     } else if (f.miss) {
-      found = '<div class="found"><span class="cover is-none" aria-hidden="true">' + ICON_BOOK + '</span><span class="fmeta"><span class="src is-miss">niet gevonden</span><span class="facts">ISBN ' + esc(fmtIsbn(f.isbn)) + ' staat niet in Google Books. Vul titel en auteur zelf in; het ISBN wordt bewaard.</span></span></div>';
+      found = '<div class="found"><span class="cover is-none" aria-hidden="true">' + ICON_BOOK + '</span><span class="fmeta"><span class="src is-miss">niet gevonden</span><span class="facts">ISBN ' + esc(fmtIsbn(f.isbn)) + ' staat niet in Google Books of Open Library. Vul titel en auteur zelf in; het ISBN wordt bewaard.' + (f.missNote ? '<br><small>' + esc(f.missNote) + '</small>' : '') + '</span></span></div>';
     }
     openSheet('Boek toevoegen',
       '<h3>Boek toevoegen</h3>' +
@@ -1227,15 +1265,15 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   function findIsbn(isbn, fromScan) {
     if (!addForm) addForm = newAddForm();
     var f = addForm;
-    f.isbn = isbn; f.err = ''; f.info = null; f.miss = false; f.busy = true; f.fromScan = f.fromScan || fromScan;
+    f.isbn = isbn; f.err = ''; f.info = null; f.miss = false; f.missNote = ''; f.busy = true; f.fromScan = f.fromScan || fromScan;
     if (!fromScan) openAdd(true);
-    return lookupIsbn(isbn).then(function (info) {
+    return lookupIsbn(isbn).then(function (res) {
       f.busy = false;
-      if (info && info.t) { f.info = info; f.t = info.t; f.a = info.a; }
-      else { f.miss = true; }
-    }, function () {
-      f.busy = false;
-      f.err = navigator.onLine === false ? 'Geen internet. Vul titel en auteur zelf in; het ISBN wordt bewaard.' : 'Google Books gaf geen antwoord. Probeer het zo nog eens, of vul het zelf in.';
+      if (res.info) { f.info = res.info; f.t = res.info.t; f.a = res.info.a; return; }
+      var bothFailed = res.errs.length >= 2;
+      if (!bothFailed) { f.miss = true; f.missNote = res.errs.length ? errText(res.errs) : ''; return; }
+      var offline = navigator.onLine === false || res.errs.every(function (e) { return !e.status; });
+      f.err = (offline ? 'Geen internet. ' : 'Opzoeken lukte niet. ') + 'Vul titel en auteur zelf in; het ISBN wordt bewaard.' + (offline ? '' : ' (' + errText(res.errs) + ')');
     }).then(function () { if (addForm === f) openAdd(true); });
   }
 
@@ -1517,8 +1555,17 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       '<button class="btn primary" id="copy">Kopieer code</button>' +
       '<div class="field"><label for="f-restore">Code plakken</label><textarea id="f-restore" placeholder="Plak hier een eerder gekopieerde code"></textarea></div>' +
       '<p class="err" id="restore-err" hidden></p>' +
-      '<button class="btn" id="restore">Herstel deze code</button>');
+      '<button class="btn" id="restore">Herstel deze code</button>' +
+      '<p class="lbl" style="margin-top:8px">ISBN opzoeken</p>' +
+      '<div class="field"><label for="f-gbkey">Eigen Google Books-sleutel (optioneel)</label><div class="isbnrow"><input id="f-gbkey" type="text" autocomplete="off" spellcheck="false" placeholder="AIza…"><button type="button" class="btn" id="gbkey-save">Bewaar</button></div></div>' +
+      '<p class="note" style="font-size:13px;color:var(--muted)">Zonder sleutel zoekt de app in Google Books met een gedeeld quotum en anders in Open Library. De sleutel blijft op deze telefoon en zit niet in je back-upcode.</p>');
     $('f-code').value = code;
+    $('f-gbkey').value = gbKey();
+    $('gbkey-save').addEventListener('click', function () {
+      var v = $('f-gbkey').value.trim();
+      try { if (v) localStorage.setItem(GB_KEY_STORE, v); else localStorage.removeItem(GB_KEY_STORE); } catch (e) {}
+      toast(v ? 'Sleutel bewaard' : 'Sleutel verwijderd');
+    });
     $('copy').addEventListener('click', function () {
       var btn = this;
       var fallback = function () { var el = $('f-code'); el.focus(); el.select(); btn.textContent = 'Geselecteerd, kopieer met je toetsenbord'; };
