@@ -1137,14 +1137,39 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       };
     });
   }
-  // geeft {info} of {info:null, errs:[...]} terug; gooit nooit
+  // KB: Nederlandse Bibliografie Totaal, via de openbare zoekvraag "ISBN zoeken in NBT".
+  // label = "Titel / Auteur ; vertaald door …"
+  function fromKB(isbn) {
+    return fetch('https://api.bibliotheken.nl/queries/KB/ISBN-zoeken-in-NBT/4/run?ISBN=' + isbn, { cache: 'no-store', headers: { Accept: 'application/json' } }).then(function (r) {
+      if (!r.ok) throw httpErr('KB', r.status);
+      return r.json();
+    }, function () { throw httpErr('KB', 0); }).then(function (rows) {
+      if (!Array.isArray(rows)) return null;
+      var v = null;
+      for (var i = 0; i < rows.length; i++) if (rows[i] && rows[i].label) { v = rows[i]; break; }
+      if (!v) return null;
+      var label = String(v.label), cut = label.indexOf(' / ');
+      var t = cut >= 0 ? label.slice(0, cut) : label;
+      var a = cut >= 0 ? label.slice(cut + 3).split(' ; ')[0] : '';
+      a = a.replace(/^(door|van)\s+/i, '').replace(/[\[\]]/g, '').trim();
+      var y = String(v.jaar_van_uitgave || '').match(/\d{4}/);
+      return {
+        src: 'KB', t: t.replace(/\s+:\s+/g, ': ').trim(), a: a, pages: null, year: y ? y[0] : null,
+        publisher: v.uitgever || '', edition: v.editie || '',
+        cover: 'https://covers.openlibrary.org/b/isbn/' + isbn + '-M.jpg?default=false'
+      };
+    });
+  }
+  // geeft {info} of {info:null, errs:[...]} terug; gooit nooit.
+  // Nederlandse en Vlaamse ISBN's (978-90, 978-94) eerst bij de KB, de rest eerst bij Google.
   function lookupIsbn(isbn) {
     var errs = [];
-    var tryOne = function (fn) { return fn(isbn).then(function (x) { return x; }, function (e) { errs.push(e); return null; }); };
-    return tryOne(fromGoogle).then(function (info) {
-      if (info && info.t) return info;
-      return tryOne(fromOpenLibrary);
-    }).then(function (info) { return { info: info && info.t ? info : null, errs: errs }; });
+    var order = /^97(8|9)9[04]/.test(isbn) ? [fromKB, fromGoogle, fromOpenLibrary] : [fromGoogle, fromKB, fromOpenLibrary];
+    var step = function (i) {
+      if (i >= order.length) return Promise.resolve(null);
+      return order[i](isbn).then(function (x) { return x && x.t ? x : step(i + 1); }, function (e) { errs.push(e); return step(i + 1); });
+    };
+    return step(0).then(function (info) { return { info: info, errs: errs }; });
   }
   function errText(errs) {
     return errs.map(function (e) {
@@ -1188,11 +1213,12 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     var found = '';
     if (f.info) {
       var facts = bookFacts({ pages: f.info.pages, year: f.info.year, publisher: f.info.publisher, isbn: f.isbn });
+      if (f.info.edition) facts = f.info.edition.replace(/\.$/, '').toLowerCase() + ' · ' + facts;
       found = '<div class="found">' +
         '<span class="cover is-none" aria-hidden="true">' + ICON_BOOK + (f.info.cover ? '<img src="' + esc(f.info.cover) + '" alt="" referrerpolicy="no-referrer" onerror="this.remove()">' : '') + '</span>' +
         '<span class="fmeta"><span class="src">via ' + esc(f.info.src) + '</span><span class="facts">' + esc(facts) + '</span></span></div>';
     } else if (f.miss) {
-      found = '<div class="found"><span class="cover is-none" aria-hidden="true">' + ICON_BOOK + '</span><span class="fmeta"><span class="src is-miss">niet gevonden</span><span class="facts">ISBN ' + esc(fmtIsbn(f.isbn)) + ' staat niet in Google Books of Open Library. Vul titel en auteur zelf in; het ISBN wordt bewaard.' + (f.missNote ? '<br><small>' + esc(f.missNote) + '</small>' : '') + '</span></span></div>';
+      found = '<div class="found"><span class="cover is-none" aria-hidden="true">' + ICON_BOOK + '</span><span class="fmeta"><span class="src is-miss">niet gevonden</span><span class="facts">ISBN ' + esc(fmtIsbn(f.isbn)) + ' staat niet bij de KB, Google Books of Open Library. Vul titel en auteur zelf in; het ISBN wordt bewaard.' + (f.missNote ? '<br><small>' + esc(f.missNote) + '</small>' : '') + '</span></span></div>';
     }
     openSheet('Boek toevoegen',
       '<h3>Boek toevoegen</h3>' +
@@ -1270,7 +1296,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     return lookupIsbn(isbn).then(function (res) {
       f.busy = false;
       if (res.info) { f.info = res.info; f.t = res.info.t; f.a = res.info.a; return; }
-      var bothFailed = res.errs.length >= 2;
+      var bothFailed = res.errs.length >= 3;
       if (!bothFailed) { f.miss = true; f.missNote = res.errs.length ? errText(res.errs) : ''; return; }
       var offline = navigator.onLine === false || res.errs.every(function (e) { return !e.status; });
       f.err = (offline ? 'Geen internet. ' : 'Opzoeken lukte niet. ') + 'Vul titel en auteur zelf in; het ISBN wordt bewaard.' + (offline ? '' : ' (' + errText(res.errs) + ')');
@@ -1558,7 +1584,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       '<button class="btn" id="restore">Herstel deze code</button>' +
       '<p class="lbl" style="margin-top:8px">ISBN opzoeken</p>' +
       '<div class="field"><label for="f-gbkey">Eigen Google Books-sleutel (optioneel)</label><div class="isbnrow"><input id="f-gbkey" type="text" autocomplete="off" spellcheck="false" placeholder="AIza…"><button type="button" class="btn" id="gbkey-save">Bewaar</button></div></div>' +
-      '<p class="note" style="font-size:13px;color:var(--muted)">Zonder sleutel zoekt de app in Google Books met een gedeeld quotum en anders in Open Library. De sleutel blijft op deze telefoon en zit niet in je back-upcode.</p>');
+      '<p class="note" style="font-size:13px;color:var(--muted)">Nederlandse boeken zoekt de app eerst bij de KB (Nederlandse Bibliografie). Daarna Google Books (zonder sleutel met een gedeeld quotum) en Open Library. De sleutel blijft op deze telefoon en zit niet in je back-upcode.</p>');
     $('f-code').value = code;
     $('f-gbkey').value = gbKey();
     $('gbkey-save').addEventListener('click', function () {
