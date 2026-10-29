@@ -1153,12 +1153,29 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       var a = cut >= 0 ? label.slice(cut + 3).split(' ; ')[0] : '';
       a = a.replace(/^(door|van)\s+/i, '').replace(/[\[\]]/g, '').trim();
       var y = String(v.jaar_van_uitgave || '').match(/\d{4}/);
-      return {
+      var info = {
         src: 'KB', t: t.replace(/\s+:\s+/g, ': ').trim(), a: a, pages: null, year: y ? y[0] : null,
         publisher: v.uitgever || '', edition: v.editie || '',
         cover: 'https://covers.openlibrary.org/b/isbn/' + isbn + '-M.jpg?default=false'
       };
+      // bladzijden staan wel in de beschrijving zelf (schema:numberOfPages); mislukt dit, dan zonder
+      return v.uri ? kbPages(v.uri).then(function (n) { info.pages = n; return info; }, function () { return info; }) : info;
     });
+  }
+  var KB_SPARQL = 'https://api.bibliotheken.nl/datasets/KB/Production/services/Production-VTS/sparql';
+  function kbPages(uri) {
+    if (!/^https?:\/\/data\.bibliotheken\.nl\/id\/[\w\/-]+$/.test(uri)) return Promise.resolve(null);
+    var q = 'PREFIX schema: <http://schema.org/> SELECT ?p WHERE { <' + uri + '> schema:numberOfPages ?p } LIMIT 3';
+    return fetch(KB_SPARQL + '?query=' + encodeURIComponent(q), { cache: 'no-store', headers: { Accept: 'application/sparql-results+json' } })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (d) {
+        var b = d && d.results && d.results.bindings || [], best = null;
+        b.forEach(function (row) {
+          var nums = String(row.p && row.p.value || '').match(/\d+/g) || [];
+          nums.forEach(function (x) { var n = +x; if (n > 4 && n < 20000 && (best === null || n > best)) best = n; });
+        });
+        return best;
+      });
   }
   // geeft {info} of {info:null, errs:[...]} terug; gooit nooit.
   // Nederlandse en Vlaamse ISBN's (978-90, 978-94) eerst bij de KB, de rest eerst bij Google.
