@@ -310,6 +310,35 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .ypick .yt{display:flex;flex-direction:column;gap:2px}
 .ypick .yt b{font-size:14px;font-weight:600}
 .ypick .yt span{font-size:12.5px;color:var(--muted)}
+/* waardering & tempo */
+.sr{display:grid;grid-template-columns:52px minmax(0,1fr) 28px;column-gap:8px;align-items:center;min-height:24px;font-size:12.5px;color:var(--soft);font-variant-numeric:tabular-nums}
+.sr .bar{height:9px;border-radius:5px;background:var(--track);overflow:hidden}
+.sr .bar i{display:block;height:100%;background:var(--accent);border-radius:5px}
+.sr .c{text-align:right}
+.cmp{display:flex;flex-direction:column}
+.cscale,.crow{display:grid;grid-template-columns:118px minmax(0,1fr) 34px;column-gap:10px;align-items:center}
+.cscale{font-size:10.5px;font-weight:700;color:var(--muted)}
+.ticks{display:flex;justify-content:space-between}
+.crow{min-height:44px;border-top:1px solid var(--line)}
+.crow.is-sep{border-top:1.5px solid var(--line2)}
+.cl{display:flex;flex-direction:column;min-width:0}
+.cl b{font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cl span{font-size:11.5px;color:var(--muted)}
+.ctrack{position:relative;height:24px}
+.ctrack::before{content:'';position:absolute;left:0;right:0;top:11px;height:2px;background:var(--line);border-radius:1px}
+.cavg{position:absolute;top:4px;width:2px;height:16px;margin-left:-1px;background:var(--tgt);border-radius:1px}
+.cdot{position:absolute;top:5px;width:14px;height:14px;margin-left:-7px;border-radius:50%;border:2px solid var(--surface);box-shadow:0 0 0 1px rgba(42,29,20,.15)}
+.cv{font-size:13px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.insight{margin:0;font-size:13.5px;line-height:1.45;background:var(--ground);border-radius:12px;padding:10px 12px}
+.toplist{display:flex;flex-direction:column}
+.tbook{display:flex;flex-direction:column;align-items:flex-start;gap:1px;border:0;border-top:1px solid var(--line);background:transparent;padding:8px 0;text-align:left;cursor:pointer;color:var(--ink);width:100%}
+.tbook b{font-family:var(--f-title);font-weight:500;font-size:14.5px}
+.tbook span{font-size:12px;color:var(--muted)}
+.tstar{font-family:var(--f-ui);font-size:12px;font-weight:600;color:var(--accent);white-space:nowrap}
+.tempo{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px}
+.tempo div{background:var(--ground);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column}
+.tempo b{font-family:var(--f-title);font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+.tempo span{font-size:12px;color:var(--muted);line-height:1.3}
 /* statistieken */
 .stats{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;background:var(--ground);max-width:560px;margin:0 auto}
 .shead{background:linear-gradient(180deg,var(--hd1),var(--hd2));color:var(--hd-ink);padding:calc(12px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 12px max(12px,env(safe-area-inset-left,0px));display:flex;align-items:center;gap:8px}
@@ -1767,6 +1796,75 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     if (b.finished) return +b.finished.slice(0, 4) === YEAR;
     return b.m === 'voorraad' ? YEAR === state.years[state.years.length - 1] : +b.y === YEAR;
   }
+  // leestempo: gelezen bladzijden per dag, per maand (tot vandaag in het lopende jaar)
+  function tempoHTML(rows, nowM) {
+    var DIM = function (m) { return new Date(YEAR, m, 0).getDate(); };
+    var today = new Date(), cur = today.getFullYear() === YEAR;
+    var per = rows.map(function (r) {
+      if (r.m > nowM) return null;
+      var days = cur && r.m === nowM ? today.getDate() : DIM(r.m);
+      return { m: r.m, v: r.read / days };
+    }).filter(function (x) { return x && x.v > 0; });
+    if (!per.length) return '';
+    var totalRead = rows.reduce(function (t, r) { return t + (r.m <= nowM ? r.read : 0); }, 0);
+    var dayCount = 0; for (var m = 1; m <= Math.min(nowM, 12); m++) dayCount += cur && m === nowM ? today.getDate() : DIM(m);
+    var best = per.slice().sort(function (a, b) { return b.v - a.v; })[0];
+    // hoe lang deed je over een boek (alleen met begin- én uitleesdatum)
+    var spans = YB().filter(function (b) { return readThisYear(b) && b.started && b.finished; }).map(function (b) { return daysSince(b.started) - daysSince(b.finished) + 1; }).filter(function (d) { return d > 0 && d < 1000; });
+    var med = null; if (spans.length) { spans.sort(function (a, b) { return a - b; }); med = spans[Math.floor(spans.length / 2)]; }
+    return '<div class="tempo"><div><b>' + nlNum(totalRead / Math.max(dayCount, 1)) + '</b><span>blz. per dag gemiddeld</span></div>' +
+      '<div><b>' + nlNum(best.v) + '</b><span>in ' + MONTHS[best.m - 1].toLowerCase() + ', je snelste maand</span></div>' +
+      (med !== null ? '<div><b>' + med + '</b><span>dagen per boek (mediaan, ' + spans.length + ' boeken)</span></div>' : '') + '</div>';
+  }
+  // ---------- waardering ----------
+  function ratedThisYear() { return YB().filter(function (b) { return b.rating && readThisYear(b); }); }
+  function avgR(bs) { return bs.length ? bs.reduce(function (t, b) { return t + b.rating; }, 0) / bs.length : null; }
+  function f1(x) { return x === null ? '–' : x.toFixed(1).replace('.', ','); }
+  function ratingCardHTML() {
+    var rated = ratedThisYear();
+    if (rated.length < 3) return '';
+    var avg = avgR(rated);
+    var pos = function (v) { return Math.max(0, Math.min(100, (v - 2) / 3 * 100)).toFixed(1); };
+    var groups = [];
+    var addGroup = function (label, test, color, sep) {
+      var bs = rated.filter(test);
+      if (bs.length < 2) return;
+      groups.push({ l: label, n: bs.length, v: avgR(bs), c: color, sep: sep });
+    };
+    var first = true;
+    plainTags().forEach(function (t) { addGroup(t.name, function (b) { return b.tags.indexOf(t.id) >= 0; }, pal(t).c, false); });
+    var nTags = groups.length;
+    lineTags().forEach(function (t) { addGroup(t.name, function (b) { return b.tags.indexOf(t.id) >= 0; }, pal(t).c, false); });
+    if (nTags && groups.length > nTags) groups[nTags].sep = true;
+    // verdeling
+    var steps = [5, 4.5, 4, 3.5, 3, 2.5, 2, 1.5, 1, 0.5], maxN = 0;
+    var dist = steps.map(function (st) { var n = rated.filter(function (b) { return b.rating === st; }).length; maxN = Math.max(maxN, n); return { st: st, n: n }; }).filter(function (x) { return x.n > 0; });
+    var distHTML = dist.map(function (x) {
+      return '<div class="sr"><span>★ ' + fmtRating(x.st) + '</span><span class="bar"><i style="width:' + Math.round(x.n / maxN * 100) + '%"></i></span><span class="c">' + x.n + '</span></div>';
+    }).join('');
+    var unrated = YB().filter(function (b) { return !b.rating && readThisYear(b); }).length;
+    // vaste-regel-conclusie: hoogste en laagste groep met minstens 3 boeken
+    var big = groups.filter(function (g) { return g.n >= 3; }).sort(function (a, b) { return b.v - a.v; });
+    var insight = '';
+    if (big.length >= 2 && big[0].v - big[big.length - 1].v >= 0.3) insight = 'Het hoogst waardeerde je <b>' + esc(big[0].l) + '</b> (★ ' + f1(big[0].v) + '), het laagst <b>' + esc(big[big.length - 1].l) + '</b> (★ ' + f1(big[big.length - 1].v) + ').';
+    else if (big.length) insight = 'Tussen je tags en lijnen zit weinig verschil in waardering.';
+    var cmp = groups.map(function (g) {
+      return '<div class="crow' + (g.sep ? ' is-sep' : '') + '"><span class="cl"><b>' + esc(g.l) + '</b><span>' + g.n + ' boeken</span></span>' +
+        '<span class="ctrack"><i class="cavg" style="left:' + pos(avg) + '%"></i><i class="cdot" style="left:' + pos(g.v) + '%;background:' + g.c + '"></i></span><span class="cv">' + f1(g.v) + '</span></div>';
+    }).join('');
+    var fives = rated.filter(function (b) { return b.rating === 5; });
+    var top = fives.length ? fives : rated.filter(function (b) { return b.rating >= 4.5; });
+    return '<div class="card"><h4>Waardering</h4>' +
+      '<div class="big"><b>' + f1(avg) + '</b><span>gemiddeld ★ over ' + rated.length + ' boeken' + (unrated ? ' · ' + unrated + ' zonder sterren' : '') + '</span></div>' +
+      '<div>' + distHTML + '</div>' +
+      (groups.length ? '<div class="cmp"><div class="cscale" aria-hidden="true"><span></span><span class="ticks"><span>★2</span><span>★3</span><span>★4</span><span>★5</span></span><span></span></div>' + cmp + '</div>' +
+        '<p class="pgnote">Streepje = je gemiddelde. Alleen tags en lijnen met minstens twee boeken met sterren.</p>' : '<p class="pgnote">Koppel tags of lijnen aan je boeken om je waardering per thema te zien.</p>') +
+      (insight ? '<p class="insight">' + insight + '</p>' : '') +
+      (top.length ? '<p class="lbl" style="margin-top:4px">' + (fives.length ? 'Vijf sterren' : 'Hoogst gewaardeerd') + '</p><div class="toplist">' + top.map(function (b) {
+        return '<button class="tbook" data-detail="' + esc(b.id) + '"><b>' + esc(b.t) + '</b><span>' + esc(b.a || '') + (fives.length ? '' : ' · ★ ' + fmtRating(b.rating)) + '</span></button>';
+      }).join('') + '</div>' : '') +
+      '</div>';
+  }
   function pagesCardHTML(nowM) {
     var AX = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
     var yb = YB(), known = yb.filter(function (b) { return b.pages; }).length, all = yb.length;
@@ -1801,6 +1899,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       (anyPlan ? '<div class="chart">' + chart + '</div><div class="axis" aria-hidden="true">' + axis + '</div>' +
         '<div class="legend"><span><i class="tgt"></i>gepland per maand</span><span><i style="background:var(--accent)"></i>gelezen</span></div>' +
         (peak && peak.plan ? '<p class="pgnote">Zwaarste maand in je planning: <b>' + MONTHS[peak.m - 1].toLowerCase() + '</b>, ≈ ' + nlNum(peak.plan) + ' blz.' + (peak.unk ? ' (plus ' + peak.unk + ' zonder bladzijden)' : '') + ' Periodes zijn over hun maanden verdeeld, doorlopende boeken over het hele jaar.</p>' : '') : '') +
+      tempoHTML(rows, nowM) +
       '<p class="pgnote">' + known + ' van ' + all + ' boeken hebben bladzijden.</p>' +
       (known < all ? '<button class="btn" id="pages-fill" style="flex:none">Bladzijden aanvullen via KB</button>' : '') +
       '</div>';
@@ -1904,13 +2003,13 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       if (key !== lastKey) { tl += '<div class="tlm">' + MONTHS[d.getMonth()] + (d.getFullYear() !== YEAR ? ' ' + d.getFullYear() : '') + '</div>'; lastKey = key; }
       tl += '<div class="tli"><span class="line" aria-hidden="true"><i></i></span><span class="d">' + d.getDate() + ' ' + MON_SHORT[d.getMonth()] + '</span>' +
         '<span class="dot" style="background:' + (b.m === 'voorraad' ? 'var(--unplan)' : 'var(--accent)') + '"></span>' +
-        '<span class="bt"><b>' + esc(b.t) + '</b>' + (b.a ? '<span>' + esc(b.a) + '</span>' : '') + '<em>' + kindOf(b) + '</em></span></div>';
+        '<span class="bt"><b>' + esc(b.t) + (b.rating ? ' <span class="tstar">★ ' + fmtRating(b.rating) + '</span>' : '') + '</b>' + (b.a ? '<span>' + esc(b.a) + '</span>' : '') + '<em>' + kindOf(b) + '</em></span></div>';
     });
     if (noDate.length) {
       tl += '<div class="tlm">Datum onbekend</div><p class="note" style="font-size:13px;color:var(--muted);margin:0 0 6px">Gelezen zonder datum. Voeg die toe via ⋯ bij het boek.</p>';
       noDate.forEach(function (b) {
         tl += '<div class="tli"><span class="line" aria-hidden="true"><i></i></span><span class="d">—</span><span class="dot" style="background:' + (b.m === 'voorraad' ? 'var(--unplan)' : 'var(--accent)') + '"></span>' +
-          '<span class="bt"><b>' + esc(b.t) + '</b>' + (b.a ? '<span>' + esc(b.a) + '</span>' : '') + '<em>' + (b.m === 'voorraad' ? 'buiten de planning' : 'gepland') + '</em></span></div>';
+          '<span class="bt"><b>' + esc(b.t) + (b.rating ? ' <span class="tstar">★ ' + fmtRating(b.rating) + '</span>' : '') + '</b>' + (b.a ? '<span>' + esc(b.a) + '</span>' : '') + '<em>' + (b.m === 'voorraad' ? 'buiten de planning' : 'gepland') + '</em></span></div>';
       });
     }
     if (!tl) tl = '<p class="note">Nog niets uitgelezen. Tik op het rondje voor een boek om te beginnen; nog een keer tikken is uitgelezen.</p>';
@@ -1931,6 +2030,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
             '<div><b>' + late + '</b><span>later dan gepland</span></div>' +
           '</div></div>' +
         pagesCardHTML(nowM) +
+        ratingCardHTML() +
         linesCardHTML() +
         '<div class="card"><h4>Per maand</h4>' +
           '<div class="chart">' + chart + '</div><div class="axis" aria-hidden="true">' + axis + '</div>' +
@@ -1946,6 +2046,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       el.addEventListener('click', function () { statsSel = +el.dataset.col; openStats(); });
     });
     if ($('pages-fill')) $('pages-fill').addEventListener('click', function () { closeStats(); openEnrichList(); });
+    box.querySelectorAll('[data-detail]').forEach(function (el) { el.addEventListener('click', function () { closeStats(); openDetail(el.dataset.detail); }); });
     box.querySelectorAll('[data-lane]').forEach(function (el) {
       el.addEventListener('click', function () { statsLine = statsLine === el.dataset.lane ? null : el.dataset.lane; openStats(); });
     });
