@@ -1350,7 +1350,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   // ---------- toevoegen ----------
   var addForm = null;
   function newAddForm() {
-    return { isbn: '', t: '', a: '', dest: state.tab === 'stock' ? 'voorraad' : (nowKey() || '1'), st: 'open', tags: [], info: null, miss: false, err: '', busy: false, fromScan: false };
+    return { isbn: '', t: '', a: '', pages: '', dest: state.tab === 'stock' ? 'voorraad' : (nowKey() || '1'), st: 'open', tags: [], info: null, miss: false, err: '', busy: false, fromScan: false };
   }
   function openAdd(keep) {
     if (!keep || !addForm) addForm = newAddForm();
@@ -1379,6 +1379,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       (dup ? '<div class="dup">' + ICON_WARN + '<span>Dit boek staat al in je lijst (' + esc(dup.m === 'voorraad' ? 'voorraad' : destLabel(dup.m).toLowerCase()) + '). Toch nog een keer toevoegen?</span></div>' : '') +
       '<div class="field"><label for="f-title">Titel</label><input id="f-title" type="text" autocomplete="off" placeholder="Bijv. Moby-Dick" required value="' + esc(f.t) + '"></div>' +
       '<div class="field"><label for="f-author">Auteur</label><input id="f-author" type="text" autocomplete="off" placeholder="Bijv. Herman Melville" value="' + esc(f.a) + '"></div>' +
+      '<div class="field"><label for="f-pages">Bladzijden <span style="font-weight:400;color:var(--muted)">(optioneel)</span></label><input id="f-pages" type="number" inputmode="numeric" min="1" max="20000" autocomplete="off" placeholder="Bijv. 320" value="' + esc(f.pages) + '"></div>' +
       '<div class="field"><label for="f-dest">Waar</label><select id="f-dest">' + opts + '</select></div>' +
       '<p class="lbl">Status</p><div class="seg2">' + stSeg + '</div>' +
       tagsHtml +
@@ -1386,8 +1387,8 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       '<div class="btnrow"><button type="button" class="btn" id="add-no">Annuleer</button><button type="submit" class="btn primary" id="add-yes"' + (f.t.trim() ? '' : ' disabled') + '>Toevoegen</button></div>' +
       '</form>', f.info || f.miss ? null : '#f-title');
     var title = $('f-title'), author = $('f-author'), isbnIn = $('f-isbn');
-    var sync = function () { f.t = title.value; f.a = author.value; f.dest = $('f-dest').value; $('add-yes').disabled = title.value.trim() === ''; if ($('add-next')) $('add-next').disabled = title.value.trim() === ''; };
-    title.addEventListener('input', sync); author.addEventListener('input', sync); $('f-dest').addEventListener('change', sync);
+    var sync = function () { f.t = title.value; f.a = author.value; f.pages = $('f-pages').value; f.dest = $('f-dest').value; $('add-yes').disabled = title.value.trim() === ''; if ($('add-next')) $('add-next').disabled = title.value.trim() === ''; };
+    title.addEventListener('input', sync); author.addEventListener('input', sync); $('f-pages').addEventListener('input', sync); $('f-dest').addEventListener('change', sync);
     if ($('add-next')) $('add-next').disabled = f.t.trim() === '';
     sheet.querySelectorAll('[data-ast]').forEach(function (el) {
       el.addEventListener('click', function () {
@@ -1418,7 +1419,9 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       var m = f.dest;
       var nb = { id: 'n' + (state.nextId++), t: t, a: f.a.trim(), m: m, status: 'open', done: false, started: null, finished: null, until: null, tags: f.tags.slice() };
       if (f.isbn && toIsbn13(f.isbn)) nb.isbn = f.isbn;
-      if (f.info) { if (f.info.pages) nb.pages = f.info.pages; if (f.info.year) nb.year = f.info.year; if (f.info.publisher) nb.publisher = f.info.publisher; if (f.info.edition) nb.edition = f.info.edition; }
+      var pg = parseInt(f.pages, 10);
+      if (pg > 0 && pg < 20000) nb.pages = pg;
+      if (f.info) { if (f.info.year) nb.year = f.info.year; if (f.info.publisher) nb.publisher = f.info.publisher; if (f.info.edition) nb.edition = f.info.edition; }
       setStatus(nb, f.st);
       state.books.push(nb);
       state.tab = m === 'voorraad' ? 'stock' : 'plan';
@@ -1444,7 +1447,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     if (!fromScan) openAdd(true);
     return lookupIsbn(isbn).then(function (res) {
       f.busy = false;
-      if (res.info) { f.info = res.info; f.t = res.info.t; f.a = res.info.a; return; }
+      if (res.info) { f.info = res.info; f.t = res.info.t; f.a = res.info.a; if (res.info.pages) f.pages = String(res.info.pages); return; }
       var bothFailed = res.errs.length >= 3;
       if (!bothFailed) { f.miss = true; f.missNote = res.errs.length ? errText(res.errs) : ''; return; }
       var offline = navigator.onLine === false || res.errs.every(function (e) { return !e.status; });
