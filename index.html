@@ -2287,8 +2287,8 @@ button.ayr{cursor:pointer}
       if (d.kind === 'jaar') {
         if (!okYear(d.year)) throw new Error('vorm');
         books = books.map(function (b) { var c = {}; for (var k in b) c[k] = b[k]; c.y = +d.year; return c; });
-      } else if (!books.every(function (b) { return okYear(b.y); })) throw new Error('vorm');
-      var ys = []; books.forEach(function (b) { if (ys.indexOf(+b.y) < 0) ys.push(+b.y); }); ys.sort(function (a, b) { return a - b; });
+      } else if (!books.every(function (b) { return okYear(b.y) || b.m === 'voorraad'; })) throw new Error('vorm');
+      var ys = []; books.forEach(function (b) { if (b.m !== 'voorraad' && ys.indexOf(+b.y) < 0) ys.push(+b.y); }); ys.sort(function (a, b) { return a - b; });
       return { kind: 'import', years: ys, books: books, tags: Array.isArray(d.tags) ? d.tags : [], note: d.note || '',
         imported: Array.isArray(d.imported) ? d.imported.map(Number).filter(okYear) : [] };
     }
@@ -2319,13 +2319,13 @@ button.ayr{cursor:pointer}
   function importPlan(bk) {
     var have = {}, isb = {};
     state.books.forEach(function (b) {
-      if (b.m === 'voorraad' || !b.y) return;
-      have[+b.y + '#' + importKey(b.t, b.a)] = b;
-      if (b.isbn) isb[+b.y + '#' + b.isbn] = b;
+      var g = b.m === 'voorraad' ? 'v' : b.y ? +b.y : null; if (g === null) return;
+      have[g + '#' + importKey(b.t, b.a)] = b;
+      if (b.isbn) isb[g + '#' + b.isbn] = b;
     });
     return bk.books.map(function (x) {
-      var i13 = x.isbn ? toIsbn13(x.isbn) : null;
-      return { x: x, old: have[+x.y + '#' + importKey(x.t, x.a)] || (i13 && isb[+x.y + '#' + i13]) || null };
+      var i13 = x.isbn ? toIsbn13(x.isbn) : null, g = x.m === 'voorraad' ? 'v' : +x.y;
+      return { x: x, old: have[g + '#' + importKey(x.t, x.a)] || (i13 && isb[g + '#' + i13]) || null };
     });
   }
   function applyImport(bk) {
@@ -2343,9 +2343,10 @@ button.ayr{cursor:pointer}
     importPlan(bk).forEach(function (p) {
       var x = p.x, b = p.old, isNew = !b;
       if (isNew) {
-        var m = String(x.m || ''); if (!(m === 'door' || (+m >= 1 && +m <= 12))) m = x.finished ? String(+x.finished.slice(5, 7)) : '1';
-        b = { id: 'n' + (state.nextId++), y: +x.y, m: m, t: x.t, a: x.a || '', status: x.status === 'open' || x.status === 'bezig' ? x.status : 'done',
+        var m = String(x.m || ''); if (!(m === 'door' || m === 'voorraad' || (+m >= 1 && +m <= 12))) m = x.finished ? String(+x.finished.slice(5, 7)) : '1';
+        b = { id: 'n' + (state.nextId++), m: m, t: x.t, a: x.a || '', status: x.status === 'open' || x.status === 'bezig' || x.status === 'done' ? x.status : m === 'voorraad' ? 'open' : 'done',
           started: null, finished: null, until: null, tags: [] };
+        if (m !== 'voorraad') b.y = +x.y;
         b.done = b.status === 'done';
       }
       var changed = false;
@@ -2364,8 +2365,7 @@ button.ayr{cursor:pointer}
     state.years.sort(function (a, b) { return a - b; });
     (bk.imported || []).forEach(function (y) { if (state.imported.indexOf(y) < 0) state.imported.push(y); });
     state.imported.sort(function (a, b) { return a - b; });
-    var last = bk.years[bk.years.length - 1];
-    state.year = last; YEAR = last; state.tab = 'plan';
+    if (bk.years.length) { var last = bk.years[bk.years.length - 1]; state.year = last; YEAR = last; state.tab = 'plan'; }
     save(); closeSheet(); render(); list.scrollTop = 0;
     toast([added ? added + (added === 1 ? ' boek' : ' boeken') + ' toegevoegd' : '', filled ? filled + ' aangevuld' : '', same ? same + ' ongewijzigd' : ''].filter(Boolean).join(' · ') || 'Niets te importeren');
   }
@@ -2380,7 +2380,12 @@ button.ayr{cursor:pointer}
         return '<div class="irow"><b>' + y + '</b><span>' + (nn ? nn + ' nieuw' : '') + (nn && ex ? ' · ' : '') + (ex ? ex + ' aanvullen' : '') + '</span>' +
           (bk.imported.indexOf(y) >= 0 ? '<span class="imptag">import</span>' : '<span></span>') + '</div>';
       }).join('');
-      var title = bk.years.length === 1 ? 'Leesjaar ' + bk.years[0] + ' importeren?' : 'Leesjaren ' + bk.years[0] + '–' + bk.years[bk.years.length - 1] + ' importeren?';
+      var vs = plan.filter(function (p) { return p.x.m === 'voorraad'; });
+      if (vs.length) {
+        var vn = vs.filter(function (p) { return !p.old; }).length, vx = vs.length - vn;
+        yrRows += '<div class="irow"><b style="font-size:14px">Voorraad</b><span>' + (vn ? vn + ' nieuw' : '') + (vn && vx ? ' · ' : '') + (vx ? vx + ' aanvullen' : '') + '</span><span></span></div>';
+      }
+      var title = !bk.years.length ? 'Voorraad aanvullen?' : bk.years.length === 1 ? 'Leesjaar ' + bk.years[0] + ' importeren?' : 'Leesjaren ' + bk.years[0] + '–' + bk.years[bk.years.length - 1] + ' importeren?';
       openSheet('Importeren',
         '<h3>' + title + '</h3>' +
         '<div class="irows">' + yrRows + '</div>' +
