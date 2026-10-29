@@ -1,5 +1,5 @@
 // Ithaka service worker: app werkt offline; online haalt hij altijd de nieuwste versie.
-const CACHE = 'ithaka-v29';
+const CACHE = 'ithaka-v30';
 const SHELL = [
   './',
   './index.html',
