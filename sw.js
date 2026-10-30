@@ -1,5 +1,5 @@
 // Ithaka service worker: app werkt offline; online haalt hij altijd de nieuwste versie.
-const CACHE = 'ithaka-v36';
+const CACHE = 'ithaka-v37';
 const SHELL = [
   './',
   './index.html',
@@ -8,7 +8,11 @@ const SHELL = [
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
   './icons/apple-touch-icon.png',
-  './icons/favicon-64.png'
+  './icons/favicon-64.png',
+  './fonts/literata-latin-opsz-normal.woff2',
+  './fonts/literata-latin-ext-opsz-normal.woff2',
+  './fonts/public-sans-latin-wght-normal.woff2',
+  './fonts/public-sans-latin-ext-wght-normal.woff2'
 ];
 
 self.addEventListener('install', (e) => {

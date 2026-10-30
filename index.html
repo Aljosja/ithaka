@@ -9,10 +9,14 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/favicon-64.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,500;7..72,600&family=Public+Sans:wght@400;500;600;700&display=swap">
+<link rel="preload" href="fonts/literata-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/public-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+/* lettertypes zitten in de app zelf, zodat ze ook offline werken (SIL Open Font License, zie fonts/) */
+@font-face{font-family:'Literata';font-style:normal;font-display:swap;font-weight:200 900;src:url(fonts/literata-latin-opsz-normal.woff2) format('woff2-variations'),url(fonts/literata-latin-opsz-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Literata';font-style:normal;font-display:swap;font-weight:200 900;src:url(fonts/literata-latin-ext-opsz-normal.woff2) format('woff2-variations'),url(fonts/literata-latin-ext-opsz-normal.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Public Sans';font-style:normal;font-display:swap;font-weight:100 900;src:url(fonts/public-sans-latin-wght-normal.woff2) format('woff2-variations'),url(fonts/public-sans-latin-wght-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Public Sans';font-style:normal;font-display:swap;font-weight:100 900;src:url(fonts/public-sans-latin-ext-wght-normal.woff2) format('woff2-variations'),url(fonts/public-sans-latin-ext-wght-normal.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
 :root{
   --ground:#F4EEE6; --surface:#FFFCF8; --ink:#2A1D14; --muted:#7A6656; --soft:#5C4A3C;
   --line:#E6DACB; --line2:#D9CAB8; --track:#F1E8DC; --hover:#F4EEE6;
@@ -665,6 +669,14 @@ button.ayr{cursor:pointer}
 .orow .ot b{font-family:var(--f-title);font-weight:500;font-size:15px;line-height:1.25}
 .orow .ot span{font-size:12.5px;color:var(--muted)}
 .orow.is-done .ot b{color:var(--soft)}
+.bknag{display:flex;align-items:center;gap:10px;margin:12px 0 2px;background:var(--surface);border:1.5px solid var(--danger);border-radius:14px;padding:10px 10px 10px 12px}
+.bknag .bki{flex:none;color:var(--danger);display:flex}
+.bknag .bkt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.bknag .bkt b{font-size:14px}
+.bknag .bkt span{font-size:12.5px;color:var(--muted)}
+.bknag .bkb{flex:none;display:flex;flex-direction:column;align-items:center;gap:0}
+.bknag .btn{min-height:40px;padding:0 12px;font-size:13.5px}
+.bknag .linkbtn{align-self:center;min-height:32px;color:var(--muted)}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -823,7 +835,7 @@ button.ayr{cursor:pointer}
         var d = JSON.parse(raw);
         if (d && Array.isArray(d.books)) {
           var st = { v: d.v || 1, tab: d.tab === 'stock' ? 'stock' : 'plan', nextId: d.nextId || 1000, nextTag: d.nextTag || 1, coll: d.coll || {}, books: d.books, tags: Array.isArray(d.tags) ? d.tags : null, lastBackup: d.lastBackup || null, year: d.year || null, years: Array.isArray(d.years) ? d.years : [], imported: Array.isArray(d.imported) ? d.imported : [], lib: d.lib && typeof d.lib === 'object' ? d.lib : null,
-            films: Array.isArray(d.films) ? d.films : [], nextFilm: d.nextFilm || 1, mode: d.mode === 'films' ? 'films' : 'books', fyear: d.fyear === 0 ? 0 : (d.fyear || null), fsort: d.fsort || 'title', ftab: d.ftab === 'watch' ? 'watch' : 'seen', sview: d.sview === 'own' || d.sview === 'want' ? d.sview : 'all', best: d.best && typeof d.best === 'object' ? d.best : {} };
+            films: Array.isArray(d.films) ? d.films : [], nextFilm: d.nextFilm || 1, mode: d.mode === 'films' ? 'films' : 'books', fyear: d.fyear === 0 ? 0 : (d.fyear || null), fsort: d.fsort || 'title', ftab: d.ftab === 'watch' ? 'watch' : 'seen', bkSnooze: d.bkSnooze || null, sview: d.sview === 'own' || d.sview === 'want' ? d.sview : 'all', best: d.best && typeof d.best === 'object' ? d.best : {} };
           normalizeBooks(st.books);
           st.books.forEach(function (b) { if (b.lib === 'loan' && !b.loanDate) { b.loanDate = new Date().toISOString().slice(0, 10); b.renewed = 0; } });
           st.books.forEach(function (b) { if (b.y) b.y = +b.y; });
@@ -1314,6 +1326,16 @@ button.ayr{cursor:pointer}
     return state.books.filter(function (b) { return b.status === 'bezig'; })
       .sort(function (x, y) { return (daysSince(y.started) || 0) - (daysSince(x.started) || 0); });
   }
+  // seintje als je back-up ouder is dan twee weken (of er nog geen is); 'later' wacht drie dagen
+  function backupNagHTML() {
+    if (filtering() || !state.books.length) return '';
+    if (state.bkSnooze && state.bkSnooze > todayISO()) return '';
+    var age = state.lastBackup ? daysSince(state.lastBackup.slice(0, 10)) : null;
+    if (age !== null && age <= 14) return '';
+    return '<div class="bknag" role="status"><span class="bki" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v6M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg></span>' +
+      '<span class="bkt"><b>' + (age === null ? 'Nog geen back-up' : 'Back-up van ' + age + ' dagen geleden') + '</b><span>Je lijst staat alleen op dit apparaat.</span></span>' +
+      '<span class="bkb"><button class="btn primary" data-bk="save">Nu bewaren</button><button class="linkbtn sm" data-bk="later">Later</button></span></div>';
+  }
   // onderweg: wat je nu leest, wat geleend is en wat je nu moet reserveren
   function onderwegHTML() {
     var seen = {}, items = [];
@@ -1339,8 +1361,9 @@ button.ayr{cursor:pointer}
   function render() {
     renderHeader(); renderChips(); navSync();
     $('btn-add').setAttribute('aria-label', isFilms() ? 'Film toevoegen' : 'Boek toevoegen');
+    var nag = backupNagHTML();
     if (filtering() && hasLineFilter() && state.films.length) { list.innerHTML = lineResultsHTML(); return; }
-    if (isFilms()) { list.innerHTML = filmListHTML(); return; }
+    if (isFilms()) { list.innerHTML = nag + filmListHTML(); return; }
     var f = filtering();
     var html = '';
     if (f) {
@@ -1352,9 +1375,9 @@ button.ayr{cursor:pointer}
     } else if (state.tab === 'plan') {
       if (!state.books.length) html += welcomeHTML();
       else if (!YB().some(function (b) { return b.m !== 'voorraad'; })) html += '<p class="results">Nog niets gepland voor ' + YEAR + '. Voeg boeken toe met + of sleep ze uit je voorraad.</p>';
-      html += onderwegHTML() + DESTS.slice(0, 13).map(function (d) { return secHTML(d, false); }).join('');
+      html += nag + onderwegHTML() + DESTS.slice(0, 13).map(function (d) { return secHTML(d, false); }).join('');
     } else {
-      html += stockSegHTML() + secHTML(DESTS[13], false);
+      html += nag + stockSegHTML() + secHTML(DESTS[13], false);
     }
     list.innerHTML = html;
   }
@@ -1389,6 +1412,8 @@ button.ayr{cursor:pointer}
       '<div class="btnrow"><button class="btn primary" data-w="add">Eerste boek toevoegen</button><button class="btn" data-w="restore">Back-up terugzetten</button></div></div>';
   }
   list.addEventListener('click', function (e) {
+    var bkb = e.target.closest && e.target.closest('[data-bk]');
+    if (bkb) { if (bkb.dataset.bk === 'save') { saveBackupFile(); setTimeout(renderKeep, 800); } else { state.bkSnooze = addDaysISO(todayISO(), 3); save(); renderKeep(); } return; }
     var svb = e.target.closest && e.target.closest('[data-sview]');
     if (svb) { state.sview = svb.dataset.sview; save(); renderKeep(); return; }
     var ow = e.target.closest && e.target.closest('[data-ow]');
