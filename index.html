@@ -798,6 +798,39 @@ button.ayr{cursor:pointer}
 .flow3 div{display:flex;flex-direction:column;gap:4px;background:var(--ground);border-radius:12px;padding:9px 10px}
 .flow3 i{font-style:normal;width:22px;height:22px;border-radius:50%;background:var(--hd2);color:var(--sun-soft);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
 .flow3 span{font-size:12.5px;line-height:1.3;font-weight:600}
+.bgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.bopt{display:flex;align-items:flex-start;gap:8px;min-height:58px;padding:10px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);text-align:left;cursor:pointer;color:var(--ink);font:inherit}
+.bopt svg{flex:none;margin-top:1px;color:var(--muted)}
+.bopt span{display:flex;flex-direction:column;gap:2px;min-width:0}
+.bopt b{font-size:14px;font-weight:650}
+.bopt small{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bopt.on{border-color:var(--accent);background:var(--accent-soft)}
+.bopt.on svg{color:var(--accent)}
+.bopt:last-child:nth-child(odd){grid-column:1 / -1}
+.bpanel{display:flex;flex-direction:column;gap:10px;background:var(--ground);border-radius:14px;padding:12px}
+.bnote{margin:0;font-size:13.5px;line-height:1.45;color:var(--soft)}
+.bct{font-style:normal;font-weight:500;opacity:.7;margin-left:2px}
+.bmonths{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.bmonths button{min-height:36px;border-radius:9px;border:1px solid var(--line2);background:var(--surface);font:inherit;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer}
+.bmonths:not(.byears) button:first-child{grid-column:1 / -1}
+.byears{grid-template-columns:repeat(3,1fr)}
+.byears button{min-height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;font-size:14px}
+.byears .bct{font-size:11px;margin:0}
+.bmonths button.is-on{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.bmonths button[disabled]{opacity:.35;cursor:default}
+.bprev{display:flex;align-items:center;gap:8px;border-top:1px solid var(--line2);padding-top:10px;font-size:13.5px;color:var(--ink)}
+.bprev span{flex:1}
+.bcap{color:var(--muted);font-size:12px}
+.blist{display:flex;flex-direction:column;gap:4px;max-height:240px;overflow-y:auto}
+.blist span{font-size:13px;color:var(--ink);display:flex;align-items:center;gap:6px}
+.blist em{font-style:normal;color:var(--accent);font-weight:600;font-size:12px}
+.blist i{font-style:normal;font-size:10px;font-weight:800;width:18px;height:18px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.blist i.zb{background:var(--accent-soft);color:var(--nav-on-ink)}
+.blist i.zf{background:var(--lib-soft);color:var(--lib)}
+.blist .more{color:var(--muted)}
+.pkchips{display:flex;flex-wrap:wrap;gap:6px}
+.pkchips:empty{display:none}
+.pkchip{display:inline-flex;align-items:center;gap:4px;min-height:32px;border-radius:999px;border:1px solid var(--line2);background:var(--accent-soft);font:inherit;font-size:12.5px;font-weight:600;padding:0 6px 0 10px;color:var(--ink);cursor:pointer;max-width:100%}
 .cklist{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .ckrow{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 12px;border:0;border-top:1px solid var(--line);background:transparent;text-align:left;cursor:pointer;color:var(--ink);width:100%}
 .ckrow:first-child{border-top:0}
@@ -5108,7 +5141,92 @@ button.ayr{cursor:pointer}
 
 
   // ---------- suggesties: profiel → Claude → terug in de app ----------
-  var askCfg = { kind: 'both', line: '', n: 10, lines: true, stars: true, lists: false, notes: false, nos: true };
+  var askCfg = { kind: 'both', line: '', n: 10, lines: true, stars: true, lists: false, notes: false, nos: true, basis: 'taste', recentN: 20, pYear: null, pMonth: 0, tagIds: [], pick: [], showBase: false };
+  // het uitgangspunt: welke titels Claude vooral moet gebruiken
+  var ASK_BASIS = [
+    ['taste', 'Mijn smaak', '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>'],
+    ['recent', 'Recent', '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'],
+    ['period', 'Een periode', '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'],
+    ['line', 'Een lijn', '<path d="M12 3v14M12 3l6 11h-6M4 18h16l-2.5 3h-11z"/>'],
+    ['tags', 'Tags', '<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.3"/>'],
+    ['notes', 'Met aantekeningen', '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>'],
+    ['pick', 'Zelf kiezen', '<path d="M4 6h10M4 12h10M4 18h7"/><path d="M15 17l2 2 4-4"/>']
+  ];
+  function askDoneItems(c) {
+    var out = [];
+    if (c.kind !== 'films') state.books.forEach(function (b) { if (b.status === 'done') out.push({ k: 'b', o: b, d: b.finished || (readYearOf(b) ? readYearOf(b) + '-00-00' : ''), y: readYearOf(b) }); });
+    if (c.kind !== 'books') state.films.forEach(function (f) { if (f.st === 'seen') out.push({ k: 'f', o: f, d: f.d || '', y: seenYear(f) || null }); });
+    return out;
+  }
+  function askDedupe(xs) {
+    var seen = {}; return xs.filter(function (x) { var k = x.k === 'b' ? 'b' + importKey(x.o.t, x.o.a) : 'f' + fkey(x.o); if (seen[k]) return false; seen[k] = 1; return true; });
+  }
+  function askNewest(a, b) { return (b.d || '') < (a.d || '') ? -1 : (b.d || '') > (a.d || '') ? 1 : 0; }
+  function askBase(c, all80) {
+    var all = askDoneItems(c), xs;
+    if (c.basis === 'taste') xs = all.filter(function (x) { return x.o.rating >= 4.5; }).sort(function (a, b) { return b.o.rating - a.o.rating || askNewest(a, b); });
+    else if (c.basis === 'recent') return askDedupe(all.filter(function (x) { return x.d; }).sort(askNewest)).slice(0, c.recentN);
+    else if (c.basis === 'period') xs = all.filter(function (x) { return x.y === c.pYear && (!c.pMonth || (x.d && +x.d.slice(5, 7) === c.pMonth)); }).sort(askNewest);
+    else if (c.basis === 'line') xs = c.line ? all.filter(function (x) { return (x.o.tags || []).indexOf(c.line) >= 0; }).sort(function (a, b) { return (b.o.rating || 0) - (a.o.rating || 0) || askNewest(a, b); }) : [];
+    else if (c.basis === 'tags') xs = c.tagIds.length ? all.filter(function (x) { return c.tagIds.some(function (t) { return (x.o.tags || []).indexOf(t) >= 0; }); }).sort(function (a, b) { return (b.o.rating || 0) - (a.o.rating || 0) || askNewest(a, b); }) : [];
+    else if (c.basis === 'notes') {
+      var nx = [];
+      if (c.kind !== 'films') state.books.forEach(function (b) { if (b.notes) nx.push({ k: 'b', o: b, d: b.finished || '', y: readYearOf(b) }); });
+      if (c.kind !== 'books') state.films.forEach(function (f) { if (f.notes) nx.push({ k: 'f', o: f, d: f.d || '', y: seenYear(f) || null }); });
+      xs = nx.sort(askNewest);
+    } else xs = c.pick.map(function (p) { var o = p.k === 'f' ? findFilm(p.id) : find(p.id); return o ? { k: p.k, o: o, d: p.k === 'f' ? o.d || '' : o.finished || '', y: p.k === 'f' ? seenYear(o) : readYearOf(o) } : null; }).filter(Boolean);
+    return all80 ? askDedupe(xs) : askDedupe(xs).slice(0, 80);
+  }
+  function askBaseLabel(c) {
+    if (c.basis === 'taste') return 'wat ik 4,5 of 5 sterren gaf';
+    if (c.basis === 'recent') return 'de laatste ' + c.recentN + ' titels die ik ' + (c.kind === 'films' ? 'zag' : c.kind === 'books' ? 'las' : 'las of zag');
+    if (c.basis === 'period') return 'wat ik ' + (c.kind === 'films' ? 'zag' : c.kind === 'books' ? 'las' : 'las en zag') + ' in ' + (c.pMonth ? MONTHS[c.pMonth - 1].toLowerCase() + ' ' : '') + c.pYear;
+    if (c.basis === 'line') { var L = findTag(c.line); return L ? 'mijn lijn "' + L.name + '"' : 'een lijn'; }
+    if (c.basis === 'tags') return 'mijn tags ' + c.tagIds.map(function (t) { var T = findTag(t); return T ? '"' + T.name + '"' : ''; }).filter(Boolean).join(' en ');
+    if (c.basis === 'notes') return 'de titels waar ik aantekeningen bij schreef';
+    return 'een paar titels die ik zelf koos';
+  }
+  function askPickSheet() {
+    var c = askCfg, st = { q: '', kind: c.kind === 'films' ? 'films' : 'books' };
+    var key = function (k, id) { return k + ':' + id; };
+    var has = function (k, id) { return c.pick.some(function (p) { return key(p.k, p.id) === key(k, id); }); };
+    var draw = function () {
+      var q = norm(st.q).trim(), pool = [];
+      if (st.kind === 'books') state.books.forEach(function (b) { pool.push({ k: 'b', o: b, d: b.finished || '', meta: [b.a, b.status === 'done' ? 'gelezen ' + (readYearOf(b) || '') : b.status === 'bezig' ? 'bezig' : 'nog te lezen'].filter(Boolean).join(' · ') }); });
+      else state.films.forEach(function (f) { pool.push({ k: 'f', o: f, d: f.d || '', meta: [f.yr, f.dir, f.st === 'seen' ? 'gezien ' + (seenYear(f) || '') : 'kijklijst'].filter(Boolean).join(' · ') }); });
+      pool = askDedupe(pool.sort(askNewest));
+      if (q) pool = pool.filter(function (x) { var h = norm(x.o.t + ' ' + (x.k === 'b' ? x.o.a || '' : x.o.dir || '')); return q.split(/\s+/).every(function (w) { return h.indexOf(w) >= 0; }); });
+      var row = function (x) {
+        var on = has(x.k, x.o.id);
+        return '<button class="sirow" data-pk="' + x.k + ':' + esc(x.o.id) + '" role="checkbox" aria-checked="' + on + '"><span class="cb' + (on ? ' is-on' : '') + '" aria-hidden="true">' + (on ? ICON_CHECK : '') + '</span><span class="tx"><b>' + esc(x.o.t) + '</b><span class="m">' + esc(x.meta) + (x.o.rating ? ' · ★ ' + fmtRating(x.o.rating) : '') + '</span></span></button>';
+      };
+      $('pk-list').innerHTML = (pool.length ? pool.slice(0, 60).map(row).join('') + (pool.length > 60 ? '<p class="note" style="font-size:12.5px;color:var(--muted);padding:8px 0">Nog ' + (pool.length - 60) + ' meer; typ om te zoeken.</p>' : '') : '<p class="note">Niets gevonden.</p>');
+      $('pk-n').textContent = c.pick.length ? c.pick.length + ' gekozen' : 'Nog niets gekozen';
+      $('pk-chosen').innerHTML = c.pick.map(function (p, i) { var o = p.k === 'f' ? findFilm(p.id) : find(p.id); return o ? '<button class="pkchip" data-pkrm="' + i + '" aria-label="' + esc(o.t) + ' weghalen">' + esc(o.t) + ICON_X + '</button>' : ''; }).join('');
+      $('pk-done').textContent = c.pick.length ? 'Klaar · ' + c.pick.length : 'Klaar';
+      sheet.querySelectorAll('[data-pk]').forEach(function (el) { el.addEventListener('click', function () {
+        var p = el.dataset.pk.split(':'), k = p[0], id = p.slice(1).join(':');
+        if (has(k, id)) c.pick = c.pick.filter(function (x) { return key(x.k, x.id) !== key(k, id); }); else c.pick.push({ k: k, id: id });
+        var sc = sheet.scrollTop; draw(); sheet.scrollTop = sc;
+      }); });
+      sheet.querySelectorAll('[data-pkrm]').forEach(function (el) { el.addEventListener('click', function () { c.pick.splice(+el.dataset.pkrm, 1); draw(); }); });
+    };
+    openSheet('Titels kiezen',
+      '<div class="sheethead"><h3>Kies titels</h3><button class="linkbtn" id="pk-back" style="align-self:center">Terug</button></div>' +
+      '<p class="note" style="margin-top:-6px">Kies boeken en films die Claude als uitgangspunt neemt. Ze hoeven niet uitgelezen te zijn.</p>' +
+      '<div class="seg2">' + [['books', 'Boeken'], ['films', 'Films']].map(function (o) { return '<button data-pkk="' + o[0] + '" class="' + (st.kind === o[0] ? 'is-on' : '') + '">' + o[1] + '</button>'; }).join('') + '</div>' +
+      '<div class="field" style="margin:0"><input id="pk-q" type="search" placeholder="Zoek op titel, schrijver of regisseur" autocomplete="off" enterkeyhint="search" aria-label="Zoek een titel"></div>' +
+      '<p class="lbl" id="pk-n"></p><div class="pkchips" id="pk-chosen"></div>' +
+      '<div class="silist" id="pk-list"></div>' +
+      '<div class="btnrow dfoot"><button class="btn primary" id="pk-done">Klaar</button></div>');
+    sheet.scrollTop = 0;
+    $('pk-q').addEventListener('input', function () { st.q = this.value; draw(); });
+    sheet.querySelectorAll('[data-pkk]').forEach(function (el) { el.addEventListener('click', function () { st.kind = el.dataset.pkk; sheet.querySelectorAll('[data-pkk]').forEach(function (b) { b.classList.toggle('is-on', b === el); }); draw(); }); });
+    var back = function () { openAsk(); var pn = sheet.querySelector('.bgrid'); if (pn) sheet.scrollTop = Math.max(0, pn.offsetTop - 60); };
+    $('pk-back').addEventListener('click', back);
+    $('pk-done').addEventListener('click', back);
+    draw();
+  }
   function sugList(st) { return (state.sugg || []).filter(function (x) { return x.st === st; }); }
   function sugKey(k, t, a) { return k + '|' + norm(t).replace(/^(the|a|an|de|het|een|le|la|les|el|il|der|die|das)\s+/, '').replace(/[^a-z0-9]+/g, ' ').trim() + '|' + norm(String(a || '').split(/\s+/).pop()); }
   function sugHave(x) {
@@ -5119,15 +5237,26 @@ button.ayr{cursor:pointer}
     return '';
   }
   function profileText() {
-    var c = askCfg, L = c.line ? findTag(c.line) : null, out = [];
+    var c = askCfg, L = c.basis === 'line' && c.line ? findTag(c.line) : null, out = [];
     var bks = state.books, fms = state.films.filter(function (f) { return f.st === 'seen'; });
     var bLine = function (b) { return '- ' + b.t + (b.a ? ' — ' + b.a : '') + (b.status === 'done' ? ' (gelezen' + (readYearOf(b) ? ' ' + readYearOf(b) : '') + (b.rating ? ', ★' + fmtRating(b.rating) : '') + ')' : ' (nog te lezen)'); };
     var fLine = function (f) { return '- ' + f.t + (f.yr ? ' (' + f.yr + ')' : '') + (f.dir ? ' — ' + f.dir : '') + (f.st === 'seen' ? (f.rating ? ' ★' + fmtRating(f.rating) : '') : ' (kijklijst)'); };
     out.push('# Ithaka-leesprofiel voor suggesties', '');
-    out.push('Gemaakt op ' + todayISO() + ' in de app Ithaka. Graag ' + c.n + ' suggesties voor ' + (c.kind === 'books' ? 'boeken' : c.kind === 'films' ? 'films' : 'boeken en films') + (L ? ', rond de lijn "' + L.name + '"' : '') + '.');
+    var base = askBase(c);
+    out.push('Gemaakt op ' + todayISO() + ' in de app Ithaka. Graag ' + c.n + ' suggesties voor ' + (c.kind === 'books' ? 'boeken' : c.kind === 'films' ? 'films' : 'boeken en films') + ', op basis van ' + askBaseLabel(c) + '.');
     out.push('Volg de projectinstructies: niets wat hieronder al staat, geen titels uit de top tien van een gangbare beste-aller-tijden-lijst, en zoek namen en titels op voordat je ze noemt.');
     out.push('Geef per titel één of twee zinnen waarom, liefst met verwijzing naar wat ik las, keek of opschreef.', '');
     out.push('Antwoord met een bestand (of een codeblok) in dit formaat, dan importeer ik het in de app:', '```json', '{"app":"ithaka","kind":"suggesties","from":"' + todayISO() + '","focus":"' + (L ? L.name : '') + '","items":[{"k":"book","t":"Titel","a":"Schrijver","yr":1936,"line":"' + (L ? L.name : 'Naam van een lijn of leeg') + '","why":"Waarom"},{"k":"film","t":"Titel","a":"Regisseur","yr":2009,"line":"","why":"Waarom"}]}', '```', '');
+    if (base.length) {
+      out.push('## Uitgangspunt: ' + askBaseLabel(c), '', 'Baseer de suggesties vooral op deze titels; de rest van het profiel is achtergrond.', '');
+      base.forEach(function (x) {
+        var o = x.o, ls = (o.tags || []).map(findTag).filter(function (t) { return t && t.line; }).map(function (t) { return t.name; });
+        var line = x.k === 'b' ? bLine(o) : fLine(o) + (o.st === 'seen' && seenYear(o) ? ' (gezien ' + seenYear(o) + ')' : '');
+        out.push(line + (ls.length ? ' · lijn: ' + ls.join(', ') : ''));
+        if ((c.notes || c.basis === 'notes') && o.notes) out.push('  Aantekening: ' + String(o.notes).replace(/\s+/g, ' ').slice(0, 300) + (o.notes.length > 300 ? '…' : ''));
+      });
+      out.push('');
+    }
     if (c.lines) {
       out.push('## Mijn lijnen', '');
       lineTags().filter(function (t) { return !L || t.id === L.id; }).forEach(function (t) {
@@ -5143,12 +5272,12 @@ button.ayr{cursor:pointer}
       });
       if (L) out.push('Andere lijnen die ik heb: ' + lineTags().filter(function (t) { return t.id !== L.id; }).map(function (t) { return t.name; }).join(', ') + '.', '');
     }
-    if (c.stars) {
+    if (c.stars && c.basis !== 'taste') {
       out.push('## Hoogst gewaardeerd (4,5 en 5 sterren)', '');
       if (c.kind !== 'films') { var seenB = {}, nb = 0; out.push('### Boeken'); bks.filter(function (b) { return b.status === 'done' && b.rating >= 4.5; }).sort(function (a, b) { return b.rating - a.rating || ((b.finished || '') < (a.finished || '') ? -1 : 1); }).forEach(function (b) { var k = importKey(b.t, b.a); if (seenB[k] || nb >= 60) return; seenB[k] = 1; nb++; out.push('- ' + b.t + (b.a ? ' — ' + b.a : '') + ' ★' + fmtRating(b.rating)); }); out.push(''); }
       if (c.kind !== 'books') { var seenK = {}, nf = 0; out.push('### Films'); fms.filter(function (f) { return f.rating >= 4.5; }).sort(function (a, b) { return b.rating - a.rating || ((b.d || '') < (a.d || '') ? -1 : 1); }).forEach(function (f) { var k = fkey(f); if (seenK[k] || nf >= 60) return; seenK[k] = 1; nf++; out.push(fLine(f)); }); out.push(''); }
     }
-    if (c.notes) {
+    if (false) {
       out.push('## Uit mijn aantekeningen (begin)', '');
       noteItems().filter(function (x) { return !L || x.tags.indexOf(L.id) >= 0; }).slice(0, 60).forEach(function (x) { out.push('- ' + x.t + (x.who ? ' — ' + x.who : '') + ': ' + x.text.replace(/\s+/g, ' ').slice(0, 220) + (x.text.length > 220 ? '…' : '')); });
       out.push('');
@@ -5181,24 +5310,64 @@ button.ayr{cursor:pointer}
   }
   function openAsk() {
     var c = askCfg, lines = lineTags();
+    if (!c.pYear) c.pYear = YEAR;
     var ck = function (key, label, sub) { return '<button class="ckrow" data-ack="' + key + '" role="switch" aria-checked="' + !!c[key] + '"><span class="cb' + (c[key] ? ' is-on' : '') + '" aria-hidden="true">' + (c[key] ? ICON_CHECK : '') + '</span><span class="ct">' + label + '</span><em>' + sub + '</em></button>'; };
     var nNo = sugList('no').length + sugList('kept').length;
+    var done = askDoneItems(c), base = askBase(c);
+    var nb = base.filter(function (x) { return x.k === 'b'; }).length, nf = base.length - nb;
+    var cnt = function (b) { var cc = {}; Object.keys(c).forEach(function (k) { cc[k] = c[k]; }); cc.basis = b; var n = askBase(cc, true).length; return n > 80 ? n + ' (de 80 beste gaan mee)' : n + ''; };
+    var sub = {
+      taste: cnt('taste').replace(' (de 80 beste gaan mee)', '') + ' met 4,5 of 5 sterren', recent: 'laatste ' + c.recentN, period: c.pMonth ? MONTHS[c.pMonth - 1].toLowerCase() + ' ' + c.pYear : 'heel ' + c.pYear,
+      line: c.line && findTag(c.line) ? findTag(c.line).name : 'kies een lijn', tags: c.tagIds.length ? c.tagIds.map(function (t) { var T = findTag(t); return T ? T.name : ''; }).join(', ') : 'kies tags',
+      notes: cnt('notes').replace(' (de 80 beste gaan mee)', '') + ' titels', pick: c.pick.length ? c.pick.length + ' gekozen' : 'kies titels'
+    };
+    var grid = '<div class="bgrid" role="radiogroup" aria-label="Op basis van">' + ASK_BASIS.map(function (o) {
+      var on = c.basis === o[0];
+      return '<button class="bopt' + (on ? ' on' : '') + '" role="radio" aria-checked="' + on + '" data-abasis="' + o[0] + '"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + o[2] + '</svg><span><b>' + o[1] + '</b><small>' + esc(sub[o[0]]) + '</small></span></button>';
+    }).join('') + '</div>';
+    // het paneel onder de keuze
+    var panel = '';
+    if (c.basis === 'taste') panel = '<p class="bnote">De titels die je 4,5 of 5 sterren gaf. Dit is je algemene smaak.</p>';
+    else if (c.basis === 'recent') panel = '<p class="bnote">Wat je het laatst ' + (c.kind === 'films' ? 'zag' : c.kind === 'books' ? 'las' : 'las of zag') + ', nieuwste eerst.</p><div class="seg2">' + [10, 20, 50].map(function (n) { return '<button data-arn="' + n + '" class="' + (c.recentN === n ? 'is-on' : '') + '">Laatste ' + n + '</button>'; }).join('') + '</div>';
+    else if (c.basis === 'period') {
+      var ys = {}; done.forEach(function (x) { if (x.y) ys[x.y] = (ys[x.y] || 0) + 1; });
+      var mo = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; done.forEach(function (x) { if (x.y === c.pYear && x.d && +x.d.slice(5, 7)) mo[+x.d.slice(5, 7) - 1]++; });
+      panel = '<p class="bnote">Kies een jaar, en eventueel één maand.</p><div class="bmonths byears">' + Object.keys(ys).sort(function (a, b) { return b - a; }).map(function (y) { return '<button class="' + (+y === c.pYear ? 'is-on' : '') + '" data-apy="' + y + '" aria-label="' + y + ', ' + ys[y] + ' titels">' + y + '<em class="bct">' + ys[y] + '</em></button>'; }).join('') + '</div>' +
+        '<div class="bmonths"><button class="' + (c.pMonth ? '' : 'is-on') + '" data-apm="0">Heel jaar</button>' + MON_SHORT.map(function (m, i) { return '<button class="' + (c.pMonth === i + 1 ? 'is-on' : '') + '" data-apm="' + (i + 1) + '"' + (mo[i] ? '' : ' disabled') + '>' + m + '</button>'; }).join('') + '</div>';
+    } else if (c.basis === 'line') panel = '<p class="bnote">Wat je in deze lijn las of zag; Claude zoekt ook rond deze lijn.</p><div class="chips">' + lines.map(function (t) { var on = c.line === t.id; return '<button class="tagopt is-line' + (on ? ' is-on' : '') + '" data-aline="' + esc(t.id) + '" style="' + tagVars(t) + '">' + iconSVG(t, 14, on ? '#FFFFFF' : null) + esc(t.name) + '</button>'; }).join('') + '</div>';
+    else if (c.basis === 'tags') panel = '<p class="bnote">Wat je las of zag met een van deze tags. Je kunt er meer kiezen.</p><div class="chips">' + plainTags().filter(function (t) { return done.some(function (x) { return (x.o.tags || []).indexOf(t.id) >= 0; }); }).map(function (t) { var on = c.tagIds.indexOf(t.id) >= 0; return '<button class="tagopt' + (on ? ' is-on' : '') + '" data-atag="' + esc(t.id) + '" style="' + tagVars(t) + '">' + esc(t.name) + '</button>'; }).join('') + '</div>';
+    else if (c.basis === 'notes') panel = '<p class="bnote">Alles waar je een aantekening bij schreef. Het begin van elke aantekening gaat mee, zodat Claude ziet wat je raakte.</p>';
+    else panel = '<p class="bnote">Kies zelf een paar boeken of films, ook als je ze nog niet las of zag.</p><button class="btn" id="ask-pick" style="flex:none">' + (c.pick.length ? 'Wijzig keuze · ' + c.pick.length + ' gekozen' : 'Kies titels') + '</button>';
+    var total = askBase(c, true).length;
+    var preview = '<div class="bprev"><span>' + (base.length ? '<b>' + base.length + (base.length === 1 ? ' titel' : ' titels') + '</b> als uitgangspunt' + (nb && nf ? ' · ' + nb + ' boeken, ' + nf + ' films' : '') + (total > base.length ? ' <small class="bcap">(de eerste 80 van ' + total + ')</small>' : '') : 'Nog geen titels gekozen') + '</span>' +
+      (base.length ? '<button class="linkbtn sm" id="ask-showbase">' + (c.showBase ? 'Verberg' : 'Bekijk') + '</button>' : '') + '</div>' +
+      (c.showBase && base.length ? '<div class="blist">' + base.slice(0, 40).map(function (x) { return '<span><i class="z' + x.k + '">' + (x.k === 'b' ? 'B' : 'F') + '</i>' + esc(x.o.t) + (x.o.rating ? ' <em>★ ' + fmtRating(x.o.rating) + '</em>' : '') + '</span>'; }).join('') + (base.length > 40 ? '<span class="more">en nog ' + (base.length - 40) + '</span>' : '') + '</div>' : '');
     openSheet('Vraag om suggesties',
       '<div class="sheethead"><h3>Vraag om suggesties</h3><button class="linkbtn" id="ask-done" style="align-self:center">Klaar</button></div>' +
-      '<p class="note">De app maakt een leesprofiel van wat je leest, kijkt en hoog waardeert. Plak het bij Claude in je project; je krijgt een bestand terug dat je hier weer importeert.</p>' +
-      '<div class="flow3"><div><i>1</i><span>Kopieer je profiel</span></div><div><i>2</i><span>Plak het bij Claude</span></div><div><i>3</i><span>Importeer het antwoord</span></div></div>' +
+      '<div class="flow3"><div><i>1</i><span>Kies waar het om draait</span></div><div><i>2</i><span>Kopieer en plak bij Claude</span></div><div><i>3</i><span>Importeer het antwoord</span></div></div>' +
       '<p class="lbl">Waarvoor</p><div class="seg2">' + [['books', 'Boeken'], ['films', 'Films'], ['both', 'Beide']].map(function (o) { return '<button data-akind="' + o[0] + '" class="' + (c.kind === o[0] ? 'is-on' : '') + '">' + o[1] + '</button>'; }).join('') + '</div>' +
-      '<p class="lbl">Rond een lijn <span style="text-transform:none;letter-spacing:0;font-weight:500">(optioneel)</span></p><div class="chips"><button class="tagopt' + (c.line ? '' : ' is-on') + '" data-aline="" style="--tag-c:var(--ink);--tag-d:var(--ink)">Vrij</button>' +
-        lines.map(function (t) { var on = c.line === t.id; return '<button class="tagopt is-line' + (on ? ' is-on' : '') + '" data-aline="' + esc(t.id) + '" style="' + tagVars(t) + '">' + iconSVG(t, 14, on ? '#FFFFFF' : null) + esc(t.name) + '</button>'; }).join('') + '</div>' +
-      '<p class="lbl">Hoeveel</p><div class="seg2">' + [5, 10, 15].map(function (n) { return '<button data-an="' + n + '" class="' + (c.n === n ? 'is-on' : '') + '">' + n + '</button>'; }).join('') + '</div>' +
-      '<p class="lbl">Wat gaat mee</p><div class="cklist">' + ck('lines', 'Je lijnen, met de boeken en films erin', c.line && findTag(c.line) ? 'alleen ' + esc(findTag(c.line).name) : 'alle ' + lines.length) + ck('stars', 'Wat je 4,5 of 5 sterren gaf', 'boeken en films') + ck('lists', 'Al je titels, zodat niets dubbel komt', 'lang; Claude heeft je lijsten ook') + ck('notes', 'Aantekeningen', 'eerste zinnen') + ck('nos', 'Eerdere suggesties en waarom', nNo + '') + '</div>' +
+      '<p class="lbl">Op basis van</p>' + grid + '<div class="bpanel">' + panel + preview + '</div>' +
+      '<p class="lbl">Hoeveel suggesties</p><div class="seg2">' + [5, 10, 15].map(function (n) { return '<button data-an="' + n + '" class="' + (c.n === n ? 'is-on' : '') + '">' + n + '</button>'; }).join('') + '</div>' +
+      '<p class="lbl">Wat gaat nog meer mee</p><div class="cklist">' +
+        (c.basis !== 'notes' ? ck('notes', 'Aantekeningen bij deze titels', 'begin van elke') : '') +
+        (c.basis !== 'taste' ? ck('stars', 'Je algemene smaak', '4,5 en 5 sterren') : '') +
+        ck('lines', 'Je lijnen, met de boeken en films erin', c.basis === 'line' && c.line && findTag(c.line) ? 'alleen ' + esc(findTag(c.line).name) : 'alle ' + lines.length) +
+        ck('nos', 'Eerdere suggesties en waarom', nNo + '') + ck('lists', 'Al je titels, zodat niets dubbel komt', 'lang') + '</div>' +
       '<p class="note" style="font-size:12.5px;color:var(--muted)">Niets verlaat je telefoon tot je het zelf plakt.</p>' +
-      '<div class="btnrow dfoot"><button class="btn" id="ask-view">Bekijk profiel</button><button class="btn primary" id="ask-copy">Kopieer profiel</button></div>');
+      '<div class="btnrow dfoot"><button class="btn" id="ask-view">Bekijk profiel</button><button class="btn primary" id="ask-copy"' + (base.length ? '' : ' disabled') + '>Kopieer profiel</button></div>');
+    var again = function () { var st = sheet.scrollTop; openAsk(); sheet.scrollTop = st; };
     $('ask-done').addEventListener('click', closeSheet);
-    sheet.querySelectorAll('[data-akind]').forEach(function (el) { el.addEventListener('click', function () { c.kind = el.dataset.akind; openAsk(); }); });
-    sheet.querySelectorAll('[data-aline]').forEach(function (el) { el.addEventListener('click', function () { c.line = el.dataset.aline; openAsk(); }); });
-    sheet.querySelectorAll('[data-an]').forEach(function (el) { el.addEventListener('click', function () { c.n = +el.dataset.an; openAsk(); }); });
-    sheet.querySelectorAll('[data-ack]').forEach(function (el) { el.addEventListener('click', function () { c[el.dataset.ack] = !c[el.dataset.ack]; openAsk(); }); });
+    sheet.querySelectorAll('[data-akind]').forEach(function (el) { el.addEventListener('click', function () { c.kind = el.dataset.akind; again(); }); });
+    sheet.querySelectorAll('[data-abasis]').forEach(function (el) { el.addEventListener('click', function () { c.basis = el.dataset.abasis; c.showBase = false; if (c.basis === 'pick' && !c.pick.length) { askPickSheet(); return; } again(); }); });
+    sheet.querySelectorAll('[data-arn]').forEach(function (el) { el.addEventListener('click', function () { c.recentN = +el.dataset.arn; again(); }); });
+    sheet.querySelectorAll('[data-apy]').forEach(function (el) { el.addEventListener('click', function () { c.pYear = +el.dataset.apy; c.pMonth = 0; again(); }); });
+    sheet.querySelectorAll('[data-apm]').forEach(function (el) { el.addEventListener('click', function () { c.pMonth = +el.dataset.apm; again(); }); });
+    sheet.querySelectorAll('[data-aline]').forEach(function (el) { el.addEventListener('click', function () { c.line = el.dataset.aline; again(); }); });
+    sheet.querySelectorAll('[data-atag]').forEach(function (el) { el.addEventListener('click', function () { var id = el.dataset.atag; c.tagIds = c.tagIds.indexOf(id) >= 0 ? c.tagIds.filter(function (x) { return x !== id; }) : c.tagIds.concat([id]); again(); }); });
+    if ($('ask-pick')) $('ask-pick').addEventListener('click', askPickSheet);
+    if ($('ask-showbase')) $('ask-showbase').addEventListener('click', function () { c.showBase = !c.showBase; again(); });
+    sheet.querySelectorAll('[data-an]').forEach(function (el) { el.addEventListener('click', function () { c.n = +el.dataset.an; again(); }); });
+    sheet.querySelectorAll('[data-ack]').forEach(function (el) { el.addEventListener('click', function () { c[el.dataset.ack] = !c[el.dataset.ack]; again(); }); });
     $('ask-copy').addEventListener('click', function () { copyText(profileText(), 'Profiel gekopieerd. Plak het bij Claude in je project.'); });
     $('ask-view').addEventListener('click', function () {
       var txt = profileText();
