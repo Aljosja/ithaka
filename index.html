@@ -257,6 +257,23 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .brow .bt{flex:1;min-width:0;display:flex;flex-direction:column}
 .brow .bt b{font-family:var(--f-title);font-weight:500;font-size:15px;overflow-wrap:anywhere}
 .brow .bt span{font-size:12.5px;color:var(--muted)}
+.syrow{border:0;border-bottom:1px solid var(--line);background:transparent;text-align:left;width:100%;cursor:pointer;color:inherit;min-height:48px}
+.syrow svg{flex:none;color:var(--muted)}
+.sygrp{display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--line);padding-top:14px;margin-top:4px}
+.sygrp h4{margin:0;font-family:var(--f-title);font-weight:600;font-size:17px}
+.sygrp .note{margin:0}
+.sygrp .lbl{margin:6px 0 0}
+.syhint{font-size:12.5px !important;color:var(--muted) !important;margin-top:-6px !important}
+.sycount{font-weight:600;color:var(--ink) !important}
+.syok{font-style:normal;color:var(--ok, #1F7A5A);font-weight:600}
+.sydet{display:flex;flex-direction:column}
+.sydet summary{list-style:none;display:flex;align-items:center;justify-content:space-between;min-height:44px;cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line)}
+.sydet summary::-webkit-details-marker{display:none}
+.sydet summary svg{transform:rotate(90deg);transition:transform .15s}
+.sydet[open] summary svg{transform:rotate(-90deg)}
+.sydet[open] .syhint{margin:8px 0 2px !important}
+.sybar{height:6px;border-radius:3px;background:var(--track);overflow:hidden}
+.sybar i{display:block;height:100%;background:var(--accent);border-radius:3px;transition:width .3s}
 .days{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right;flex:none}
 .days.is-old{color:var(--danger);font-weight:700}
 .rdone{flex:none;min-height:38px;border:0;border-radius:10px;background:var(--accent);color:var(--accent-ink);font-weight:600;font-size:13px;padding:0 14px;cursor:pointer}
@@ -1037,21 +1054,40 @@ button.ayr{cursor:pointer}
   var ICON_TRASH = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/></svg>';
 
   // ---------- zoeken & filter (niet bewaard) ----------
-  function emptyFilter() { return { q: '', tags: [], author: '', status: 'all', scope: 'auto', view: 'auto' }; }
+  function emptyFilter() { return { q: '', tags: [], author: '', status: 'all', scope: 'auto', view: 'auto', sug: false }; }
+  // wat ooit via een suggestie van Claude in de app kwam: per titel, zodat herlezen en herzien ook meetellen
+  var sugKeyMemo = { sig: '', book: {}, film: {} };
+  function filmTitleKey(f) { return norm(f.t).trim() + '|' + (f.yr || ''); }
+  function sugKeys(kind) {
+    var ss = state.sugg || [], sig = ss.length + ':' + ss.filter(function (x) { return x.ref; }).length + ':' + state.books.length + ':' + state.films.length;
+    if (sugKeyMemo.sig !== sig) {
+      var m = { sig: sig, book: {}, film: {} };
+      ss.forEach(function (x) {
+        if (!x.ref) return;
+        if (x.k === 'film') { var f = findFilm(x.ref); m.film[f ? filmTitleKey(f) : filmTitleKey(x)] = 1; if (f && f.wd) m.film['wd:' + f.wd] = 1; }
+        else { var b = find(x.ref); m.book[b ? bookKeyOf(b) : importKey(x.t, x.a)] = 1; }
+      });
+      sugKeyMemo = m;
+    }
+    return sugKeyMemo[kind];
+  }
+  function bookFromSug(b) { return !!sugKeys('book')[bookKeyOf(b)]; }
+  function filmFromSug(f) { var k = sugKeys('film'); return !!(k[filmTitleKey(f)] || (f.wd && k['wd:' + f.wd])); }
   function hasLineFilter() { return filter.tags.some(isLine); }
   var filter = emptyFilter();
   // zoeken op tekst: standaard alle jaren; filteren op tag/lijn/status: standaard dit jaar
-  function scopeAll() { return filter.scope === 'all' || (filter.scope !== 'year' && filter.q.trim() !== ''); }
+  function scopeAll() { return filter.scope === 'all' || (filter.scope !== 'year' && (filter.q.trim() !== '' || filter.sug)); }
   function filterPool() { return scopeAll() ? state.books : YB(); }
   var searchOpen = false;
   var sessionOpen = {};   // maanden die deze sessie open moeten blijven
   function norm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
-  function filterCount() { return (filter.q.trim() ? 1 : 0) + filter.tags.length + (filter.author ? 1 : 0) + (filter.status !== 'all' ? 1 : 0); }
+  function filterCount() { return (filter.q.trim() ? 1 : 0) + filter.tags.length + (filter.author ? 1 : 0) + (filter.status !== 'all' ? 1 : 0) + (filter.sug ? 1 : 0); }
   function filtering() { return filterCount() > 0; }
   function matches(b) {
     if (filter.author && b.a !== filter.author) return false;
     if (filter.tags.length && !b.tags.some(function (t) { return filter.tags.indexOf(t) >= 0; })) return false;
     if (filter.status !== 'all' && b.status !== filter.status) return false;
+    if (filter.sug && !bookFromSug(b)) return false;
     var q = norm(filter.q.trim());
     if (q) { var hay = norm(b.t + ' ' + b.a); if (!q.split(/\s+/).every(function (w) { return hay.indexOf(w) >= 0; })) return false; }
     return true;
@@ -1366,7 +1402,8 @@ button.ayr{cursor:pointer}
     if (filter.q.trim()) chips.push('<button class="fchip" data-rm="q">“' + esc(filter.q.trim()) + '”' + ICON_X + '</button>');
     filter.tags.forEach(function (id) { var t = findTag(id); if (t) chips.push('<button class="fchip' + (t.line ? ' is-line' : '') + '" data-rm="tag" data-id="' + esc(id) + '" style="' + tagVars(t) + ';border-color:var(--tag-c);color:var(--tag-d)" aria-label="' + (t.line ? 'Lijn ' : 'Tag ') + esc(t.name) + ' weghalen">' + (t.line ? iconSVG(t, 15) : '') + esc(t.name) + ICON_X + '</button>'); });
     if (filter.author) chips.push('<button class="fchip" data-rm="author">' + esc(filter.author) + ICON_X + '</button>');
-    if (filter.status !== 'all') chips.push('<button class="fchip" data-rm="status">' + STATUS_LABEL[filter.status] + ICON_X + '</button>');
+    if (filter.status !== 'all' && !isFilms()) chips.push('<button class="fchip" data-rm="status">' + STATUS_LABEL[filter.status] + ICON_X + '</button>');
+    if (filter.sug) chips.push('<button class="fchip" data-rm="sug">Van Claude' + ICON_X + '</button>');
     box.innerHTML = chips.join('') + '<button class="fclear" data-rm="all">Wis alles</button>';
     box.hidden = false;
   }
@@ -1549,6 +1586,7 @@ button.ayr{cursor:pointer}
     if (k === 'tag') filter.tags = filter.tags.filter(function (x) { return x !== el.dataset.id; });
     if (k === 'author') filter.author = '';
     if (k === 'status') filter.status = 'all';
+    if (k === 'sug') filter.sug = false;
     render(); list.scrollTop = 0;
   });
 
@@ -1903,14 +1941,24 @@ button.ayr{cursor:pointer}
   }
 
   // filters
+  function sugFilterHTML(kind) {
+    var n = kind === 'film' ? state.films.filter(filmFromSug).length : state.books.filter(bookFromSug).length;
+    return '<p class="lbl">Herkomst</p><div class="seg2"><button data-fsug="0" class="' + (filter.sug ? '' : 'is-on') + '">Alles</button><button data-fsug="1" class="' + (filter.sug ? 'is-on' : '') + '">Van Claude · ' + n + '</button></div>' +
+      (n ? '' : '<p class="note" style="font-size:12.5px;margin-top:-4px">Nog niets uit een suggestie van Claude in je lijst' + '.</p>');
+  }
+  function bindSugFilter(refresh) {
+    sheet.querySelectorAll('[data-fsug]').forEach(function (el) { el.addEventListener('click', function () { filter.sug = el.dataset.fsug === '1'; refresh(); }); });
+  }
   function openFilter() {
     if (isFilms()) {
       var nf = state.films.filter(matchesFilm).length;
       openSheet('Filters', '<h3>Filters</h3>' + tagGroupsHTML(function (tid) { return filter.tags.indexOf(tid) >= 0; }, 'data-ftag', '', 'film') +
         '<button class="linkbtn" id="tags-manage">Tags en lijnen beheren</button>' +
+        sugFilterHTML('film') +
         '<div class="field"><label for="f-dir">Regisseur</label><select id="f-dir"><option value="">Alle regisseurs</option>' + directors().map(function (d) { return '<option value="' + esc(d) + '"' + (d === filter.author ? ' selected' : '') + '>' + esc(d) + '</option>'; }).join('') + '</select></div>' +
         '<div class="btnrow"><button class="btn" id="f-clear">Wis filters</button><button class="btn primary" id="f-show">Toon ' + nf + (nf === 1 ? ' film' : ' films') + '</button></div>');
       $('f-dir').addEventListener('change', function () { filter.author = this.value; render(); list.scrollTop = 0; openFilter(); });
+      bindSugFilter(function () { render(); list.scrollTop = 0; openFilter(); });
       sheet.querySelectorAll('[data-ftag]').forEach(function (el) {
         el.addEventListener('click', function () { var id = el.dataset.ftag; filter.tags = filter.tags.indexOf(id) >= 0 ? filter.tags.filter(function (x) { return x !== id; }) : filter.tags.concat([id]); render(); list.scrollTop = 0; openFilter(); });
       });
@@ -1930,6 +1978,7 @@ button.ayr{cursor:pointer}
       opts +
       '<button class="linkbtn" id="tags-manage">Tags en lijnen beheren</button>' +
       '<p class="lbl">Status</p><div class="seg2">' + status + '</div>' +
+      sugFilterHTML('book') +
       '<p class="lbl">Zoeken in</p><div class="seg2"><button data-fscope="year" class="' + (all ? '' : 'is-on') + '">' + YEAR + ' + voorraad</button><button data-fscope="all" class="' + (all ? 'is-on' : '') + '">Alle jaren</button></div>' +
       '<div class="field"><label for="f-auth">Schrijver</label><select id="f-auth">' + auth + '</select></div>' +
       '<div class="btnrow"><button class="btn" id="f-clear">Wis filters</button><button class="btn primary" id="f-show">Toon ' + n + (n === 1 ? ' boek' : ' boeken') + '</button></div>');
@@ -1948,6 +1997,7 @@ button.ayr{cursor:pointer}
       el.addEventListener('click', function () { filter.scope = el.dataset.fscope; refresh(); });
     });
     $('f-auth').addEventListener('change', function () { filter.author = this.value; refresh(); });
+    bindSugFilter(refresh);
     $('tags-manage').addEventListener('click', function () { openTags({ kind: 'filter' }); });
     $('f-clear').addEventListener('click', function () { clearFilters(); closeSheet(); });
     $('f-show').addEventListener('click', closeSheet);
@@ -2295,7 +2345,7 @@ button.ayr{cursor:pointer}
         '<em>ISBN ' + esc(x.isbn) + (cur ? ' · huidige' : '') + '</em></span><span class="ep">' + (x.pages ? nlNum(x.pages) + '<small>blz.</small>' : '<small>blz.<br>onbekend</small>') + '</span></button>';
     }).join('') + '</div>';
     openSheet('Aanvullen via KB',
-      '<div class="sheethead"><h3>Aanvullen via KB</h3><button class="linkbtn" id="en-back" style="align-self:center">' + (e.back === 'list' ? 'Lijst' : 'Terug') + '</button></div>' +
+      '<div class="sheethead"><h3>Aanvullen via KB</h3><button class="linkbtn" id="en-back" style="align-self:center">' + (e.back === 'list' || e.back === 'sync' ? 'Lijst' : 'Terug') + '</button></div>' +
       '<p class="note" style="margin-top:-6px">' + esc(b.t) + (b.a ? ' · ' + esc(b.a) : '') + (bookFacts(b) ? '<br><small style="color:var(--muted)">nu: ' + esc(bookFacts(b)) + '</small>' : '') + '</p>' +
       '<div class="field"><label for="en-q">Titel zoals bij de KB, of een ISBN</label><div class="isbnrow"><input id="en-q" type="text" autocomplete="off" value="' + esc(e.q) + '"><button type="button" class="btn" id="en-go"' + (e.busy ? ' disabled' : '') + '>Zoek</button></div></div>' +
       list);
@@ -2312,7 +2362,7 @@ button.ayr{cursor:pointer}
     };
     $('en-go').addEventListener('click', run);
     $('en-q').addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); run(); } });
-    $('en-back').addEventListener('click', function () { enrich = null; if (e.back === 'list') openEnrichList(); else openActions(id); });
+    $('en-back').addEventListener('click', function () { enrich = null; if (e.back === 'list') openEnrichList(); else if (e.back === 'sync') openSync(); else openActions(id); });
     sheet.querySelectorAll('[data-ed]').forEach(function (el) {
       el.addEventListener('click', function () {
         var x = e.eds[+el.dataset.ed];
@@ -2321,9 +2371,10 @@ button.ayr{cursor:pointer}
         if (x.year) b.year = x.year;
         if (x.publisher) b.publisher = x.publisher;
         if (x.edition) b.edition = x.edition;
+        delete b.kbMiss; delete b.kbAuto;
         save(); renderKeep(); toast(x.pages ? 'Aangevuld · ' + nlNum(x.pages) + ' blz.' : 'Aangevuld');
         enrich = null;
-        if (e.back === 'list') openEnrichList(); else openActions(id);
+        if (e.back === 'list') openEnrichList(); else if (e.back === 'sync') openSync(); else openActions(id);
       });
     });
     if (!e.busy && !e.eds && !e.err && e.q) run();
@@ -3478,6 +3529,7 @@ button.ayr{cursor:pointer}
   function matchesFilm(f) {
     if (filter.author && (f.dir || '').split(' & ').map(function (d) { return d.trim(); }).indexOf(filter.author) < 0) return false;
     if (filter.tags.length && !(f.tags || []).some(function (t) { return filter.tags.indexOf(t) >= 0; })) return false;
+    if (filter.sug && !filmFromSug(f)) return false;
     var q = norm(filter.q.trim());
     if (q) { var hay = norm(f.t + ' ' + (f.dir || '') + ' ' + (f.yr || '')); if (!q.split(/\s+/).every(function (w) { return hay.indexOf(w) >= 0; })) return false; }
     return true;
@@ -3772,13 +3824,23 @@ button.ayr{cursor:pointer}
     var by = {}, order = [];
     rows.forEach(function (r) {
       var k = keyOf(r); if (!k) return;
-      var g = by[k]; if (!g) { g = by[k] = { wd: wdQid(r.f), yr: null, dirs: [], min: null, en: r.en || '', nl: r.nl || '', lab: r.fLabel || '', row: r }; order.push(k); }
+      var g = by[k]; if (!g) { g = by[k] = { wd: wdQid(r.f), yr: null, dirs: [], min: null, lb: '', en: r.en || '', nl: r.nl || '', lab: r.fLabel || '', row: r }; order.push(k); }
+      if (r.lbid && !g.lb && /^[a-z0-9-]+$/i.test(r.lbid)) g.lb = lbFilmUrl(r.lbid);
       var y = r.date ? +String(r.date).slice(0, 4) : null; if (y && (!g.yr || y < g.yr)) g.yr = y;
       if (r.dirLabel && !/^Q\d+$/.test(r.dirLabel) && g.dirs.indexOf(r.dirLabel) < 0) g.dirs.push(r.dirLabel);
       var mn = parseFloat(r.dur); if (mn > 0 && mn < 2000 && !g.min) g.min = Math.round(mn);
       if (r.en && !g.en) g.en = r.en; if (r.nl && !g.nl) g.nl = r.nl;
     });
-    return order.map(function (k) { var g = by[k]; return { key: k, wd: g.wd, t: g.en || g.nl || g.lab, nl: g.nl, yr: g.yr, dir: g.dirs.slice(0, 2).join(' & '), min: g.min }; });
+    return order.map(function (k) { var g = by[k]; return { key: k, wd: g.wd, t: g.en || g.nl || g.lab, nl: g.nl, yr: g.yr, dir: g.dirs.slice(0, 2).join(' & '), min: g.min, lb: g.lb }; });
+  }
+  // Letterboxd film ID op Wikidata (P6127) is het stukje na /film/ in de link
+  function lbFilmUrl(id) { return 'https://letterboxd.com/film/' + id + '/'; }
+  // Letterboxd-link alleen zetten als hij ontbreekt; staat dezelfde film al met een (boxd.it-)link in je lijst, neem die over
+  function fillLb(f, url) {
+    if (f.lb) return false;
+    var twin = state.films.filter(function (x) { return x !== f && x.lb && ((f.wd && x.wd === f.wd) || filmTitleKey(x) === filmTitleKey(f)); })[0];
+    var v = twin ? twin.lb : url; if (!v) return false;
+    f.lb = v; return true;
   }
   function wdSearch(q) {
     var one = function (lang) {
@@ -3789,8 +3851,8 @@ button.ayr{cursor:pointer}
     return Promise.all([one('nl'), one('en').catch(function () { return []; })]).then(function (rs) {
       var ids = []; rs[0].concat(rs[1]).forEach(function (id) { if (/^Q\d+$/.test(id) && ids.indexOf(id) < 0) ids.push(id); });
       if (!ids.length) return [];
-      var qq = 'SELECT ?f ?fLabel ?en ?nl ?date ?dirLabel ?dur WHERE { VALUES ?f { ' + ids.map(function (i) { return 'wd:' + i; }).join(' ') + ' } VALUES ?type { ' + WD_TYPES + ' } ?f wdt:P31 ?type . ' +
-        'OPTIONAL { ?f wdt:P577 ?date } OPTIONAL { ?f wdt:P57 ?dir } OPTIONAL { ?f wdt:P2047 ?dur } ' +
+      var qq = 'SELECT ?f ?fLabel ?en ?nl ?date ?dirLabel ?dur ?lbid WHERE { VALUES ?f { ' + ids.map(function (i) { return 'wd:' + i; }).join(' ') + ' } VALUES ?type { ' + WD_TYPES + ' } ?f wdt:P31 ?type . ' +
+        'OPTIONAL { ?f wdt:P577 ?date } OPTIONAL { ?f wdt:P57 ?dir } OPTIONAL { ?f wdt:P2047 ?dur } OPTIONAL { ?f wdt:P6127 ?lbid } ' +
         'OPTIONAL { ?f rdfs:label ?en FILTER(LANG(?en) = "en") } OPTIONAL { ?f rdfs:label ?nl FILTER(LANG(?nl) = "nl") } ' +
         'SERVICE wikibase:label { bd:serviceParam wikibase:language "nl,en,mul". } }';
       return wdSparql(qq).then(function (rows) {
@@ -3802,44 +3864,240 @@ button.ayr{cursor:pointer}
   }
   // regisseur, jaar en speelduur ophalen voor films zonder: op Engelse titel + jaar (±1), in porties
   var wdBusy = false;
-  function wdEnrich(onDone) {
+  // Films koppelen aan Wikidata. scope 'dir': films zonder regisseur (knop bij Terugblik);
+  // scope 'link': films zonder Wikidata-koppeling, plus films met koppeling maar zonder Letterboxd-link of regisseur.
+  var WD_LANGS = ['en', 'nl', 'mul', 'fr', 'de', 'it', 'es'];
+  var wdRun = null;
+  function dirSurname(d) { return norm(String(d || '').split(' & ')[0].trim().split(/\s+/).pop() || ''); }
+  function wdPick(groups, f, needDir) {
+    var sur = dirSurname(f.dir);
+    if (sur && sur.length > 2) {
+      var m = groups.filter(function (g) { return g.dir && norm(g.dir).indexOf(sur) >= 0; });
+      if (m.length) return m[0];
+      if (groups.some(function (g) { return g.dir; })) return null; // andere regisseur: waarschijnlijk een andere film
+    }
+    var wd = groups.filter(function (g) { return g.dir; });
+    if (wd.length) return wd[0];
+    return !needDir && groups.length === 1 ? groups[0] : null;
+  }
+  function wdApply(list, hit) {
+    var lbNew = false;
+    list.forEach(function (x) {
+      if (!x.wd) x.wd = hit.wd;
+      if (!x.dir && hit.dir) x.dir = hit.dir;
+      if (!x.min && hit.min) x.min = hit.min;
+      if (fillLb(x, hit.lb)) lbNew = true;
+      delete x.wdMiss;
+    });
+    return lbNew;
+  }
+  function wdSync(scope, opts) {
+    opts = opts || {};
     if (wdBusy) return; wdBusy = true;
-    var todo = {}, keys = [];
-    state.films.forEach(function (f) { if (!f.dir && f.t && f.yr) { var k = fkey(f); if (!todo[k]) { todo[k] = f; keys.push(k); } } });
-    var total = keys.length, filled = 0, failed = false, i = 0;
-    if (!total) { wdBusy = false; toast('Alle films hebben al een regisseur'); if (onDone) onDone(0, 0); return; }
-    var step = function () {
-      if (i >= keys.length) {
-        wdBusy = false; save(); renderKeep();
-        toast(failed && !filled ? 'Wikidata gaf geen antwoord. Heb je internet?' : filled + ' van ' + total + ' films aangevuld via Wikidata');
-        if (onDone) onDone(filled, total); return;
-      }
-      var part = keys.slice(i, i + 15); i += 15;
-      toast('Wikidata: ' + Math.min(i, total) + ' van ' + total + '…');
-      var vals = part.map(function (k) { var f = todo[k]; return '(' + sparqlStr(f.t) + '@en ' + (+f.yr) + ')'; }).join(' ');
-      var q = 'SELECT ?t ?y ?f ?date ?dirLabel ?dur WHERE { VALUES (?t ?y) { ' + vals + ' } ?f rdfs:label ?t . VALUES ?type { ' + WD_TYPES + ' } ?f wdt:P31 ?type . ' +
-        '?f wdt:P577 ?date . FILTER(ABS(YEAR(?date) - ?y) <= 1) OPTIONAL { ?f wdt:P57 ?dir } OPTIONAL { ?f wdt:P2047 ?dur } ' +
-        'SERVICE wikibase:label { bd:serviceParam wikibase:language "nl,en,mul". } }';
-      wdSparql(q).then(function (rows) {
-        var res = wdGroup(rows, function (r) { return norm(r.t) + '|' + r.y; });
-        part.forEach(function (k) {
-          var f = todo[k], hit = null;
-          res.forEach(function (g) { if (g.key === norm(f.t) + '|' + f.yr && (!hit || (!hit.dir && g.dir))) hit = g; });
-          if (!hit || !hit.dir) return;
-          sameFilm(k).forEach(function (x) { x.dir = hit.dir; if (hit.min && !x.min) x.min = hit.min; if (!x.wd) x.wd = hit.wd; });
-          filled++;
-        });
-        save();
-      }, function () { failed = true; }).then(function () { setTimeout(step, 250); });
+    var link = scope === 'link';
+    var byQ = {}, qids = [], todo = {}, keys = [], noYear = [];
+    state.films.forEach(function (f) {
+      if (!f.t) return;
+      if (link && f.wd) { if ((!f.lb || !f.dir) && !byQ[f.wd]) { byQ[f.wd] = 1; qids.push(f.wd); } return; }
+      if (link ? (f.wd || (!opts.retry && f.wdMiss)) : f.dir) return;
+      var k = fkey(f); if (todo[k]) return;
+      if (!f.yr) { if (link) { todo[k] = f; noYear.push(k); } return; }
+      todo[k] = f; keys.push(k);
+    });
+    var r = wdRun = { scope: scope, busy: true, total: qids.length + keys.length + noYear.length, done: 0, linked: [], lbAdded: 0, miss: [], err: '', stop: false, fails: 0 };
+    if (!r.total) {
+      wdBusy = false; r.busy = false;
+      if (!link) toast('Alle films hebben al een regisseur');
+      if (opts.onDone) opts.onDone(0, 0); syncRefresh(); return;
+    }
+    noYear.forEach(function (k) { var f = todo[k]; if (link) { sameFilm(k).forEach(function (x) { x.wdMiss = todayISO(); }); r.miss.push(f.id); r.done++; } });
+    var finish = function () {
+      wdBusy = false; r.busy = false; save(); renderKeep();
+      if (r.fails && !r.linked.length && !r.lbAdded) r.err = 'Wikidata gaf geen antwoord. Heb je internet?';
+      if (!link) toast(r.err || r.linked.length + ' van ' + keys.length + ' films aangevuld via Wikidata');
+      if (opts.onDone) opts.onDone(r.linked.length, keys.length);
+      syncRefresh();
     };
-    step();
+    var qi = 0, ki = 0;
+    var step = function () {
+      if (r.stop) return finish();
+      // fase 1: al gekoppeld, maar Letterboxd-link of regisseur ontbreekt: ophalen op Wikidata-nummer
+      if (qi < qids.length) {
+        var part = qids.slice(qi, qi + 40); qi += 40;
+        var q1 = 'SELECT ?f ?date ?dirLabel ?dur ?lbid WHERE { VALUES ?f { ' + part.map(function (i) { return 'wd:' + i; }).join(' ') + ' } ' +
+          'OPTIONAL { ?f wdt:P577 ?date } OPTIONAL { ?f wdt:P57 ?dir } OPTIONAL { ?f wdt:P2047 ?dur } OPTIONAL { ?f wdt:P6127 ?lbid } ' +
+          'SERVICE wikibase:label { bd:serviceParam wikibase:language "nl,en,mul". } }';
+        return wdSparql(q1).then(function (rows) {
+          wdGroup(rows, function (x) { return wdQid(x.f); }).forEach(function (g) {
+            var fs = state.films.filter(function (f) { return f.wd === g.wd; });
+            var before = fs.filter(function (f) { return f.lb; }).length;
+            wdApply(fs, g);
+            if (fs.filter(function (f) { return f.lb; }).length > before) r.lbAdded++;
+          });
+        }, function () { r.fails++; }).then(function () { r.done += part.length; save(); syncRefresh(); setTimeout(step, 200); });
+      }
+      if (ki >= keys.length) return finish();
+      // fase 2: zoeken op titel (Engels, Nederlands, origineel) en jaar ±1
+      var part2 = keys.slice(ki, ki + 8); ki += 8;
+      if (!link) toast('Wikidata: ' + Math.min(ki, keys.length) + ' van ' + keys.length + '…');
+      var vals = [];
+      part2.forEach(function (k, j) { var f = todo[k]; WD_LANGS.forEach(function (lg) { vals.push('(' + sparqlStr(f.t) + '@' + lg + ' ' + (+f.yr) + ' "' + j + '")'); }); });
+      var q2 = 'SELECT ?k ?f ?date ?dirLabel ?dur ?lbid WHERE { VALUES (?t ?y ?k) { ' + vals.join(' ') + ' } ?f rdfs:label ?t . VALUES ?type { ' + WD_TYPES + ' } ?f wdt:P31 ?type . ' +
+        '?f wdt:P577 ?date . FILTER(ABS(YEAR(?date) - ?y) <= 1) OPTIONAL { ?f wdt:P57 ?dir } OPTIONAL { ?f wdt:P2047 ?dur } OPTIONAL { ?f wdt:P6127 ?lbid } ' +
+        'SERVICE wikibase:label { bd:serviceParam wikibase:language "nl,en,mul". } }';
+      wdSparql(q2).then(function (rows) {
+        var groups = wdGroup(rows, function (x) { return x.k + '|' + wdQid(x.f); });
+        part2.forEach(function (k, j) {
+          var f = todo[k], mine = groups.filter(function (g) { return g.key.split('|')[0] === String(j); });
+          var hit = wdPick(mine, f, !link);
+          if (!hit) { if (link) { sameFilm(k).forEach(function (x) { x.wdMiss = todayISO(); }); r.miss.push(f.id); } return; }
+          if (wdApply(sameFilm(k), hit)) r.lbAdded++;
+          r.linked.push(f.id);
+        });
+      }, function () { r.fails++; }).then(function () { r.done += part2.length; save(); syncRefresh(); setTimeout(step, 250); });
+    };
+    syncRefresh(); step();
+  }
+  function wdEnrich(onDone) { wdSync('dir', { onDone: onDone }); }
+
+  // Boeken koppelen aan de KB: zoeken op titel en auteur; bij meer uitgaven kiest de app er zelf een
+  var kbRun = null;
+  function bookNeedsKB(b) { return !b.isbn && !!b.t; }
+  function pickEdition(eds, b) {
+    var withP = eds.filter(function (e) { return e.pages; });
+    if (b.pages && withP.length) {
+      var best = withP.slice().sort(function (x, y) { return Math.abs(x.pages - b.pages) - Math.abs(y.pages - b.pages); })[0];
+      if (Math.abs(best.pages - b.pages) <= Math.max(15, b.pages * 0.12)) return best;
+    }
+    return withP[0] || eds[0];
+  }
+  function kbSync(retry) {
+    if (kbRun && kbRun.busy) return;
+    var groups = {}, keys = [];
+    state.books.forEach(function (b) {
+      if (!bookNeedsKB(b) || (!retry && b.kbMiss)) return;
+      var k = bookKeyOf(b); if (!groups[k]) { groups[k] = []; keys.push(k); } groups[k].push(b);
+    });
+    var r = kbRun = { busy: true, total: keys.length, done: 0, linked: [], miss: [], err: '', stop: false, fails: 0 };
+    var i = 0;
+    var next = function () {
+      if (r.stop || i >= keys.length) {
+        r.busy = false;
+        if (r.fails && !r.linked.length && !r.miss.length) r.err = 'De KB gaf geen antwoord. Heb je internet?';
+        save(); renderKeep(); syncRefresh(); return;
+      }
+      var bs = groups[keys[i++]], b0 = bs[0];
+      kbSearch(b0.t, b0.a).then(function (eds) {
+        var ok = (eds || []).filter(function (e) { return e.match; });
+        if (!ok.length) { bs.forEach(function (b) { b.kbMiss = todayISO(); }); r.miss.push(b0.id); return; }
+        var x = pickEdition(ok, b0);
+        bs.forEach(function (b) {
+          b.isbn = x.isbn;
+          if (!b.pages && x.pages) b.pages = x.pages;
+          if (!b.year && x.year) b.year = x.year;
+          if (!b.publisher && x.publisher) b.publisher = x.publisher;
+          if (!b.edition && x.edition) b.edition = x.edition;
+          b.kbAuto = true; delete b.kbMiss;
+        });
+        r.linked.push(b0.id);
+      }, function () {
+        r.fails++;
+        if (r.fails >= 3 && !r.linked.length && !r.miss.length) r.stop = true;
+      }).then(function () { r.done++; if (r.done % 5 === 0) save(); syncRefresh(); setTimeout(next, 150); });
+    };
+    syncRefresh(); next();
+  }
+
+  // ---------- koppelingen aanvullen (Meer) ----------
+  function syncRefresh() {
+    if (!overlay.hidden && sheet.querySelector('#sy-done')) { var st = sheet.scrollTop; openSync(); sheet.scrollTop = st; }
+  }
+  function syncCounts() {
+    var bk = {}, bTried = {}, fk = {}, fTried = {}, fNoLb = 0;
+    state.books.forEach(function (b) { if (!bookNeedsKB(b)) return; var k = bookKeyOf(b); bk[k] = 1; if (b.kbMiss) bTried[k] = 1; });
+    state.films.forEach(function (f) {
+      if (!f.t) return;
+      if (!f.wd) { var k = fkey(f); fk[k] = 1; if (f.wdMiss) fTried[k] = 1; }
+      if (!f.lb) fNoLb++;
+    });
+    var n = function (o) { return Object.keys(o).length; };
+    return { books: n(bk), booksTried: n(bTried), films: n(fk), filmsTried: n(fTried), noLb: fNoLb };
+  }
+  var syOpen = {};
+  function syDetHTML(key, label, hint, rows, openDef) {
+    var open = syOpen[key] !== undefined ? syOpen[key] : openDef;
+    return '<details class="sydet" data-sydet="' + key + '"' + (open ? ' open' : '') + '><summary><span>' + label + '</span>' + CHEV_R + '</summary>' + (hint ? '<p class="note syhint">' + hint + '</p>' : '') + rows + '</details>';
+  }
+  function syncRowHTML(attr, id, title, sub) {
+    return '<button class="brow syrow" ' + attr + '="' + esc(id) + '"><span class="bt"><b>' + esc(title) + '</b><span>' + sub + '</span></span>' + CHEV_R + '</button>';
+  }
+  function runHTML(r, what, unit) {
+    if (!r) return '';
+    var pct = r.total ? Math.round(100 * r.done / r.total) : 100;
+    var head = r.busy ? r.done + ' van ' + r.total + ' ' + unit + ' · ' + r.linked.length + ' gekoppeld'
+      : r.err ? '' : (r.stop ? 'Gestopt · ' : 'Klaar · ') + r.linked.length + ' gekoppeld' + (r.miss.length ? ', ' + r.miss.length + ' niet gevonden' : '') + (r.lbAdded ? ' · ' + r.lbAdded + ' Letterboxd-links' : '');
+    return (r.busy ? '<div class="sybar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><i style="width:' + pct + '%"></i></div>' : '') +
+      (r.err ? '<p class="err">' + esc(r.err) + '</p>' : '<p class="note sycount">' + head + '</p>') +
+      (r.busy ? '<button class="btn" id="sy-' + what + '-stop" style="flex:none">Stop</button>' : '');
+  }
+  function openSync() {
+    var c = syncCounts(), kr = kbRun, wr = wdRun && wdRun.scope === 'link' ? wdRun : null;
+    var bNew = c.books - c.booksTried, fNew = c.films - c.filmsTried;
+    var bBtns = kr && kr.busy ? '' : '<div class="btnrow">' +
+      (bNew ? '<button class="btn primary" id="sy-kb">Zoek ' + bNew + (bNew === 1 ? ' boek' : ' boeken') + ' bij de KB</button>' : '') +
+      (c.booksTried ? '<button class="btn" id="sy-kb-all">' + (bNew ? 'Ook ' + c.booksTried + ' eerder niet gevonden' : 'Probeer ' + c.booksTried + ' opnieuw') + '</button>' : '') + '</div>';
+    var fBtns = wdBusy ? '' : '<div class="btnrow">' +
+      (fNew || (!c.films && c.noLb) ? '<button class="btn primary" id="sy-wd">Zoek bij Wikidata</button>' : '') +
+      (c.filmsTried ? '<button class="btn" id="sy-wd-all">' + (fNew ? 'Ook ' + c.filmsTried + ' eerder niet gevonden' : 'Probeer ' + c.filmsTried + ' opnieuw') + '</button>' : '') + '</div>';
+    var bRows = '', fRows = '';
+    if (kr && (kr.linked.length || kr.miss.length)) {
+      var bl = kr.linked.map(find).filter(Boolean), bm = kr.miss.map(find).filter(Boolean);
+      if (bl.length) bRows += syDetHTML('bl', 'Gekoppeld · ' + bl.length, 'De app koos zelf een uitgave. Tik om een andere te kiezen.', bl.map(function (b) {
+        return syncRowHTML('data-sy-b', b.id, b.t, esc([b.a, b.year, b.publisher].filter(Boolean).join(' · ')) + (b.isbn ? ' · ISBN ' + esc(b.isbn) : ''));
+      }).join(''), bl.length <= 10);
+      if (bm.length) bRows += syDetHTML('bm', 'Niet gevonden · ' + bm.length, 'De KB kent vooral Nederlandse uitgaven. Tik om zelf te zoeken of een ISBN in te vullen.', bm.map(function (b) {
+        return syncRowHTML('data-sy-b', b.id, b.t, b.isbn ? '<em class="syok">nu gekoppeld</em>' : esc(b.a || 'geen auteur'));
+      }).join(''), false);
+    }
+    if (wr && (wr.linked.length || wr.miss.length)) {
+      var fl = wr.linked.map(findFilm).filter(Boolean), fm = wr.miss.map(findFilm).filter(Boolean);
+      if (fl.length) fRows += syDetHTML('fl', 'Gekoppeld · ' + fl.length, 'Klopt er een niet? Tik om zelf de juiste te kiezen.', fl.map(function (f) {
+        return syncRowHTML('data-sy-f', f.id, f.t + (f.yr ? ' (' + f.yr + ')' : ''), esc(f.dir || 'regisseur onbekend') + (f.lb ? ' · Letterboxd' : ''));
+      }).join(''), fl.length <= 10);
+      if (fm.length) fRows += syDetHTML('fm', 'Niet gevonden · ' + fm.length, 'Wikidata zoekt op de precieze titel en het jaar. Tik om zelf te zoeken, bijvoorbeeld op de oorspronkelijke titel.', fm.map(function (f) {
+        return syncRowHTML('data-sy-f', f.id, f.t + (f.yr ? ' (' + f.yr + ')' : ''), f.wd ? '<em class="syok">nu gekoppeld</em>' : f.yr ? esc(f.dir || 'regisseur onbekend') : 'geen jaar bekend');
+      }).join(''), false);
+    }
+    openSheet('Koppelingen aanvullen',
+      '<div class="sheethead"><h3>Koppelingen aanvullen</h3><button class="linkbtn" id="sy-done" style="align-self:center">Klaar</button></div>' +
+      '<p class="note" style="margin-top:-6px">Zoek in één keer de koppelingen die nog ontbreken. Wat al ingevuld is, blijft staan.</p>' +
+      '<section class="sygrp"><h4>Boeken · KB</h4>' +
+        '<p class="note">' + (c.books ? c.books + (c.books === 1 ? ' boek heeft' : ' boeken hebben') + ' nog geen ISBN of KB-koppeling' + (c.booksTried ? '; ' + c.booksTried + ' daarvan eerder niet gevonden' : '') + '.' : 'Alle boeken hebben een ISBN.') +
+        ' Bladzijden, uitgever en jaar komen mee als ze nog leeg zijn.</p>' +
+        runHTML(kr, 'kb', 'boeken') + bBtns + bRows + '</section>' +
+      '<section class="sygrp"><h4>Films · Wikidata</h4>' +
+        '<p class="note">' + (c.films ? c.films + (c.films === 1 ? ' film heeft' : ' films hebben') + ' nog geen Wikidata-koppeling' + (c.filmsTried ? '; ' + c.filmsTried + ' daarvan eerder niet gevonden' : '') + '.' : 'Alle films zijn gekoppeld aan Wikidata.') +
+        (c.noLb ? ' ' + c.noLb + (c.noLb === 1 ? ' film mist' : ' films missen') + ' een Letterboxd-link.' : '') +
+        ' Regisseur, speelduur en Letterboxd-link komen mee als ze ontbreken.</p>' +
+        runHTML(wr, 'wd', 'films') + fBtns + fRows + '</section>');
+    $('sy-done').addEventListener('click', closeSheet);
+    var on = function (id, fn) { if ($(id)) $(id).addEventListener('click', fn); };
+    on('sy-kb', function () { kbSync(false); });
+    on('sy-kb-all', function () { kbSync(true); });
+    on('sy-kb-stop', function () { if (kbRun) kbRun.stop = true; });
+    on('sy-wd', function () { wdSync('link'); });
+    on('sy-wd-all', function () { wdSync('link', { retry: true }); });
+    on('sy-wd-stop', function () { if (wdRun) wdRun.stop = true; });
+    sheet.querySelectorAll('[data-sydet]').forEach(function (el) { el.addEventListener('toggle', function () { syOpen[el.dataset.sydet] = el.open; }); });
+    sheet.querySelectorAll('[data-sy-b]').forEach(function (el) { el.addEventListener('click', function () { if (kbRun && kbRun.busy) return; enrich = null; openEnrich(el.dataset.syB, 'sync'); }); });
+    sheet.querySelectorAll('[data-sy-f]').forEach(function (el) { el.addEventListener('click', function () { if (wdBusy) return; var f = findFilm(el.dataset.syF); if (f) openAddFilm({ fill: f.id, q: f.t, back: 'sync' }); }); });
   }
 
   // ---------- film toevoegen ----------
   var addFilm = null;
   function openAddFilm(opts) {
     opts = opts || {};
-    if (!opts.keep) addFilm = { q: opts.q || '', res: null, busy: false, err: '', pick: null, t: '', yr: '', dir: '', min: '', wd: '', st: state.ftab === 'watch' ? 'watch' : 'seen', d: todayISO(), rating: 0, avail: false, link: opts.link || null, fill: opts.fill || null };
+    if (!opts.keep) addFilm = { q: opts.q || '', res: null, busy: false, err: '', pick: null, t: '', yr: '', dir: '', min: '', wd: '', st: state.ftab === 'watch' ? 'watch' : 'seen', d: todayISO(), rating: 0, avail: false, link: opts.link || null, fill: opts.fill || null, back: opts.back || null, lb: '' };
     var a = addFilm, fillF = a.fill ? findFilm(a.fill) : null;
     var resHTML = '';
     if (a.busy) resHTML = '<p class="note">Zoeken bij Wikidata…</p>';
@@ -3872,15 +4130,15 @@ button.ayr{cursor:pointer}
     };
     $('af-go').addEventListener('click', go);
     $('af-q').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); go(); } });
-    if ($('af-back')) $('af-back').addEventListener('click', function () { openFilmMore(a.fill); });
+    if ($('af-back')) $('af-back').addEventListener('click', function () { if (a.back === 'sync') { addFilm = null; openSync(); } else openFilmMore(a.fill); });
     sheet.querySelectorAll('[data-wdp]').forEach(function (el) {
       el.addEventListener('click', function () {
         var x = a.res[+el.dataset.wdp];
         if (fillF) {
-          sameFilm(fkey(fillF)).forEach(function (f) { f.wd = x.wd; if (x.dir) f.dir = x.dir; if (x.min) f.min = x.min; if (x.yr && !f.yr) f.yr = x.yr; });
-          save(); renderKeep(); toast('Aangevuld'); addFilm = null; openFilm(fillF.id); return;
+          sameFilm(fkey(fillF)).forEach(function (f) { f.wd = x.wd; if (x.dir) f.dir = x.dir; if (x.min) f.min = x.min; if (x.yr && !f.yr) f.yr = x.yr; fillLb(f, x.lb); delete f.wdMiss; });
+          save(); renderKeep(); toast('Aangevuld'); var bk = a.back; addFilm = null; if (bk === 'sync') openSync(); else openFilm(fillF.id); return;
         }
-        sync(); a.pick = +el.dataset.wdp; a.t = x.t; a.yr = x.yr ? String(x.yr) : ''; a.dir = x.dir || ''; a.min = x.min || ''; a.wd = x.wd;
+        sync(); a.pick = +el.dataset.wdp; a.t = x.t; a.yr = x.yr ? String(x.yr) : ''; a.dir = x.dir || ''; a.min = x.min || ''; a.wd = x.wd; a.lb = x.lb || '';
         openAddFilm({ keep: true });
       });
     });
@@ -3898,6 +4156,7 @@ button.ayr{cursor:pointer}
       // dezelfde film al in je lijst? neem tags en koppelingen over
       var prev = state.films.filter(function (x) { return fkey(x) === fkey(f) || (norm(x.t) === norm(f.t) && (!x.yr || !f.yr || x.yr === f.yr)); })[0];
       if (prev) { if (prev.lb) f.lb = prev.lb; if (!f.wd && prev.wd) f.wd = prev.wd; if (!f.dir && prev.dir) f.dir = prev.dir; if (!f.min && prev.min) f.min = prev.min; f.tags = (prev.tags || []).slice(); f.links = (prev.links || []).slice(); }
+      if (!f.lb && a.lb && a.wd === f.wd) fillLb(f, a.lb);
       if (a.st === 'seen') { f.d = a.d || todayISO(); if (a.rating) f.rating = a.rating; if (prev && prev.st === 'seen') f.re = true; }
       else if (a.avail) f.avail = true;
       if (a.link) { var b = find(a.link); if (b) { var bk = bookKeyOf(b); if (f.links.indexOf(bk) < 0) f.links.push(bk); } }
@@ -4291,6 +4550,7 @@ button.ayr{cursor:pointer}
     var books = state.books.filter(function (b) {
       if (!fm && filter.author && b.a !== filter.author) return false;
       if (!fm && filter.status !== 'all' && b.status !== filter.status) return false;
+      if (filter.sug && !bookFromSug(b)) return false;
       if (!b.tags.some(function (t) { return filter.tags.indexOf(t) >= 0; })) return false;
       var q = norm(filter.q.trim()); if (q) { var hay = norm(b.t + ' ' + b.a); if (!q.split(/\s+/).every(function (w) { return hay.indexOf(w) >= 0; })) return false; }
       return true;
@@ -4298,6 +4558,7 @@ button.ayr{cursor:pointer}
     var films = state.films.filter(function (f) {
       if (fm && filter.author && (f.dir || '').split(' & ').map(function (d) { return d.trim(); }).indexOf(filter.author) < 0) return false;
       if (!(f.tags || []).some(function (t) { return filter.tags.indexOf(t) >= 0; })) return false;
+      if (filter.sug && !filmFromSug(f)) return false;
       var q = norm(filter.q.trim()); if (q) { var hay = norm(f.t + ' ' + (f.dir || '') + ' ' + (f.yr || '')); if (!q.split(/\s+/).every(function (w) { return hay.indexOf(w) >= 0; })) return false; }
       return true;
     });
@@ -4729,11 +4990,18 @@ button.ayr{cursor:pointer}
     imp: '<path d="M12 4v11M7 10l5 5 5-5M4 20h16"/>',
     pag: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/>',
     note: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
-    kompas: '<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>'
+    kompas: '<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',
+    koppel: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>'
   };
   var CHEV_R = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
   function mitHTML(id, ic, title, sub) {
     return '<button class="mit" id="' + id + '"><span class="mi"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + MI[ic] + '</svg></span><span class="mt"><b>' + title + '</b><span>' + sub + '</span></span>' + CHEV_R + '</button>';
+  }
+  function syncSub() {
+    if ((kbRun && kbRun.busy) || wdBusy) return 'Bezig met zoeken…';
+    var c = syncCounts();
+    var parts = [c.books ? c.books + (c.books === 1 ? ' boek' : ' boeken') + ' zonder KB' : '', c.films ? c.films + (c.films === 1 ? ' film' : ' films') + ' zonder Wikidata' : '', !c.films && c.noLb ? c.noLb + ' zonder Letterboxd' : ''].filter(Boolean);
+    return parts.length ? parts.join(' · ') : 'Alles is gekoppeld';
   }
   function openMore() {
     var box = $('more');
@@ -4755,6 +5023,7 @@ button.ayr{cursor:pointer}
       '<div class="mgrp"><p class="lbl">Bibliotheek</p><div class="mlist">' + mitHTML('m-lib', 'bieb', 'Bibliotheek', esc(libSub)) + '</div></div>' +
       '<div class="mgrp"><p class="lbl">Gegevens</p><div class="mlist">' +
         mitHTML('m-imp', 'imp', 'Herstellen en importeren', 'Back-up terugzetten, Goodreads of Letterboxd, ISBN-sleutel') +
+        mitHTML('m-sync', 'koppel', 'Koppelingen aanvullen', esc(syncSub())) +
         mitHTML('m-pages', 'pag', 'Bladzijden aanvullen', 'Ontbrekende bladzijden opzoeken bij de KB') + '</div></div>' +
       '<div class="mgrp"><p class="lbl">Weergave</p><div class="mlist"><div class="seg2" role="group" aria-label="Thema">' +
         [['auto', 'Automatisch'], ['light', 'Licht'], ['dark', 'Donker']].map(function (o) { return '<button data-theme-set="' + o[0] + '" class="' + (th === o[0] ? 'is-on' : '') + '" aria-pressed="' + (th === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div></div></div>' +
@@ -4768,6 +5037,7 @@ button.ayr{cursor:pointer}
     $('m-lib').addEventListener('click', function () { openLib(); });
     $('m-imp').addEventListener('click', function () { openBackup(); });
     $('m-pages').addEventListener('click', function () { openEnrichList(); });
+    $('m-sync').addEventListener('click', function () { openSync(); });
     box.querySelectorAll('[data-theme-set]').forEach(function (el) { el.addEventListener('click', function () { setTheme(el.dataset.themeSet); openMore(); }); });
   }
   // thema: automatisch (telefoon), licht of donker; per apparaat, niet in de back-up
