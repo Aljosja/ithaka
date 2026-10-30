@@ -3522,7 +3522,7 @@ button.ayr{cursor:pointer}
     return '<div class="frow" data-fid="' + esc(f.id) + '">' +
       (f.st === 'watch' ? '<button class="fst" data-fact="seen" aria-label="' + esc(f.t) + ' gezien">' + ICON_CHECK + '</button>' : '<span class="poster" style="background:' + posterColor(f) + '" aria-hidden="true">' + posterInner(f) + '</span>') +
       '<button class="ftx" data-fact="open"><span class="t">' + esc(f.t) + '</span>' +
-        (meta ? '<span class="a">' + esc(meta) + '</span>' : '') +
+        (meta || f.notes ? '<span class="a">' + esc(meta || '') + (f.notes ? '<span class="anote"' + (meta ? '' : ' style="margin-left:0"') + ' title="Aantekeningen">' + ICON_NOTE + '</span>' : '') + '</span>' : '') +
         (bits.length ? '<span class="fb">' + bits.map(function (x) { return '<em' + (x === 'beschikbaar' ? ' class="av"' : '') + '>' + esc(x) + '</em>'; }).join('') + '</span>' : '') + tags + '</button>' +
       '<span class="fr">' + (f.st === 'seen' && f.rating ? '<span class="arate">★ ' + fmtRating(f.rating) + '</span>' : '') + '</span>' +
       '</div>';
@@ -3666,7 +3666,7 @@ button.ayr{cursor:pointer}
       '<div class="btnrow"><button type="button" class="btn" id="ff-more">Meer opties</button><button type="button" class="btn primary" id="ff-done">Klaar</button></div>');
     var notes = $('ff-notes'); notes.value = f.notes || '';
     var t = null;
-    var flush = function () { clearTimeout(t); var v = notes.value.replace(/\s+$/, ''); if ((f.notes || '') !== v) { if (v) f.notes = v; else delete f.notes; save(); } };
+    var flush = function () { clearTimeout(t); var v = notes.value.replace(/\s+$/, ''); if ((f.notes || '') !== v) { if (v) f.notes = v; else delete f.notes; save(); renderKeep(); } };
     notes.addEventListener('input', function () { clearTimeout(t); t = setTimeout(function () { flush(); var sv = $('ff-saved'); if (sv) { sv.textContent = 'bewaard'; setTimeout(function () { if ($('ff-saved')) $('ff-saved').textContent = ''; }, 1400); } }, 400); });
     detailFlush = flush;
     var re = function () { flush(); save(); renderKeep(); openFilm(id); };
