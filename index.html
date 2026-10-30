@@ -3141,6 +3141,10 @@ button.ayr{cursor:pointer}
       if (!Array.isArray(d.items) || !d.items.every(function (x) { return x && typeof x.t === 'string'; })) throw new Error('vorm');
       return { kind: 'suggesties', from: d.from || todayISO(), focus: d.focus || '', items: d.items };
     }
+    if (d && d.kind === 'aanvullen') {
+      if (!Array.isArray(d.books) || !d.books.every(function (b) { return b && typeof b.t === 'string'; })) throw new Error('vorm');
+      return { kind: 'aanvullen', books: d.books, note: d.note || '', from: d.from || '' };
+    }
     var okYear = function (y) { return +y > 1900 && +y < 3000; };
     if (d && d.kind === 'films') {
       if (!Array.isArray(d.films) || !d.films.every(function (f) { return f && typeof f.t === 'string'; })) throw new Error('vorm');
@@ -3249,6 +3253,7 @@ button.ayr{cursor:pointer}
   // eerst laten zien wat er komt, dan pas vervangen
   function confirmRestore(bk) {
     if (bk.kind === 'films') { confirmFilmImport(bk); return; }
+    if (bk.kind === 'aanvullen') { confirmFill(bk); return; }
     if (bk.kind === 'suggesties') { sugPick = null; confirmSugg(bk); return; }
     if (bk.kind === 'import') {
       var plan = importPlan(bk);
@@ -4389,6 +4394,46 @@ button.ayr{cursor:pointer}
   function filmImportPlan(bk) {
     var have = {}; state.films.forEach(function (f) { have[filmImportKey(f)] = f; });
     return bk.films.map(function (x) { return { x: x, old: have[filmImportKey(x)] || null }; });
+  }
+  // aanvullen: alleen lege velden van boeken die al in de app staan (nu: jaar van ontstaan); voegt nooit boeken toe
+  function fillBase(t) { return norm(t).replace(/\([^)]*\)/g, '').split(':')[0].replace(/\s+/g, ' ').trim(); }
+  function fillTargets(x) {
+    var key = importKey(x.t, x.a), hit = null, byId = x.id ? find(String(x.id)) : null;
+    if (byId && (importKey(byId.t, byId.a) === key || fillBase(byId.t) === fillBase(x.t))) hit = byId;
+    var i13 = x.isbn ? toIsbn13(String(x.isbn)) : null;
+    if (!hit && i13) hit = state.books.filter(function (b) { return b.isbn === i13; })[0] || null;
+    if (!hit) hit = state.books.filter(function (b) { return importKey(b.t, b.a) === key; })[0] || null;
+    return hit ? sameBook(hit) : [];
+  }
+  function fillPlan(bk) {
+    var fill = [], have = 0, miss = 0, seen = {};
+    bk.books.forEach(function (x) {
+      var o = parseInt(x.orig, 10); if (!(o >= -3000 && o <= 2100) || !o) return;
+      var ts = fillTargets(x).filter(function (b) { return !seen[b.id]; });
+      if (!ts.length) { miss++; return; }
+      ts.forEach(function (b) { seen[b.id] = 1; });
+      var empty = ts.filter(function (b) { return !b.orig; });
+      if (empty.length) fill.push({ books: empty, orig: o }); else have++;
+    });
+    return { fill: fill, have: have, miss: miss };
+  }
+  function confirmFill(bk) {
+    var p = fillPlan(bk), n = p.fill.length;
+    openSheet('Aanvullen',
+      '<h3>Jaar van ontstaan aanvullen?</h3><div class="irows">' +
+        '<div class="irow"><b>' + n + '</b><span>' + (n === 1 ? 'boek krijgt' : 'boeken krijgen') + ' een jaar van ontstaan</span></div>' +
+        (p.have ? '<div class="irow"><b>' + p.have + '</b><span>' + (p.have === 1 ? 'heeft' : 'hebben') + ' al een jaar; dat blijft staan</span></div>' : '') +
+        (p.miss ? '<div class="irow"><b>' + p.miss + '</b><span>niet gevonden in je app; die worden overgeslagen</span></div>' : '') + '</div>' +
+      '<p class="note" style="font-size:13.5px">Er komen geen boeken bij en niets wordt overschreven. Heb je een boek vaker gelezen, dan krijgen alle keren het jaar.</p>' +
+      (bk.note ? '<p class="note" style="color:var(--muted);font-size:13px">' + esc(bk.note) + '</p>' : '') +
+      '<div class="btnrow"><button class="btn" id="rs-no">Annuleer</button><button class="btn primary" id="rs-yes"' + (n ? '' : ' disabled') + '>Vul aan</button></div>');
+    $('rs-no').addEventListener('click', openBackup);
+    $('rs-yes').addEventListener('click', function () {
+      var k = 0;
+      p.fill.forEach(function (f) { f.books.forEach(function (b) { if (!b.orig) { b.orig = f.orig; k++; } }); });
+      save(); closeSheet(); closePanels(); renderKeep();
+      toast(n + (n === 1 ? ' boek aangevuld' : ' boeken aangevuld') + ' met een jaar van ontstaan');
+    });
   }
   function confirmFilmImport(bk) {
     var plan = filmImportPlan(bk), ys = {};
