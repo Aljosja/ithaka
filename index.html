@@ -576,7 +576,8 @@ button.ayr{cursor:pointer}
 .libline .li b{font-size:14px}
 .libline .li > span{font-size:12.5px;color:var(--soft);line-height:1.35}
 .libline .li .due{color:var(--lib-due);font-weight:700}
-.llinks{display:flex;flex-wrap:wrap;gap:0 12px}
+.llinks{display:flex;flex-direction:column;align-items:flex-start;gap:0}
+.llinks a{display:inline-flex!important;align-items:center;gap:5px;min-height:32px;margin:0;padding:0}
 .lhas{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:12.5px;color:var(--soft)}
 .lhas button{min-height:32px;min-width:44px;border-radius:999px;border:1px solid var(--lib-line);background:var(--surface);color:var(--lib);font-weight:600;font-size:12.5px;padding:0 10px;cursor:pointer}
 .lhas button.is-on{background:var(--lib);border-color:var(--lib);color:var(--surface)}
@@ -823,6 +824,7 @@ button.ayr{cursor:pointer}
           var st = { v: d.v || 1, tab: d.tab === 'stock' ? 'stock' : 'plan', nextId: d.nextId || 1000, nextTag: d.nextTag || 1, coll: d.coll || {}, books: d.books, tags: Array.isArray(d.tags) ? d.tags : null, lastBackup: d.lastBackup || null, year: d.year || null, years: Array.isArray(d.years) ? d.years : [], imported: Array.isArray(d.imported) ? d.imported : [], lib: d.lib && typeof d.lib === 'object' ? d.lib : null,
             films: Array.isArray(d.films) ? d.films : [], nextFilm: d.nextFilm || 1, mode: d.mode === 'films' ? 'films' : 'books', fyear: d.fyear === 0 ? 0 : (d.fyear || null), fsort: d.fsort || 'title', ftab: d.ftab === 'watch' ? 'watch' : 'seen', sview: d.sview === 'own' || d.sview === 'want' ? d.sview : 'all', best: d.best && typeof d.best === 'object' ? d.best : {} };
           normalizeBooks(st.books);
+          st.books.forEach(function (b) { if (b.lib === 'loan' && !b.loanDate) { b.loanDate = new Date().toISOString().slice(0, 10); b.renewed = 0; } });
           st.books.forEach(function (b) { if (b.y) b.y = +b.y; });
           if (!st.tags) { st.tags = defaultTags(); migrateTitles(st); }
           if (st.v < 3) { migrateUntil(st); st.v = 3; }
@@ -1038,13 +1040,13 @@ button.ayr{cursor:pointer}
   function libBoxHTML(b) {
     var cur = b.lib === 'want' || b.lib === 'loan' ? b.lib : 'own', c = libCfg();
     var url = libSearchURL(b);
-    var link = url ? '<a class="linkbtn sm" href="' + esc(url) + '" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;color:var(--lib)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>Zoek in de catalogus</a>' : '';
+    var link = url ? '<a class="linkbtn sm" href="' + esc(url) + '" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;color:var(--lib)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>Zoek op titel</a>' : '';
     var ic = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-5 9 5"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8"/><path d="M3 21h18"/></svg>';
     if (cur === 'own') return '<div class="libline is-quiet">' + ic + '<span class="li"><b>Eigen boek</b><span>Of leen je hem bij de bieb?</span></span><span class="lbtns"><button type="button" class="lbtn" data-lib="want">Wil lenen</button><button type="button" class="lbtn" data-lib="loan">Geleend</button></span></div>';
     if (cur === 'want') {
       var st = planStart(b);
       var txt = b.status === 'done' ? 'Al gelezen.' : !st ? 'Zonder geplande maand staat hij in je bieb-overzicht.' : reserveNow(b) ? '<span class="due">Reserveer hem nu</span>: gepland in ' + MONTHS[+b.m - 1].toLowerCase() + '.' : 'Seintje om te reserveren vanaf ' + dShort(addDaysISO(st, -28)) + '.';
-      var isbnLink = b.isbn && url ? '<a class="linkbtn sm" href="' + esc(libSearchURL(b, true)) + '" target="_blank" rel="noopener" style="text-decoration:none;color:var(--lib)">op ISBN</a>' : '';
+      var isbnLink = b.isbn && url ? '<a class="linkbtn sm" href="' + esc(libSearchURL(b, true)) + '" target="_blank" rel="noopener" style="text-decoration:none;color:var(--lib)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>Zoek op ISBN</a>' : '';
       var has = '<span class="lhas" role="group" aria-label="Heeft de bieb hem?"><span>In de bieb?</span><button type="button" data-has="1" class="' + (b.libHas === true ? 'is-on' : '') + '" aria-pressed="' + (b.libHas === true) + '">Ja</button><button type="button" data-has="0" class="' + (b.libHas === false ? 'is-on no' : '') + '" aria-pressed="' + (b.libHas === false) + '">Nee</button></span>';
       return '<div class="libline">' + ic + '<span class="li"><b>Wil lenen</b><span>' + txt + '</span><span class="llinks">' + link + isbnLink + '</span>' + has + '</span><span class="lbtns"><button type="button" class="lbtn" data-lib="loan">Geleend</button><button type="button" class="lbtn" data-lib="own">Toch niet</button></span></div>';
     }
@@ -1702,9 +1704,9 @@ button.ayr{cursor:pointer}
     sheet.querySelectorAll('[data-lib]').forEach(function (el) {
       el.addEventListener('click', function () {
         var v = el.dataset.lib; flush();
-        if (v === 'loan') { if (b.lib !== 'loan') { b.loanDate = todayISO(); b.renewed = 0; } delete b.libHas; }
-        if (v === 'own') delete b.libHas;
+        if (v === 'loan') { if (b.lib !== 'loan' || !b.loanDate) { b.loanDate = todayISO(); b.renewed = 0; } delete b.libHas; }
         else { delete b.loanDate; delete b.renewed; }
+        if (v === 'own') delete b.libHas;
         if (v === 'own') delete b.lib; else b.lib = v;
         save(); renderKeep(); openDetail(id);
       });
