@@ -386,6 +386,8 @@ button.ayr{cursor:pointer}
 .mode button.is-on{background:var(--hd-ink);color:#2A1D14}
 .flist{display:flex;flex-direction:column;gap:6px}
 .lres{margin:12px 2px 4px}
+.seg2.sm.fwseg button{padding:0 6px;white-space:nowrap}
+.fwseg .n{opacity:.7;font-weight:500}
 .sec .flist{margin-top:0}
 .fseg{padding:10px 2px 2px;display:flex;flex-direction:column;gap:8px}
 .fsort{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);font-weight:600}
@@ -3088,7 +3090,7 @@ button.ayr{cursor:pointer}
     if (q) { var hay = norm(f.t + ' ' + (f.dir || '') + ' ' + (f.yr || '')); if (!q.split(/\s+/).every(function (w) { return hay.indexOf(w) >= 0; })) return false; }
     return true;
   }
-  var fwatchAvail = false;
+  var fwatchAvail = 'all'; // all | avail | not
   function sortKeyTitle(t) { return norm(t).replace(/^(the|a|an|de|het|een|le|la|les|el|il|der|die|das)\s+/, '').trim(); }
   function sortWatch(arr) {
     var k = state.fsort, big = 1e9;
@@ -3119,12 +3121,13 @@ button.ayr{cursor:pointer}
     if (state.ftab === 'watch') {
       var all = watchList(), av = all.filter(function (f) { return f.avail; });
       var ag = sortWatch(againList()), agClosed = !!state.coll['f:again'];
-      html += '<div class="fseg"><div class="seg2 sm" role="group" aria-label="Kijklijst"><button data-favail="0" class="' + (fwatchAvail ? '' : 'is-on') + '">Alles · ' + all.length + '</button><button data-favail="1" class="' + (fwatchAvail ? 'is-on' : '') + '">Beschikbaar · ' + (av.length + ag.length) + '</button></div>' +
+      var nv = all.filter(function (f) { return !f.avail; });
+      html += '<div class="fseg"><div class="seg2 sm fwseg" role="group" aria-label="Kijklijst">' + [['all', 'Alles', all.length], ['avail', 'Beschikbaar', av.length + ag.length], ['not', 'Nog niet', nv.length]].map(function (o) { return '<button data-favail="' + o[0] + '"' + (o[0] === 'not' ? ' aria-label="Nog niet beschikbaar, ' + o[2] + '"' : '') + ' class="' + (fwatchAvail === o[0] ? 'is-on' : '') + '">' + o[1] + ' <span class="n">' + o[2] + '</span></button>'; }).join('') + '</div>' +
         '<label class="fsort"><span>Sorteer</span><select id="fsort" aria-label="Sorteer de kijklijst">' + [['title', 'Titel (A–Z)'], ['dur-asc', 'Duur: kort eerst'], ['dur-desc', 'Duur: lang eerst'], ['yr-desc', 'Jaar: nieuw eerst'], ['yr-asc', 'Jaar: oud eerst'], ['added', 'Laatst toegevoegd']].map(function (o) { return '<option value="' + o[0] + '"' + (state.fsort === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label></div>';
-      var shown = sortWatch((fwatchAvail ? av : all).slice());
-      if (ag.length) html += '<section class="sec' + (agClosed ? ' is-collapsed' : '') + '"><button class="sechead" data-fcoll="again" aria-expanded="' + !agClosed + '"><span class="h">Herkijken</span><span class="sp"></span><span class="cnt">' + ag.length + '</span><span class="chev' + (agClosed ? '' : ' is-open') + '">' + ICON_CHEV + '</span></button>' + (agClosed ? '' : '<div class="flist">' + ag.map(function (f) { return filmRowHTML(f); }).join('') + '</div>') + '</section>';
-      html += '<section class="sec"><div class="sechead is-static"><span class="h">' + (fwatchAvail ? 'Beschikbaar' : 'Kijklijst') + '</span><span class="sp"></span><span class="cnt">' + shown.length + '</span></div>' +
-        (shown.length ? '<div class="flist">' + shown.map(function (f) { return filmRowHTML(f); }).join('') + '</div>' : '<p class="results">' + (fwatchAvail ? 'Nog niets als beschikbaar gemarkeerd. Open een film op je kijklijst en zet "Beschikbaar" aan.' : 'Je kijklijst is leeg. Voeg films toe met +.') + '</p>') + '</section>';
+      var shown = sortWatch((fwatchAvail === 'avail' ? av : fwatchAvail === 'not' ? nv : all).slice());
+      if (ag.length && fwatchAvail !== 'not') html += '<section class="sec' + (agClosed ? ' is-collapsed' : '') + '"><button class="sechead" data-fcoll="again" aria-expanded="' + !agClosed + '"><span class="h">Herkijken</span><span class="sp"></span><span class="cnt">' + ag.length + '</span><span class="chev' + (agClosed ? '' : ' is-open') + '">' + ICON_CHEV + '</span></button>' + (agClosed ? '' : '<div class="flist">' + ag.map(function (f) { return filmRowHTML(f); }).join('') + '</div>') + '</section>';
+      html += '<section class="sec"><div class="sechead is-static"><span class="h">' + (fwatchAvail === 'avail' ? 'Beschikbaar' : fwatchAvail === 'not' ? 'Nog niet beschikbaar' : 'Kijklijst') + '</span><span class="sp"></span><span class="cnt">' + shown.length + '</span></div>' +
+        (shown.length ? '<div class="flist">' + shown.map(function (f) { return filmRowHTML(f); }).join('') + '</div>' : '<p class="results">' + (fwatchAvail === 'not' ? 'Alles op je kijklijst is beschikbaar.' : fwatchAvail === 'avail' ? 'Nog niets als beschikbaar gemarkeerd. Open een film op je kijklijst en zet "Beschikbaar" aan.' : 'Je kijklijst is leeg. Voeg films toe met +.') + '</p>') + '</section>';
       return html;
     }
     var seen = seenIn(FY()).sort(function (a, b) { return (b.d || '') < (a.d || '') ? -1 : (b.d || '') > (a.d || '') ? 1 : 0; });
@@ -3145,7 +3148,7 @@ button.ayr{cursor:pointer}
     el = e.target.closest && e.target.closest('[data-lview]');
     if (el) { filter.view = el.dataset.lview; renderKeep(); return; }
     el = e.target.closest && e.target.closest('[data-favail]');
-    if (el) { fwatchAvail = el.dataset.favail === '1'; renderKeep(); return; }
+    if (el) { fwatchAvail = el.dataset.favail; renderKeep(); return; }
     el = e.target.closest && e.target.closest('[data-fact]'); if (!el) return;
     var row = el.closest('.frow'); var f = row && findFilm(row.dataset.fid); if (!f) return;
     if (el.dataset.fact === 'seen') {
