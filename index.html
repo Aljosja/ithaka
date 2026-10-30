@@ -835,7 +835,7 @@ button.ayr{cursor:pointer}
         var d = JSON.parse(raw);
         if (d && Array.isArray(d.books)) {
           var st = { v: d.v || 1, tab: d.tab === 'stock' ? 'stock' : 'plan', nextId: d.nextId || 1000, nextTag: d.nextTag || 1, coll: d.coll || {}, books: d.books, tags: Array.isArray(d.tags) ? d.tags : null, lastBackup: d.lastBackup || null, year: d.year || null, years: Array.isArray(d.years) ? d.years : [], imported: Array.isArray(d.imported) ? d.imported : [], lib: d.lib && typeof d.lib === 'object' ? d.lib : null,
-            films: Array.isArray(d.films) ? d.films : [], nextFilm: d.nextFilm || 1, mode: d.mode === 'films' ? 'films' : 'books', fyear: d.fyear === 0 ? 0 : (d.fyear || null), fsort: d.fsort || 'title', ftab: d.ftab === 'watch' ? 'watch' : 'seen', bkSnooze: d.bkSnooze || null, sview: d.sview === 'own' || d.sview === 'want' ? d.sview : 'all', best: d.best && typeof d.best === 'object' ? d.best : {} };
+            films: Array.isArray(d.films) ? d.films : [], nextFilm: d.nextFilm || 1, mode: d.mode === 'films' ? 'films' : 'books', fyear: d.fyear === 0 ? 0 : (d.fyear || null), fsort: d.fsort || 'title', ftab: d.ftab === 'watch' ? 'watch' : 'seen', fre: d.fre === 're' || d.fre === 'first' ? d.fre : 'all', bkSnooze: d.bkSnooze || null, sview: d.sview === 'own' || d.sview === 'want' ? d.sview : 'all', best: d.best && typeof d.best === 'object' ? d.best : {} };
           normalizeBooks(st.books);
           st.books.forEach(function (b) { if (b.lib === 'loan' && !b.loanDate) { b.loanDate = new Date().toISOString().slice(0, 10); b.renewed = 0; } });
           st.books.forEach(function (b) { if (b.y) b.y = +b.y; });
@@ -3399,7 +3399,7 @@ button.ayr{cursor:pointer}
     var meta = filmMeta(f);
     var bits = [];
     if (o.date && f.d) bits.push(dShort(f.d));
-    if (f.st === 'seen' && f.re) bits.push('herzien');
+    if (f.st === 'seen' && isRewatch(f)) bits.push('herzien');
     if (f.st === 'watch' && f.avail) bits.push('beschikbaar');
     var tags = tagsHTML(f.tags || []);
     return '<div class="frow" data-fid="' + esc(f.id) + '">' +
@@ -3437,6 +3437,13 @@ button.ayr{cursor:pointer}
     });
   }
   list.addEventListener('change', function (e) { if (e.target && e.target.id === 'fsort') { state.fsort = e.target.value; save(); renderKeep(); } });
+  // herzien: zo gemarkeerd (Letterboxd 'rewatch'), of dezelfde film al eerder gezien
+  function isRewatch(f) {
+    if (f.st !== 'seen') return false;
+    if (f.re) return true;
+    var k = fkey(f);
+    return state.films.some(function (x) { return x !== f && x.st === 'seen' && fkey(x) === k && ((x.d && f.d && x.d < f.d) || (!x.d && f.d)); });
+  }
   function filmListHTML() {
     var html = '';
     if (filtering()) {
@@ -3463,6 +3470,14 @@ button.ayr{cursor:pointer}
       return html;
     }
     var seen = seenIn(FY()).sort(function (a, b) { return (b.d || '') < (a.d || '') ? -1 : (b.d || '') > (a.d || '') ? 1 : 0; });
+    if (seen.length) {
+      var reN = seen.filter(isRewatch).length, rv = state.fre || 'all';
+      html += '<div class="fseg"><div class="seg2 sm fwseg" role="group" aria-label="Welke kijkbeurten">' + [['all', 'Alles', seen.length], ['first', 'Eerste keer', seen.length - reN], ['re', 'Herzien', reN]].map(function (o) {
+        return '<button data-fre="' + o[0] + '" class="' + (rv === o[0] ? 'is-on' : '') + '" aria-pressed="' + (rv === o[0]) + '">' + o[1] + ' <span class="n">' + o[2] + '</span></button>';
+      }).join('') + '</div></div>';
+      if (rv !== 'all') seen = seen.filter(function (f) { return rv === 're' ? isRewatch(f) : !isRewatch(f); });
+      if (!seen.length) return html + '<p class="results">' + (rv === 're' ? 'Nog niets herzien in ' + fyLabel(FY()) + '.' : 'Alles in ' + fyLabel(FY()) + ' was een herziening.') + '</p>';
+    }
     if (!seen.length) return '<p class="results">Nog geen films gezien in ' + fyLabel(FY()) + '. Voeg er een toe met +, of importeer je Letterboxd-dagboek via de back-upknop.</p>';
     var cur = null, grp = [];
     var flush = function () {
@@ -3491,6 +3506,8 @@ button.ayr{cursor:pointer}
       }
       return;
     }
+    el = e.target.closest && e.target.closest('[data-fre]');
+    if (el) { state.fre = el.dataset.fre; save(); renderKeep(); return; }
     el = e.target.closest && e.target.closest('[data-favail]');
     if (el) { fwatchAvail = el.dataset.favail; renderKeep(); return; }
     el = e.target.closest && e.target.closest('[data-fact]'); if (!el) return;
@@ -3936,7 +3953,7 @@ button.ayr{cursor:pointer}
   function filmYearStatsHTML() {
     var y = FY(), fs = seenIn(y), keys = {};
     fs.forEach(function (f) { keys[fkey(f)] = 1; });
-    var re = fs.filter(function (f) { return f.re; }).length, mins = 0, withMin = 0;
+    var re = fs.filter(isRewatch).length, mins = 0, withMin = 0;
     fs.forEach(function (f) { if (f.min) { mins += f.min; withMin++; } });
     var rated = fs.filter(function (f) { return f.rating; }), a = avgF(fs);
     var AX = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'], cnt = [], mx = 1;
