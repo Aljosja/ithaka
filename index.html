@@ -1708,7 +1708,7 @@ button.ayr{cursor:pointer}
       '<p class="lbl">Leesjaar toevoegen</p>' +
       '<div class="btnrow"><button class="btn" data-yadd="' + prev + '">+ ' + prev + '</button><button class="btn" data-yadd="' + next + '">+ ' + next + '</button></div>' +
       (msg ? '<p class="err">' + esc(msg) + '</p>' : '') +
-      '<p class="note" style="font-size:13px;color:var(--muted)">Je voorraad, tags en lijnen horen bij alle jaren. Leesjaren uit Goodreads importeer je via de back-upknop → Herstel uit bestand. Die krijgen het label import.</p>');
+      '<p class="note" style="font-size:13px;color:var(--muted)">Je voorraad, tags en lijnen horen bij alle jaren. Leesjaren uit Goodreads lees je in als importbestand (laat Claude dat maken van je Goodreads-export), via Meer → Herstellen en importeren. Die krijgen het label import.</p>');
     $('yr-done').addEventListener('click', closeSheet); bindModeSeg();
     sheet.querySelectorAll('[data-y]').forEach(function (el) {
       el.addEventListener('click', function () { switchYear(+el.dataset.y); closeSheet(); });
@@ -3310,6 +3310,7 @@ button.ayr{cursor:pointer}
       '<p class="note">Je lijst staat alleen op dit apparaat. Bewaar af en toe een back-up als bestand, bijvoorbeeld in iCloud Drive, Google Drive of je downloads. ' + esc(backupAge()) + '</p>' +
       '<button class="btn primary" id="bk-save" style="flex:none">Bewaar back-up als bestand</button>' +
       '<button class="btn" id="bk-load" style="flex:none">Herstel uit bestand</button>' +
+      '<p class="note" style="font-size:12.5px;color:var(--muted);margin-top:-4px">Hier lees je ook importbestanden in: suggesties van Claude, leesjaren uit Goodreads of films uit Letterboxd. Een export van Goodreads of Letterboxd zelf werkt niet; laat Claude daar eerst een importbestand van maken.</p>' +
       (errMsg ? '<p class="err">' + esc(errMsg) + '</p>' : '') +
       '<details class="codebox"><summary>Of met een code (kopiëren en plakken, zonder foto’s)</summary>' +
       '<div class="field"><label for="f-code">Jouw code</label><textarea id="f-code" readonly></textarea></div>' +
@@ -3595,7 +3596,7 @@ button.ayr{cursor:pointer}
       if (rv !== 'all') seen = seen.filter(function (f) { return rv === 're' ? isRewatch(f) : !isRewatch(f); });
       if (!seen.length) return html + '<p class="results">' + (rv === 're' ? 'Nog niets herzien in ' + fyLabel(FY()) + '.' : 'Alles in ' + fyLabel(FY()) + ' was een herziening.') + '</p>';
     }
-    if (!seen.length) return '<p class="results">Nog geen films gezien in ' + fyLabel(FY()) + '. Voeg er een toe met +, of importeer je Letterboxd-dagboek via de back-upknop.</p>';
+    if (!seen.length) return '<p class="results">Nog geen films gezien in ' + fyLabel(FY()) + '. Voeg er een toe met +, of lees een importbestand van je Letterboxd-dagboek in via Meer → Herstellen en importeren.</p>';
     var cur = null, grp = [];
     var flush = function () {
       if (!grp.length) return;
@@ -5076,7 +5077,7 @@ button.ayr{cursor:pointer}
       '<div class="mgrp"><p class="lbl">Ontdekken</p><div class="mlist">' + mitHTML('m-sugg', 'kompas', 'Suggesties van Claude', sugList('new').length ? sugList('new').length + ' nieuw · ' + sugList('kept').length + ' bewaard' : 'Vraag om suggesties op basis van je profiel') + '</div></div>' +
       '<div class="mgrp"><p class="lbl">Bibliotheek</p><div class="mlist">' + mitHTML('m-lib', 'bieb', 'Bibliotheek', esc(libSub)) + '</div></div>' +
       '<div class="mgrp"><p class="lbl">Gegevens</p><div class="mlist">' +
-        mitHTML('m-imp', 'imp', 'Herstellen en importeren', 'Back-up terugzetten, Goodreads of Letterboxd, ISBN-sleutel') +
+        mitHTML('m-imp', 'imp', 'Herstellen en importeren', 'Back-up terugzetten, importbestanden, ISBN-sleutel') +
         mitHTML('m-sync', 'koppel', 'Koppelingen aanvullen', esc(syncSub())) +
         mitHTML('m-pages', 'pag', 'Bladzijden aanvullen', 'Ontbrekende bladzijden opzoeken bij de KB') + '</div></div>' +
       '<div class="mgrp"><p class="lbl">Weergave</p><div class="mlist"><div class="seg2" role="group" aria-label="Thema">' +
