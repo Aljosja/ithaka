@@ -723,6 +723,8 @@ button.ayr{cursor:pointer}
 .lphead .lchip{font-size:13px;padding:3px 9px 3px 7px}
 .lphead .lpn{flex:1;font-size:12.5px;color:var(--muted)}
 .lpd{margin:6px 0 0 !important}
+.lpchg{display:flex;flex-direction:column;gap:6px;background:var(--ground);border-radius:12px;padding:10px 12px}
+.lpchg p{margin:0;font-size:13.5px;color:var(--soft);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .sirow{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border:0;border-bottom:1px solid var(--line);background:transparent;text-align:left;cursor:pointer;color:var(--ink);width:100%}
 .sirow .cb{margin-top:2px}
 .sirow .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
@@ -851,7 +853,10 @@ button.ayr{cursor:pointer}
     { id: 'ster', name: 'Ster', d: 'M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z' },
     { id: 'maan', name: 'Maan', d: 'M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z' },
     { id: 'sleutel', name: 'Sleutel', d: 'M11 13a4 4 0 1 1-5.7-5.7A4 4 0 0 1 11 13zM11 13l9-9M16.5 7.5l3 3' },
-    { id: 'boom', name: 'Boom', d: 'M12 21v-7M12 3a6 6 0 0 1 6 6 5 5 0 0 1-6 5 5 5 0 0 1-6-5 6 6 0 0 1 6-6z' }
+    { id: 'boom', name: 'Boom', d: 'M12 21v-7M12 3a6 6 0 0 1 6 6 5 5 0 0 1-6 5 5 5 0 0 1-6-5 6 6 0 0 1 6-6z' },
+    { id: 'woord', name: 'Woord', d: 'M4 5h16v11H10l-5 4v-4H4zM8 9.5h8M8 12.5h5' },
+    { id: 'veer', name: 'Veer', d: 'M20 4C12 4 7 9 6 17M6 17l-2 3M6 17c5 0 10-3 11.5-8.5M9.5 12.5c3-.3 5.5-1.8 7-4.5' },
+    { id: 'torii', name: 'Torii', d: 'M3 5.5c6 1.5 12 1.5 18 0M5 9.5h14M7 7v14M17 7v14' }
   ];
   function iconOf(t) { for (var i = 0; i < ICONS.length; i++) if (ICONS[i].id === (t && t.icon)) return ICONS[i]; return ICONS[0]; }
   function iconSVG(t, size, color) {
@@ -3147,8 +3152,8 @@ button.ayr{cursor:pointer}
       return { kind: 'suggesties', from: d.from || todayISO(), focus: d.focus || '', items: d.items };
     }
     if (d && d.kind === 'lijnvoorstel') {
-      if (!Array.isArray(d.items) || !d.items.every(function (x) { return x && typeof x.t === 'string' && typeof x.line === 'string'; })) throw new Error('vorm');
-      return { kind: 'lijnvoorstel', items: d.items, note: d.note || '', from: d.from || '' };
+      if (!Array.isArray(d.items) || !d.items.every(function (x) { return x && typeof x.t === 'string' && (typeof x.line === 'string' || typeof x.tag === 'string'); })) throw new Error('vorm');
+      return { kind: 'lijnvoorstel', items: d.items, lines: Array.isArray(d.lines) ? d.lines : [], tags: Array.isArray(d.tags) ? d.tags : [], note: d.note || '', from: d.from || '' };
     }
     if (d && d.kind === 'aanvullen') {
       if (!Array.isArray(d.books) || !d.books.every(function (b) { return b && typeof b.t === 'string'; })) throw new Error('vorm');
@@ -4446,6 +4451,8 @@ button.ayr{cursor:pointer}
     });
   }
   // lijnvoorstel: per lijn aanvinken wat erin mag; twijfel staat standaard uit
+  // lijnvoorstel: per lijn aanvinken wat erin of eruit gaat; twijfel staat standaard uit.
+  // v2 kan ook lijnen hernoemen (from), nieuwe lijnen en tags maken, en titels uit een lijn halen (op: 'remove').
   var lpRev = null;
   function lpTargets(x) {
     if (x.k === 'film') {
@@ -4459,51 +4466,112 @@ button.ayr{cursor:pointer}
     if (!b) b = state.books.filter(function (y) { return importKey(y.t, y.a) === importKey(x.t, x.a); })[0] || null;
     return b ? sameBook(b) : [];
   }
+  function tagByName(name, line) {
+    var k = norm(name).trim(), hit = null;
+    state.tags.forEach(function (t) { if (norm(t.name).trim() === k && !!t.line === !!line) hit = t; });
+    return hit;
+  }
+  function lpPlan(bk) {
+    // wat er aan lijnen en tags verandert; t is de bestaande tag of een nog te maken nieuwe
+    var res = {}, changes = [];
+    (bk.lines || []).forEach(function (L) {
+      var name = String(L.name || '').trim(); if (!name) return;
+      var have = tagByName(name, true);
+      if (L.from && !have) {
+        var old = tagByName(L.from, true);
+        if (old) { res[norm(name)] = old; changes.push({ kind: 'rename', t: old, from: old.name, to: name }); return; }
+      }
+      if (have) { res[norm(name)] = have; return; }
+      var nt = { id: null, name: name, line: true, color: +L.color >= 0 && +L.color < PALETTE.length ? +L.color : 4, icon: ICONS.some(function (i) { return i.id === L.icon; }) ? L.icon : 'zeil' };
+      res[norm(name)] = nt; changes.push({ kind: 'new', t: nt });
+    });
+    (bk.tags || []).forEach(function (T) {
+      var name = String(T.name || '').trim(); if (!name) return;
+      var have = tagByName(name, false);
+      if (have) { res['#' + norm(name)] = have; return; }
+      var nt = { id: null, name: name, line: false, color: +T.color >= 0 && +T.color < PALETTE.length ? +T.color : 4 };
+      if (T.scope === 'films' || T.scope === 'both') nt.scope = T.scope;
+      res['#' + norm(name)] = nt; changes.push({ kind: 'newtag', t: nt });
+    });
+    var resolve = function (x) {
+      if (x.tag) return res['#' + norm(x.tag)] || tagByName(x.tag, false);
+      return res[norm(x.line)] || tagByName(x.line, true);
+    };
+    var rows = [], skipped = 0;
+    bk.items.forEach(function (x) {
+      var T = resolve(x); if (!T) { skipped++; return; }
+      var rm = x.op === 'remove';
+      var ts = lpTargets(x).filter(function (o) { var has = T.id && (o.tags || []).indexOf(T.id) >= 0; return rm ? has : !has; });
+      if (!ts.length) { skipped++; return; }
+      rows.push({ x: x, T: T, rm: rm, ts: ts, on: x.sure !== false });
+    });
+    return { changes: changes, rows: rows, skipped: skipped };
+  }
   function openLinePlan(bk) {
-    if (!lpRev) {
-      var rows = [];
-      bk.items.forEach(function (x) {
-        var L = null; lineTags().forEach(function (t) { if (norm(t.name).trim() === norm(x.line).trim()) L = t; });
-        if (!L) return;
-        var ts = lpTargets(x).filter(function (o) { return (o.tags || []).indexOf(L.id) < 0; });
-        if (!ts.length) return;
-        rows.push({ x: x, L: L, ts: ts, on: x.sure !== false });
-      });
-      lpRev = { bk: bk, rows: rows, skipped: bk.items.length - rows.length };
-    }
+    if (!lpRev) { lpRev = lpPlan(bk); lpRev.bk = bk; }
     var r = lpRev, n = r.rows.filter(function (q) { return q.on; }).length;
-    var groups = lineTags().map(function (L) { return { L: L, rs: r.rows.map(function (q, i) { return { q: q, i: i }; }).filter(function (o) { return o.q.L === L; }) }; }).filter(function (g) { return g.rs.length; });
+    var order = [];
+    r.changes.forEach(function (c) { if (order.indexOf(c.t) < 0) order.push(c.t); });
+    r.rows.forEach(function (q) { if (order.indexOf(q.T) < 0) order.push(q.T); });
+    var chip = function (T, nameOverride) {
+      var nm = nameOverride || T.name;
+      return T.line ? '<span class="lchip" style="' + tagVars(T) + ';background:' + pal(T).c + '22">' + iconSVG(T, 13) + esc(nm) + '</span>' : '<span class="lchip" style="' + tagVars(T) + ';background:' + pal(T).c + '22">#' + esc(nm) + '</span>';
+    };
+    var newName = function (T) { var c = r.changes.filter(function (c) { return c.t === T && c.kind === 'rename'; })[0]; return c ? c.to : T.name; };
     var rowHTML = function (o) {
       var x = o.q.x, sub = x.k === 'film' ? ['Film', x.yr, x.dir].filter(Boolean).join(' · ') : ['Boek', x.a].filter(Boolean).join(' · ');
       return '<button class="sirow" data-lp="' + o.i + '" role="checkbox" aria-checked="' + o.q.on + '"><span class="cb' + (o.q.on ? ' is-on' : '') + '" aria-hidden="true">' + (o.q.on ? ICON_CHECK : '') + '</span><span class="tx"><b>' + esc(x.t) + '</b><span class="m">' + esc(sub) + '</span>' + (x.why ? '<span class="r">' + esc(x.why) + '</span>' : '') + '</span></button>';
     };
+    var sub = function (label, list) { return list.length ? '<p class="lbl lpd">' + label + '</p><div class="silist">' + list.map(rowHTML).join('') + '</div>' : ''; };
+    var changesHTML = r.changes.length ? '<div class="lpchg"><p class="lbl" style="margin:0">Wat er verandert aan je lijnen</p>' + r.changes.map(function (c) {
+      if (c.kind === 'rename') return '<p>' + chip(c.t, c.from) + ' heet voortaan ' + chip(c.t, c.to) + '</p>';
+      return '<p>Nieuw: ' + chip(c.t) + (c.kind === 'newtag' ? ' (gewone tag)' : '') + '</p>';
+    }).join('') + '</div>' : '';
     openSheet('Lijnvoorstel',
       '<div class="sheethead"><h3>Lijnvoorstel van Claude</h3></div>' +
-      '<p class="note" style="margin-top:-6px">' + (bk.note ? esc(bk.note) + ' ' : '') + 'Vink uit wat niet klopt. Er verandert niets tot je op Voeg toe tikt.</p>' +
-      (r.skipped ? '<p class="note" style="font-size:12.5px;color:var(--muted)">' + r.skipped + ' voorstellen overgeslagen: al in die lijn, of niet (meer) in je app.</p>' : '') +
-      groups.map(function (g) {
-        var sure = g.rs.filter(function (o) { return o.q.x.sure !== false; }), doubt = g.rs.filter(function (o) { return o.q.x.sure === false; });
-        var on = g.rs.filter(function (o) { return o.q.on; }).length;
-        return '<section class="lpgrp"><div class="lphead"><span class="lchip" style="' + tagVars(g.L) + ';background:' + pal(g.L).c + '22">' + iconSVG(g.L, 13) + esc(g.L.name) + '</span><span class="lpn">' + on + ' van ' + g.rs.length + '</span>' +
-          '<button class="linkbtn sm" data-lpall="' + esc(g.L.id) + '">' + (on === g.rs.length ? 'Alles uit' : 'Alles aan') + '</button></div>' +
-          (sure.length ? '<div class="silist">' + sure.map(rowHTML).join('') + '</div>' : '') +
-          (doubt.length ? '<p class="lbl lpd">Twijfel · standaard uit</p><div class="silist">' + doubt.map(rowHTML).join('') + '</div>' : '') + '</section>';
+      '<p class="note" style="margin-top:-6px">' + (bk.note ? esc(bk.note) + ' ' : '') + 'Vink uit wat niet klopt; twijfelgevallen staan uit. Er verandert niets tot je op de knop onderaan tikt.</p>' +
+      changesHTML +
+      (r.skipped ? '<p class="note" style="font-size:12.5px;color:var(--muted)">' + r.skipped + ' voorstellen overgeslagen: al zo, of niet (meer) in je app.</p>' : '') +
+      order.map(function (T) {
+        var rs = r.rows.map(function (q, i) { return { q: q, i: i }; }).filter(function (o) { return o.q.T === T; });
+        if (!rs.length) return '';
+        var on = rs.filter(function (o) { return o.q.on; }).length;
+        var addS = rs.filter(function (o) { return !o.q.rm && o.q.x.sure !== false; }), addD = rs.filter(function (o) { return !o.q.rm && o.q.x.sure === false; });
+        var rmS = rs.filter(function (o) { return o.q.rm && o.q.x.sure !== false; }), rmD = rs.filter(function (o) { return o.q.rm && o.q.x.sure === false; });
+        var key = T.id || ('new:' + T.name);
+        return '<section class="lpgrp"><div class="lphead">' + chip(T, newName(T)) + '<span class="lpn">' + on + ' van ' + rs.length + '</span>' +
+          '<button class="linkbtn sm" data-lpall="' + esc(key) + '">' + (on === rs.length ? 'Alles uit' : 'Alles aan') + '</button></div>' +
+          (addS.length && !rmS.length && !rmD.length && !addD.length ? '<div class="silist">' + addS.map(rowHTML).join('') + '</div>' : sub('Erbij', addS)) +
+          sub('Erbij · twijfel', addD) + sub('Eruit', rmS) + sub('Eruit · twijfel, blijft staan als je niets doet', rmD) + '</section>';
       }).join('') +
-      '<div class="btnrow dfoot"><button class="btn" id="lp-no">Annuleer</button><button class="btn primary" id="lp-yes"' + (n ? '' : ' disabled') + '>Voeg ' + n + ' toe</button></div>');
+      '<div class="btnrow dfoot"><button class="btn" id="lp-no">Annuleer</button><button class="btn primary" id="lp-yes">' + (n ? 'Pas ' + n + ' toe' : (r.changes.length ? 'Alleen lijnen aanpassen' : 'Niets te doen')) + '</button></div>');
+    if (!n && !r.changes.length) $('lp-yes').disabled = true;
     var keep = function () { var st = sheet.scrollTop; openLinePlan(bk); sheet.scrollTop = st; };
     sheet.querySelectorAll('[data-lp]').forEach(function (el) { el.addEventListener('click', function () { var q = r.rows[+el.dataset.lp]; q.on = !q.on; keep(); }); });
     sheet.querySelectorAll('[data-lpall]').forEach(function (el) {
       el.addEventListener('click', function () {
-        var rs = r.rows.filter(function (q) { return q.L.id === el.dataset.lpall; }), all = rs.every(function (q) { return q.on; });
+        var rs = r.rows.filter(function (q) { return (q.T.id || ('new:' + q.T.name)) === el.dataset.lpall; }), all = rs.every(function (q) { return q.on; });
         rs.forEach(function (q) { q.on = !all; }); keep();
       });
     });
     $('lp-no').addEventListener('click', function () { lpRev = null; closeSheet(); });
     $('lp-yes').addEventListener('click', function () {
+      r.changes.forEach(function (c) {
+        if (c.kind === 'rename') c.t.name = c.to;
+        else { c.t.id = 't' + (state.nextTag++); state.tags.push(c.t); }
+      });
       var k = 0;
-      r.rows.forEach(function (q) { if (!q.on) return; q.ts.forEach(function (o) { o.tags = o.tags || []; if (o.tags.indexOf(q.L.id) < 0) o.tags.push(q.L.id); }); k++; });
+      r.rows.forEach(function (q) {
+        if (!q.on) return;
+        q.ts.forEach(function (o) {
+          o.tags = o.tags || [];
+          var i = o.tags.indexOf(q.T.id);
+          if (q.rm) { if (i >= 0) o.tags.splice(i, 1); } else if (i < 0) o.tags.push(q.T.id);
+        });
+        k++;
+      });
       lpRev = null; save(); closeSheet(); closePanels(); render();
-      toast(k + (k === 1 ? ' titel' : ' titels') + ' in een lijn gezet');
+      toast(r.changes.length ? 'Lijnen aangepast · ' + k + (k === 1 ? ' wijziging' : ' wijzigingen') : k + (k === 1 ? ' titel' : ' titels') + ' bijgewerkt');
     });
   }
   function confirmFilmImport(bk) {
