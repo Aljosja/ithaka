@@ -576,7 +576,7 @@ button.ayr{cursor:pointer}
 .owc .os{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .owc .os.is-old{color:var(--danger);font-weight:700}
 .owc .lb{margin-top:3px}
-.zoek .zhd{background:linear-gradient(180deg,var(--hd1),var(--hd2));color:var(--hd-ink);padding:calc(10px + env(safe-area-inset-top,0px)) max(10px,env(safe-area-inset-right,0px)) 10px max(10px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:10px}
+.zoek .zhd{background:var(--hd2);color:var(--hd-ink);padding:calc(10px + env(safe-area-inset-top,0px)) max(10px,env(safe-area-inset-right,0px)) 10px max(10px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:10px}
 .zsrow{display:flex;align-items:center;gap:6px}
 .zback{flex:none}
 .zfield{flex:1;min-width:0;min-height:44px;border-radius:12px;background:var(--surface);color:var(--ink);display:flex;align-items:center;gap:6px;padding:4px 6px 4px 10px;box-sizing:border-box;flex-wrap:wrap}
@@ -594,7 +594,7 @@ button.ayr{cursor:pointer}
 .zfc .k{font-weight:500;opacity:.8}
 .zfc.on{background:var(--hd-ink);border-color:var(--hd-ink);color:var(--hd2)}
 .zfc.ic{padding:0 11px}
-.zdot{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;border-radius:9px;background:var(--sun);color:#2A190E;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px;box-sizing:border-box}
+.zdot{min-width:18px;height:18px;border-radius:9px;background:var(--sun);color:#2A190E;font-size:11px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;padding:0 5px;box-sizing:border-box;margin-left:2px}
 .zbody{gap:8px !important;padding-top:12px !important}
 .zbody>*{flex-shrink:0}
 .zlbl{margin:6px 4px 0;font-size:11.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
@@ -625,6 +625,7 @@ button.ayr{cursor:pointer}
 .zacts{display:flex;gap:8px;flex-wrap:wrap;margin:0 2px}
 .zab{min-height:38px;border-radius:999px;border:1px solid var(--line2);background:var(--surface);font:inherit;font-size:13px;font-weight:600;padding:0 12px;display:inline-flex;align-items:center;gap:6px;color:var(--ink);cursor:pointer}
 .zab[disabled]{opacity:.6;cursor:default}
+.zwis{color:var(--accent)}
 .zov{padding:8px}
 .ztiles{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .ztile{border:0;border-radius:12px;background:var(--track);text-align:left;padding:9px 11px;display:flex;flex-direction:column;gap:1px;min-height:58px;cursor:pointer;color:var(--ink);font:inherit}
@@ -5576,7 +5577,7 @@ button.ayr{cursor:pointer}
     $('zq-clear').hidden = !zq.q;
     $('zfac').innerHTML = zFacetsHTML();
     var all = zItems(), html;
-    if (zq.q.trim()) html = zTypingHTML(all);
+    if (zq.q.trim()) html = (zActive() ? '<div class="zacts"><button class="zab zwis" data-zreset="1">' + zic('x', 14, 2.4) + 'Wis alles</button></div>' : '') + zTypingHTML(all);
     else if (!zActive()) html = zStartHTML(all);
     else {
       var xs = all.filter(function (x) { return zMatch(x, zq); });
@@ -5585,7 +5586,8 @@ button.ayr{cursor:pointer}
       html = '<p class="zsum">' + zSummary(xs, zq) + '</p>' +
         '<div class="zacts"><button class="zab" id="z-pin"' + (pinned ? ' disabled' : '') + '>' + zic('pin', 15) + (pinned ? 'Vastgezet' : 'Vastzetten') + '</button>' +
         '<button class="zab" data-zfacet="group">Groepeer: ' + (zq.group === 'az' ? 'A–Z' : zq.group === 'ontstaan' ? 'ontstaan' : (zq.stand === 'done' ? 'jaar' : 'waar')) + zic('neer', 13, 2.4) + '</button>' +
-        (zq.line && zq.stand === 'done' ? '<button class="zab" id="z-stats">In Terugblik</button>' : '') + '</div>' +
+        (zq.line && zq.stand === 'done' ? '<button class="zab" id="z-stats">In Terugblik</button>' : '') +
+        '<button class="zab zwis" data-zreset="1">' + zic('x', 14, 2.4) + 'Wis alles</button></div>' +
         (overview ? zOverview(xs, zq) : '') + zGrouped(xs, zq);
     }
     body.innerHTML = html;
@@ -5616,6 +5618,7 @@ button.ayr{cursor:pointer}
     if (d.zstand) { zq.stand = d.zstand; renderZoek(true); return; }
     if (d.zyear) { zq.stand = 'done'; zq.when = +d.zyear; renderZoek(true); return; }
     if (d.zfacet) { zFacet(d.zfacet); return; }
+    if (d.zreset) { zq = zq0(); zOpenSec = {}; $('zq').value = ''; renderZoek(true); return; }
   }
   function zFacet(name) {
     var all = zItems(), opts = [], title = '', note = '';
