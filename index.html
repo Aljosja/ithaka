@@ -718,6 +718,11 @@ button.ayr{cursor:pointer}
 .pview{white-space:pre-wrap;font-size:12px;line-height:1.45;background:var(--ground);border:1px solid var(--line);border-radius:12px;padding:12px;margin:0;max-height:55vh;overflow:auto;font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--soft)}
 .okline{display:flex;gap:8px;align-items:center;margin:0;font-size:13px;color:#1F5A4E;background:#E2F0EC;border-radius:10px;padding:8px 10px}
 .silist{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.lpgrp{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.lphead{display:flex;align-items:center;gap:8px}
+.lphead .lchip{font-size:13px;padding:3px 9px 3px 7px}
+.lphead .lpn{flex:1;font-size:12.5px;color:var(--muted)}
+.lpd{margin:6px 0 0 !important}
 .sirow{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border:0;border-bottom:1px solid var(--line);background:transparent;text-align:left;cursor:pointer;color:var(--ink);width:100%}
 .sirow .cb{margin-top:2px}
 .sirow .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
@@ -3141,6 +3146,10 @@ button.ayr{cursor:pointer}
       if (!Array.isArray(d.items) || !d.items.every(function (x) { return x && typeof x.t === 'string'; })) throw new Error('vorm');
       return { kind: 'suggesties', from: d.from || todayISO(), focus: d.focus || '', items: d.items };
     }
+    if (d && d.kind === 'lijnvoorstel') {
+      if (!Array.isArray(d.items) || !d.items.every(function (x) { return x && typeof x.t === 'string' && typeof x.line === 'string'; })) throw new Error('vorm');
+      return { kind: 'lijnvoorstel', items: d.items, note: d.note || '', from: d.from || '' };
+    }
     if (d && d.kind === 'aanvullen') {
       if (!Array.isArray(d.books) || !d.books.every(function (b) { return b && typeof b.t === 'string'; })) throw new Error('vorm');
       return { kind: 'aanvullen', books: d.books, note: d.note || '', from: d.from || '' };
@@ -3254,6 +3263,7 @@ button.ayr{cursor:pointer}
   function confirmRestore(bk) {
     if (bk.kind === 'films') { confirmFilmImport(bk); return; }
     if (bk.kind === 'aanvullen') { confirmFill(bk); return; }
+    if (bk.kind === 'lijnvoorstel') { lpRev = null; openLinePlan(bk); return; }
     if (bk.kind === 'suggesties') { sugPick = null; confirmSugg(bk); return; }
     if (bk.kind === 'import') {
       var plan = importPlan(bk);
@@ -4433,6 +4443,67 @@ button.ayr{cursor:pointer}
       p.fill.forEach(function (f) { f.books.forEach(function (b) { if (!b.orig) { b.orig = f.orig; k++; } }); });
       save(); closeSheet(); closePanels(); renderKeep();
       toast(n + (n === 1 ? ' boek aangevuld' : ' boeken aangevuld') + ' met een jaar van ontstaan');
+    });
+  }
+  // lijnvoorstel: per lijn aanvinken wat erin mag; twijfel staat standaard uit
+  var lpRev = null;
+  function lpTargets(x) {
+    if (x.k === 'film') {
+      var f = x.id ? findFilm(String(x.id)) : null;
+      if (f && norm(f.t) !== norm(x.t)) f = null;
+      if (!f) f = state.films.filter(function (y) { return norm(y.t) === norm(x.t) && (!x.yr || +y.yr === +x.yr); })[0] || null;
+      return f ? sameFilm(fkey(f)) : [];
+    }
+    var b = x.id ? find(String(x.id)) : null;
+    if (b && fillBase(b.t) !== fillBase(x.t)) b = null;
+    if (!b) b = state.books.filter(function (y) { return importKey(y.t, y.a) === importKey(x.t, x.a); })[0] || null;
+    return b ? sameBook(b) : [];
+  }
+  function openLinePlan(bk) {
+    if (!lpRev) {
+      var rows = [];
+      bk.items.forEach(function (x) {
+        var L = null; lineTags().forEach(function (t) { if (norm(t.name).trim() === norm(x.line).trim()) L = t; });
+        if (!L) return;
+        var ts = lpTargets(x).filter(function (o) { return (o.tags || []).indexOf(L.id) < 0; });
+        if (!ts.length) return;
+        rows.push({ x: x, L: L, ts: ts, on: x.sure !== false });
+      });
+      lpRev = { bk: bk, rows: rows, skipped: bk.items.length - rows.length };
+    }
+    var r = lpRev, n = r.rows.filter(function (q) { return q.on; }).length;
+    var groups = lineTags().map(function (L) { return { L: L, rs: r.rows.map(function (q, i) { return { q: q, i: i }; }).filter(function (o) { return o.q.L === L; }) }; }).filter(function (g) { return g.rs.length; });
+    var rowHTML = function (o) {
+      var x = o.q.x, sub = x.k === 'film' ? ['Film', x.yr, x.dir].filter(Boolean).join(' · ') : ['Boek', x.a].filter(Boolean).join(' · ');
+      return '<button class="sirow" data-lp="' + o.i + '" role="checkbox" aria-checked="' + o.q.on + '"><span class="cb' + (o.q.on ? ' is-on' : '') + '" aria-hidden="true">' + (o.q.on ? ICON_CHECK : '') + '</span><span class="tx"><b>' + esc(x.t) + '</b><span class="m">' + esc(sub) + '</span>' + (x.why ? '<span class="r">' + esc(x.why) + '</span>' : '') + '</span></button>';
+    };
+    openSheet('Lijnvoorstel',
+      '<div class="sheethead"><h3>Lijnvoorstel van Claude</h3></div>' +
+      '<p class="note" style="margin-top:-6px">' + (bk.note ? esc(bk.note) + ' ' : '') + 'Vink uit wat niet klopt. Er verandert niets tot je op Voeg toe tikt.</p>' +
+      (r.skipped ? '<p class="note" style="font-size:12.5px;color:var(--muted)">' + r.skipped + ' voorstellen overgeslagen: al in die lijn, of niet (meer) in je app.</p>' : '') +
+      groups.map(function (g) {
+        var sure = g.rs.filter(function (o) { return o.q.x.sure !== false; }), doubt = g.rs.filter(function (o) { return o.q.x.sure === false; });
+        var on = g.rs.filter(function (o) { return o.q.on; }).length;
+        return '<section class="lpgrp"><div class="lphead"><span class="lchip" style="' + tagVars(g.L) + ';background:' + pal(g.L).c + '22">' + iconSVG(g.L, 13) + esc(g.L.name) + '</span><span class="lpn">' + on + ' van ' + g.rs.length + '</span>' +
+          '<button class="linkbtn sm" data-lpall="' + esc(g.L.id) + '">' + (on === g.rs.length ? 'Alles uit' : 'Alles aan') + '</button></div>' +
+          (sure.length ? '<div class="silist">' + sure.map(rowHTML).join('') + '</div>' : '') +
+          (doubt.length ? '<p class="lbl lpd">Twijfel · standaard uit</p><div class="silist">' + doubt.map(rowHTML).join('') + '</div>' : '') + '</section>';
+      }).join('') +
+      '<div class="btnrow dfoot"><button class="btn" id="lp-no">Annuleer</button><button class="btn primary" id="lp-yes"' + (n ? '' : ' disabled') + '>Voeg ' + n + ' toe</button></div>');
+    var keep = function () { var st = sheet.scrollTop; openLinePlan(bk); sheet.scrollTop = st; };
+    sheet.querySelectorAll('[data-lp]').forEach(function (el) { el.addEventListener('click', function () { var q = r.rows[+el.dataset.lp]; q.on = !q.on; keep(); }); });
+    sheet.querySelectorAll('[data-lpall]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var rs = r.rows.filter(function (q) { return q.L.id === el.dataset.lpall; }), all = rs.every(function (q) { return q.on; });
+        rs.forEach(function (q) { q.on = !all; }); keep();
+      });
+    });
+    $('lp-no').addEventListener('click', function () { lpRev = null; closeSheet(); });
+    $('lp-yes').addEventListener('click', function () {
+      var k = 0;
+      r.rows.forEach(function (q) { if (!q.on) return; q.ts.forEach(function (o) { o.tags = o.tags || []; if (o.tags.indexOf(q.L.id) < 0) o.tags.push(q.L.id); }); k++; });
+      lpRev = null; save(); closeSheet(); closePanels(); render();
+      toast(k + (k === 1 ? ' titel' : ' titels') + ' in een lijn gezet');
     });
   }
   function confirmFilmImport(bk) {
