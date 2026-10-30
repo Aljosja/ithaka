@@ -272,6 +272,10 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .sydet summary svg{transform:rotate(90deg);transition:transform .15s}
 .sydet[open] summary svg{transform:rotate(-90deg)}
 .sydet[open] .syhint{margin:8px 0 2px !important}
+.syline{display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
+.syline .syrow{border-bottom:0;flex:1;min-width:0}
+.syskip{flex:none;min-height:36px;border:1px solid var(--line2);border-radius:999px;background:transparent;color:var(--soft);font:inherit;font-size:12.5px;font-weight:600;padding:0 12px;cursor:pointer}
+.syall{align-self:flex-start;margin-top:6px}
 .sybar{height:6px;border-radius:3px;background:var(--track);overflow:hidden}
 .sybar i{display:block;height:100%;background:var(--accent);border-radius:3px;transition:width .3s}
 .days{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right;flex:none}
@@ -740,6 +744,7 @@ button.ayr{cursor:pointer}
 .nope p{margin:0;font-size:12.5px;font-weight:600;color:var(--soft)}
 .rbtn{min-height:34px;border-radius:999px;border:1px solid var(--line2);background:var(--surface);font-size:12.5px;font-weight:600;padding:0 11px;color:var(--soft);cursor:pointer}
 .sugwhy{margin:0;font-size:13.5px;line-height:1.45;color:var(--soft);background:var(--ground);border-radius:12px;padding:10px 12px}
+.sugknown{display:block;margin-top:4px;padding:0;min-height:32px;text-align:left}
 .sugwhy b{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
 @media (prefers-color-scheme: dark){ .okline{background:#173A33;color:#9FD8CB} }
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
@@ -1768,7 +1773,7 @@ button.ayr{cursor:pointer}
       '<div class="dhead">' + cover + '<div class="dmeta"><h3>' + esc(b.t) + '</h3>' + (b.a ? '<button type="button" class="alink" id="dd-author" aria-label="Alles van ' + esc(b.a) + '">' + esc(b.a) + '</button>' : '') +
         (bookFacts(b) ? '<span class="facts">' + esc(bookFacts(b)) + '</span>' : '') + '<span class="dwhere">' + esc(where) + '</span>' +
         '<span class="photorow"><button type="button" class="linkbtn sm" id="dd-photo">' + (own ? 'Andere foto' : 'Foto van de kaft maken') + '</button>' + (own ? '<button type="button" class="linkbtn sm muted" id="dd-photo-del">Foto weg</button>' : '') + '</span></div></div>' +
-      (sugFor('book', b.id) && sugFor('book', b.id).why ? '<p class="sugwhy"><b>Suggestie van Claude</b>' + esc(sugFor('book', b.id).why) + '</p>' : '') +
+      sugWhyHTML('book', b.id) +
       steps + dates +
       (b.status === 'done' ? '<div class="field"><label>Sterren</label><div class="rate"><div class="stars" role="group" aria-label="Sterren">' + starsHTML(b.rating || 0) + '</div>' +
         '<span class="rval" id="dd-rval">' + (b.rating ? fmtRating(b.rating) : 'nog geen') + '</span>' +
@@ -3645,7 +3650,7 @@ button.ayr{cursor:pointer}
         (f.dir ? '<span class="dirlinks">' + f.dir.split(' & ').map(function (d) { return '<button type="button" class="alink" data-fperson="' + esc(d.trim()) + '">Alles van ' + esc(d.trim()) + '</button>'; }).join('') + '</span>' : '') +
         (f.lb ? '<a class="linkbtn sm" href="' + esc(f.lb) + '" target="_blank" rel="noopener" style="text-decoration:none">Letterboxd</a>' : '') +
       '</div></div>' +
-      (sugFor('film', f.id) && sugFor('film', f.id).why ? '<p class="sugwhy"><b>Suggestie van Claude</b>' + esc(sugFor('film', f.id).why) + '</p>' : '') +
+      sugWhyHTML('film', f.id) +
       '<div class="seg2">' + stSeg + '</div>' +
       (f.st === 'seen' ?
         '<div class="datefields"><div class="field"><label for="ff-d">Gezien op</label><input id="ff-d" type="date" value="' + esc(f.d || '') + '"></div><div class="field"><label>&nbsp;</label>' + sw('ff-re', f.re, 'Herzien') + '</div></div>' +
@@ -3899,7 +3904,7 @@ button.ayr{cursor:pointer}
     state.films.forEach(function (f) {
       if (!f.t) return;
       if (link && f.wd) { if ((!f.lb || !f.dir) && !byQ[f.wd]) { byQ[f.wd] = 1; qids.push(f.wd); } return; }
-      if (link ? (f.wd || (!opts.retry && f.wdMiss)) : f.dir) return;
+      if (link ? (f.wd || f.wdSkip || (!opts.retry && f.wdMiss)) : f.dir) return;
       var k = fkey(f); if (todo[k]) return;
       if (!f.yr) { if (link) { todo[k] = f; noYear.push(k); } return; }
       todo[k] = f; keys.push(k);
@@ -3962,7 +3967,7 @@ button.ayr{cursor:pointer}
 
   // Boeken koppelen aan de KB: zoeken op titel en auteur; bij meer uitgaven kiest de app er zelf een
   var kbRun = null;
-  function bookNeedsKB(b) { return !b.isbn && !!b.t; }
+  function bookNeedsKB(b) { return !b.isbn && !!b.t && !b.kbSkip; }
   function pickEdition(eds, b) {
     var withP = eds.filter(function (e) { return e.pages; });
     if (b.pages && withP.length) {
@@ -4017,19 +4022,34 @@ button.ayr{cursor:pointer}
     state.books.forEach(function (b) { if (!bookNeedsKB(b)) return; var k = bookKeyOf(b); bk[k] = 1; if (b.kbMiss) bTried[k] = 1; });
     state.films.forEach(function (f) {
       if (!f.t) return;
-      if (!f.wd) { var k = fkey(f); fk[k] = 1; if (f.wdMiss) fTried[k] = 1; }
+      if (!f.wd && !f.wdSkip) { var k = fkey(f); fk[k] = 1; if (f.wdMiss) fTried[k] = 1; }
       if (!f.lb) fNoLb++;
     });
     var n = function (o) { return Object.keys(o).length; };
-    return { books: n(bk), booksTried: n(bTried), films: n(fk), filmsTried: n(fTried), noLb: fNoLb };
+    return { books: n(bk), booksTried: n(bTried), films: n(fk), filmsTried: n(fTried), noLb: fNoLb,
+      booksSkip: syBooks(function (b) { return b.kbSkip && !b.isbn; }).length, filmsSkip: syFilms(function (f) { return f.wdSkip && !f.wd; }).length };
+  }
+  // niet gevonden en overgeslagen: uit de lijst zelf, ook na herstarten; één regel per titel
+  function syBooks(test) { var seen = {}; return state.books.filter(function (b) { if (!test(b)) return false; var k = bookKeyOf(b); if (seen[k]) return false; seen[k] = 1; return true; }); }
+  function syFilms(test) { var seen = {}; return state.films.filter(function (f) { if (!test(f)) return false; var k = fkey(f); if (seen[k]) return false; seen[k] = 1; return true; }); }
+  function sameBook(b) { var k = bookKeyOf(b); return state.books.filter(function (x) { return bookKeyOf(x) === k; }); }
+  function setSkip(kind, id, on) {
+    var it = kind === 'film' ? findFilm(id) : find(id); if (!it) return;
+    (kind === 'film' ? sameFilm(fkey(it)) : sameBook(it)).forEach(function (x) {
+      if (kind === 'film') { if (on) x.wdSkip = true; else delete x.wdSkip; } else { if (on) x.kbSkip = true; else delete x.kbSkip; }
+    });
   }
   var syOpen = {};
   function syDetHTML(key, label, hint, rows, openDef) {
     var open = syOpen[key] !== undefined ? syOpen[key] : openDef;
     return '<details class="sydet" data-sydet="' + key + '"' + (open ? ' open' : '') + '><summary><span>' + label + '</span>' + CHEV_R + '</summary>' + (hint ? '<p class="note syhint">' + hint + '</p>' : '') + rows + '</details>';
   }
-  function syncRowHTML(attr, id, title, sub) {
-    return '<button class="brow syrow" ' + attr + '="' + esc(id) + '"><span class="bt"><b>' + esc(title) + '</b><span>' + sub + '</span></span>' + CHEV_R + '</button>';
+  function syncRowHTML(attr, id, title, sub, side) {
+    var row = '<button class="brow syrow" ' + attr + '="' + esc(id) + '"><span class="bt"><b>' + esc(title) + '</b><span>' + sub + '</span></span>' + (side ? '' : CHEV_R) + '</button>';
+    return side ? '<div class="syline">' + row + side + '</div>' : row;
+  }
+  function skipBtn(kind, id, t, on) {
+    return '<button class="syskip" data-skip="' + kind + ':' + esc(id) + '" data-on="' + (on ? 1 : 0) + '" aria-label="' + (on ? 'Niet meer zoeken naar ' : 'Weer zoeken naar ') + esc(t) + '">' + (on ? 'Overslaan' : 'Terugzetten') + '</button>';
   }
   function runHTML(r, what, unit) {
     if (!r) return '';
@@ -4050,33 +4070,41 @@ button.ayr{cursor:pointer}
       (fNew || (!c.films && c.noLb) ? '<button class="btn primary" id="sy-wd">Zoek bij Wikidata</button>' : '') +
       (c.filmsTried ? '<button class="btn" id="sy-wd-all">' + (fNew ? 'Ook ' + c.filmsTried + ' eerder niet gevonden' : 'Probeer ' + c.filmsTried + ' opnieuw') + '</button>' : '') + '</div>';
     var bRows = '', fRows = '';
-    if (kr && (kr.linked.length || kr.miss.length)) {
-      var bl = kr.linked.map(find).filter(Boolean), bm = kr.miss.map(find).filter(Boolean);
-      if (bl.length) bRows += syDetHTML('bl', 'Gekoppeld · ' + bl.length, 'De app koos zelf een uitgave. Tik om een andere te kiezen.', bl.map(function (b) {
+    if (kr && kr.linked.length) {
+      var bl = kr.linked.map(find).filter(Boolean);
+      bRows += syDetHTML('bl', 'Gekoppeld · ' + bl.length, 'De app koos zelf een uitgave. Tik om een andere te kiezen.', bl.map(function (b) {
         return syncRowHTML('data-sy-b', b.id, b.t, esc([b.a, b.year, b.publisher].filter(Boolean).join(' · ')) + (b.isbn ? ' · ISBN ' + esc(b.isbn) : ''));
       }).join(''), bl.length <= 10);
-      if (bm.length) bRows += syDetHTML('bm', 'Niet gevonden · ' + bm.length, 'De KB kent vooral Nederlandse uitgaven. Tik om zelf te zoeken of een ISBN in te vullen.', bm.map(function (b) {
-        return syncRowHTML('data-sy-b', b.id, b.t, b.isbn ? '<em class="syok">nu gekoppeld</em>' : esc(b.a || 'geen auteur'));
-      }).join(''), false);
     }
-    if (wr && (wr.linked.length || wr.miss.length)) {
-      var fl = wr.linked.map(findFilm).filter(Boolean), fm = wr.miss.map(findFilm).filter(Boolean);
-      if (fl.length) fRows += syDetHTML('fl', 'Gekoppeld · ' + fl.length, 'Klopt er een niet? Tik om zelf de juiste te kiezen.', fl.map(function (f) {
+    var bm = kr && kr.busy ? [] : syBooks(function (b) { return b.kbMiss && bookNeedsKB(b); });
+    if (bm.length) bRows += syDetHTML('bm', 'Niet gevonden · ' + bm.length, 'De KB kent vooral Nederlandse uitgaven. Tik om zelf te zoeken of een ISBN in te vullen. Staat een boek er niet in, kies dan Overslaan: dan zoekt de app er niet meer naar.',
+      bm.map(function (b) { return syncRowHTML('data-sy-b', b.id, b.t, esc(b.a || 'geen auteur'), skipBtn('book', b.id, b.t, true)); }).join('') +
+      (bm.length > 1 ? '<button class="linkbtn syall" data-skipall="book">Alle ' + bm.length + ' overslaan</button>' : ''), false);
+    var bs = syBooks(function (b) { return b.kbSkip && !b.isbn; });
+    if (bs.length) bRows += syDetHTML('bs', 'Overgeslagen · ' + bs.length, 'Hier zoekt de app niet meer naar. Je kunt ze altijd nog zelf aanvullen.',
+      bs.map(function (b) { return syncRowHTML('data-sy-b', b.id, b.t, esc(b.a || 'geen auteur'), skipBtn('book', b.id, b.t, false)); }).join(''), false);
+    if (wr && wr.linked.length) {
+      var fl = wr.linked.map(findFilm).filter(Boolean);
+      fRows += syDetHTML('fl', 'Gekoppeld · ' + fl.length, 'Klopt er een niet? Tik om zelf de juiste te kiezen.', fl.map(function (f) {
         return syncRowHTML('data-sy-f', f.id, f.t + (f.yr ? ' (' + f.yr + ')' : ''), esc(f.dir || 'regisseur onbekend') + (f.lb ? ' · Letterboxd' : ''));
       }).join(''), fl.length <= 10);
-      if (fm.length) fRows += syDetHTML('fm', 'Niet gevonden · ' + fm.length, 'Wikidata zoekt op de precieze titel en het jaar. Tik om zelf te zoeken, bijvoorbeeld op de oorspronkelijke titel.', fm.map(function (f) {
-        return syncRowHTML('data-sy-f', f.id, f.t + (f.yr ? ' (' + f.yr + ')' : ''), f.wd ? '<em class="syok">nu gekoppeld</em>' : f.yr ? esc(f.dir || 'regisseur onbekend') : 'geen jaar bekend');
-      }).join(''), false);
     }
+    var fm = wdBusy ? [] : syFilms(function (f) { return f.wdMiss && !f.wd && !f.wdSkip; });
+    if (fm.length) fRows += syDetHTML('fm', 'Niet gevonden · ' + fm.length, 'Wikidata zoekt op de precieze titel en het jaar. Tik om zelf te zoeken, bijvoorbeeld op de oorspronkelijke titel. Staat een film er niet in, kies dan Overslaan.',
+      fm.map(function (f) { return syncRowHTML('data-sy-f', f.id, f.t + (f.yr ? ' (' + f.yr + ')' : ''), f.yr ? esc(f.dir || 'regisseur onbekend') : 'geen jaar bekend', skipBtn('film', f.id, f.t, true)); }).join('') +
+      (fm.length > 1 ? '<button class="linkbtn syall" data-skipall="film">Alle ' + fm.length + ' overslaan</button>' : ''), false);
+    var fs = syFilms(function (f) { return f.wdSkip && !f.wd; });
+    if (fs.length) fRows += syDetHTML('fs', 'Overgeslagen · ' + fs.length, 'Hier zoekt de app niet meer naar. Je kunt ze altijd nog zelf aanvullen.',
+      fs.map(function (f) { return syncRowHTML('data-sy-f', f.id, f.t + (f.yr ? ' (' + f.yr + ')' : ''), esc(f.dir || 'regisseur onbekend'), skipBtn('film', f.id, f.t, false)); }).join(''), false);
     openSheet('Koppelingen aanvullen',
       '<div class="sheethead"><h3>Koppelingen aanvullen</h3><button class="linkbtn" id="sy-done" style="align-self:center">Klaar</button></div>' +
       '<p class="note" style="margin-top:-6px">Zoek in één keer de koppelingen die nog ontbreken. Wat al ingevuld is, blijft staan.</p>' +
       '<section class="sygrp"><h4>Boeken · KB</h4>' +
-        '<p class="note">' + (c.books ? c.books + (c.books === 1 ? ' boek heeft' : ' boeken hebben') + ' nog geen ISBN of KB-koppeling' + (c.booksTried ? '; ' + c.booksTried + ' daarvan eerder niet gevonden' : '') + '.' : 'Alle boeken hebben een ISBN.') +
+        '<p class="note">' + (c.books ? c.books + (c.books === 1 ? ' boek heeft' : ' boeken hebben') + ' nog geen ISBN of KB-koppeling' + (c.booksTried ? '; ' + c.booksTried + ' daarvan eerder niet gevonden' : '') + '.' : c.booksSkip ? 'Voor alle boeken is er een ISBN of sla je het zoeken over.' : 'Alle boeken hebben een ISBN.') + (c.booksSkip ? ' ' + c.booksSkip + ' overgeslagen.' : '') +
         ' Bladzijden, uitgever en jaar komen mee als ze nog leeg zijn.</p>' +
         runHTML(kr, 'kb', 'boeken') + bBtns + bRows + '</section>' +
       '<section class="sygrp"><h4>Films · Wikidata</h4>' +
-        '<p class="note">' + (c.films ? c.films + (c.films === 1 ? ' film heeft' : ' films hebben') + ' nog geen Wikidata-koppeling' + (c.filmsTried ? '; ' + c.filmsTried + ' daarvan eerder niet gevonden' : '') + '.' : 'Alle films zijn gekoppeld aan Wikidata.') +
+        '<p class="note">' + (c.films ? c.films + (c.films === 1 ? ' film heeft' : ' films hebben') + ' nog geen Wikidata-koppeling' + (c.filmsTried ? '; ' + c.filmsTried + ' daarvan eerder niet gevonden' : '') + '.' : c.filmsSkip ? 'Alle andere films zijn gekoppeld aan Wikidata.' : 'Alle films zijn gekoppeld aan Wikidata.') + (c.filmsSkip ? ' ' + c.filmsSkip + ' overgeslagen.' : '') +
         (c.noLb ? ' ' + c.noLb + (c.noLb === 1 ? ' film mist' : ' films missen') + ' een Letterboxd-link.' : '') +
         ' Regisseur, speelduur en Letterboxd-link komen mee als ze ontbreken.</p>' +
         runHTML(wr, 'wd', 'films') + fBtns + fRows + '</section>');
@@ -4088,6 +4116,16 @@ button.ayr{cursor:pointer}
     on('sy-wd', function () { wdSync('link'); });
     on('sy-wd-all', function () { wdSync('link', { retry: true }); });
     on('sy-wd-stop', function () { if (wdRun) wdRun.stop = true; });
+    sheet.querySelectorAll('[data-skip]').forEach(function (el) {
+      el.addEventListener('click', function () { var p = el.dataset.skip.split(':'); setSkip(p[0], p.slice(1).join(':'), el.dataset.on === '1'); save(); syncRefresh(); });
+    });
+    sheet.querySelectorAll('[data-skipall]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        if (el.dataset.skipall === 'film') state.films.forEach(function (f) { if (f.wdMiss && !f.wd) f.wdSkip = true; });
+        else state.books.forEach(function (b) { if (b.kbMiss && !b.isbn) b.kbSkip = true; });
+        save(); syncRefresh(); toast('Overgeslagen');
+      });
+    });
     sheet.querySelectorAll('[data-sydet]').forEach(function (el) { el.addEventListener('toggle', function () { syOpen[el.dataset.sydet] = el.open; }); });
     sheet.querySelectorAll('[data-sy-b]').forEach(function (el) { el.addEventListener('click', function () { if (kbRun && kbRun.busy) return; enrich = null; openEnrich(el.dataset.syB, 'sync'); }); });
     sheet.querySelectorAll('[data-sy-f]').forEach(function (el) { el.addEventListener('click', function () { if (wdBusy) return; var f = findFilm(el.dataset.syF); if (f) openAddFilm({ fill: f.id, q: f.t, back: 'sync' }); }); });
@@ -4978,6 +5016,22 @@ button.ayr{cursor:pointer}
     });
   }
   function sugById(id) { var r = null; (state.sugg || []).forEach(function (x) { if (x.id === id) r = x; }); return r; }
+  // bij een boek of film uit een suggestie: waarom, en 'Kende ik al' als Claude iets voorstelde dat je al had of kende
+  function sugWhyHTML(kind, id) {
+    var x = sugFor(kind, id); if (!x) return '';
+    return '<div class="sugwhy"><b>Suggestie van Claude</b>' + (x.why ? esc(x.why) : '') +
+      '<button type="button" class="linkbtn sm sugknown" data-sugknown="' + esc(x.id) + '">' + 'Kende ik al · haal weg als suggestie' + '</button></div>';
+  }
+  // de koppeling weghalen: het item blijft in je lijst, de suggestie gaat naar Weggelegd met reden 'Kende ik al'
+  function sugForget(sid) {
+    var x = sugById(sid); if (!x) return;
+    x.st = 'no'; x.no = 'Kende ik al'; delete x.ref; delete x.to;
+    save(); renderKeep(); toast('Weggehaald als suggestie');
+  }
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest && e.target.closest('[data-sugknown]'); if (!el) return;
+    var holder = el.closest('.sugwhy'); sugForget(el.dataset.sugknown); if (holder) holder.remove();
+  });
   function sugFor(kind, id) { var r = null; (state.sugg || []).forEach(function (x) { if (x.ref === id && x.k === kind) r = x; }); return r; }
   function keepScroll(fn) { var st = sheet.scrollTop; fn(); sheet.scrollTop = st; }
 
