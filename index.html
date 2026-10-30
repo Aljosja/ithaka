@@ -583,6 +583,7 @@ button.ayr{cursor:pointer}
 .lhas button.is-on{background:var(--lib);border-color:var(--lib);color:var(--surface)}
 .lhas button.is-on.no{background:var(--muted);border-color:var(--muted)}
 .lb.want.no{color:var(--muted);border-color:var(--line2)}
+.lb.res{color:var(--lib);background:var(--lib-soft);border:1.5px solid var(--lib)}
 .lbtns{display:flex;flex-direction:column;gap:6px;flex:none}
 .lbtn{min-height:38px;border-radius:10px;border:1px solid var(--lib-line);background:var(--surface);color:var(--lib);font-weight:600;font-size:13px;padding:0 12px;cursor:pointer;white-space:nowrap}
 .libline.is-quiet .lbtn{border-color:var(--line2);color:var(--soft)}
@@ -1038,7 +1039,7 @@ button.ayr{cursor:pointer}
   function libSearchURL(b, byIsbn) { var u = libCfg().url; if (!u) return ''; var q = byIsbn ? b.isbn : libQuery(b); if (!q) return ''; return u.indexOf('{q}') >= 0 ? u.replace('{q}', encodeURIComponent(q)) : u; }
   function dShort(iso) { var d = parseISO(iso); return d.getDate() + ' ' + MON_SHORT[d.getMonth()]; }
   function libBoxHTML(b) {
-    var cur = b.lib === 'want' || b.lib === 'loan' ? b.lib : 'own', c = libCfg();
+    var cur = b.lib === 'want' || b.lib === 'loan' || b.lib === 'res' ? b.lib : 'own', c = libCfg();
     var url = libSearchURL(b);
     var link = url ? '<a class="linkbtn sm" href="' + esc(url) + '" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;color:var(--lib)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>Zoek op titel</a>' : '';
     var ic = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-5 9 5"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8"/><path d="M3 21h18"/></svg>';
@@ -1048,7 +1049,13 @@ button.ayr{cursor:pointer}
       var txt = b.status === 'done' ? 'Al gelezen.' : !st ? 'Zonder geplande maand staat hij in je bieb-overzicht.' : reserveNow(b) ? '<span class="due">Reserveer hem nu</span>: gepland in ' + MONTHS[+b.m - 1].toLowerCase() + '.' : 'Seintje om te reserveren vanaf ' + dShort(addDaysISO(st, -28)) + '.';
       var isbnLink = b.isbn && url ? '<a class="linkbtn sm" href="' + esc(libSearchURL(b, true)) + '" target="_blank" rel="noopener" style="text-decoration:none;color:var(--lib)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>Zoek op ISBN</a>' : '';
       var has = '<span class="lhas" role="group" aria-label="Heeft de bieb hem?"><span>In de bieb?</span><button type="button" data-has="1" class="' + (b.libHas === true ? 'is-on' : '') + '" aria-pressed="' + (b.libHas === true) + '">Ja</button><button type="button" data-has="0" class="' + (b.libHas === false ? 'is-on no' : '') + '" aria-pressed="' + (b.libHas === false) + '">Nee</button></span>';
-      return '<div class="libline">' + ic + '<span class="li"><b>Wil lenen</b><span>' + txt + '</span><span class="llinks">' + link + isbnLink + '</span>' + has + '</span><span class="lbtns"><button type="button" class="lbtn" data-lib="loan">Geleend</button><button type="button" class="lbtn" data-lib="own">Toch niet</button></span></div>';
+      return '<div class="libline">' + ic + '<span class="li"><b>Wil lenen</b><span>' + txt + '</span><span class="llinks">' + link + isbnLink + '</span>' + has + '</span><span class="lbtns"><button type="button" class="lbtn" data-lib="res">Gereserveerd</button><button type="button" class="lbtn" data-lib="loan">Geleend</button><button type="button" class="lbtn" data-lib="own">Toch niet</button></span></div>';
+    }
+    if (cur === 'res') {
+      var rd = b.resDate ? daysSince(b.resDate) : null;
+      return '<div class="libline">' + ic + '<span class="li"><b>Gereserveerd' + (b.resDate ? ' · sinds ' + dShort(b.resDate) : '') + '</b><span>' + (rd ? rd + (rd === 1 ? ' dag' : ' dagen') + ' geleden. ' : '') + 'Opgehaald? Dan loopt de leentermijn vanaf vandaag.</span>' +
+        '<details class="ldet"><summary>Gereserveerd op ' + (b.resDate ? dShort(b.resDate) : '?') + '</summary><input id="dd-res" type="date" value="' + esc(b.resDate || '') + '" aria-label="Gereserveerd op"></details></span>' +
+        '<span class="lbtns"><button type="button" class="lbtn" data-lib="loan">Opgehaald</button><button type="button" class="lbtn" data-lib="want">Geannuleerd</button></span></div>';
     }
     var due = dueISO(b), n = daysTo(due);
     var left = n < 0 ? '<span class="due">' + (-n) + (n === -1 ? ' dag' : ' dagen') + ' te laat.</span>' : n === 0 ? '<span class="due">Vandaag inleveren.</span>' : (n <= 7 ? '<span class="due">' : '') + 'Nog ' + n + (n === 1 ? ' dag' : ' dagen') + '.' + (n <= 7 ? '</span>' : '');
@@ -1062,11 +1069,13 @@ button.ayr{cursor:pointer}
       var due = dueISO(b), n = daysTo(due);
       return '<span class="lb loan' + (n <= 7 ? ' due' : '') + '">' + ICON_LIB + (n < 0 ? 'te laat · ' + dShort(due) : n === 0 ? 'vandaag inleveren' : 'geleend · tot ' + dShort(due)) + '</span>';
     }
+    if (b.lib === 'res' && b.status !== 'done') return '<span class="lb res">' + ICON_LIB + 'gereserveerd' + (b.resDate ? ' · ' + dShort(b.resDate) : '') + '</span>';
     if (b.lib === 'want' && b.status !== 'done') return b.libHas === false ? '<span class="lb want no">' + ICON_LIB + 'niet in de bieb</span>' : '<span class="lb want">' + ICON_LIB + (reserveNow(b) ? 'nu reserveren' : b.libHas ? 'lenen · in de bieb' : 'lenen') + '</span>';
     return '';
   }
   function libLoans() { return state.books.filter(function (b) { return b.lib === 'loan' && b.loanDate; }).sort(function (x, y) { return dueISO(x) < dueISO(y) ? -1 : 1; }); }
   function libWants() { return state.books.filter(function (b) { return b.lib === 'want' && b.status !== 'done'; }); }
+  function libRes() { return state.books.filter(function (b) { return b.lib === 'res' && b.status !== 'done'; }).sort(function (x, y) { return (x.resDate || '') < (y.resDate || '') ? -1 : 1; }); }
   function renderLibbar() {
     var loans = libLoans(), now = libWants().filter(reserveNow);
     var bar = $('libbar');
@@ -1091,7 +1100,8 @@ button.ayr{cursor:pointer}
     var loans = libLoans(), wants = libWants();
     var now = wants.filter(reserveNow), later = wants.filter(function (b) { return !reserveNow(b) && planStart(b); }).sort(function (x, y) { return planStart(x) < planStart(y) ? -1 : 1; });
     var loose = wants.filter(function (b) { return !planStart(b); });
-    var html = '';
+    var html = '', res = libRes();
+    if (res.length) html += '<div class="lgrp">Gereserveerd <span>' + res.length + '</span></div>' + res.map(function (b) { return rowL(b, b.resDate ? 'sinds<br>' + dShort(b.resDate) : '', 'now'); }).join('');
     if (loans.length) html += '<div class="lgrp">Geleend <span>' + loans.length + '</span></div>' + loans.map(function (b) {
       var due = dueISO(b), n = daysTo(due);
       return rowL(b, (n < 0 ? 'te laat<br>' : 'inleveren<br>') + dShort(due) + (b.renewed ? '<br><small style="font-weight:500">verlengd</small>' : ''), n <= 7 ? 'due' : '');
@@ -1150,7 +1160,7 @@ button.ayr{cursor:pointer}
   function secHTML(d, f) {
     var sv = !f && d.key === 'voorraad' ? (state.sview || 'all') : 'all';
     var items = YB().filter(function (b) { return b.m === d.key && (!f || matches(b)) && (sv === 'all' || (sv === 'want' ? isToLend(b) : !isToLend(b))); });
-    if (sv === 'want') { var hv = function (b) { return b.libHas === true ? 0 : b.libHas === false ? 2 : 1; }; items = items.map(function (b, i) { return { b: b, i: i }; }).sort(function (x, z) { return (hv(x.b) - hv(z.b)) || (x.i - z.i); }).map(function (x) { return x.b; }); }
+    if (sv === 'want') { var hv = function (b) { return b.lib === 'res' ? -1 : b.libHas === true ? 0 : b.libHas === false ? 2 : 1; }; items = items.map(function (b, i) { return { b: b, i: i }; }).sort(function (x, z) { return (hv(x.b) - hv(z.b)) || (x.i - z.i); }).map(function (x) { return x.b; }); }
     if (f && !items.length) return '';
     var doneN = items.filter(function (b) { return b.done; }).length;
     var complete = !f && items.length > 0 && doneN === items.length;
@@ -1310,13 +1320,15 @@ button.ayr{cursor:pointer}
     var add = function (b) { if (!seen[b.id]) { seen[b.id] = 1; items.push(b); } };
     var bz = bezigBooks(); bz.forEach(add);
     libLoans().forEach(add);
+    libRes().forEach(add);
     libWants().filter(reserveNow).forEach(add);
     if (!items.length) return '';
-    var lib = libLoans().length || libWants().length;
+    var lib = libLoans().length || libWants().length || libRes().length;
     var cards = items.map(function (b) {
       var d = daysSince(b.started), sub, old = false;
       if (b.status === 'bezig') { old = d !== null && d > 60; sub = (b.a ? b.a + ' · ' : '') + (old ? d + ' dagen bezig' : b.started ? 'sinds ' + dShort(b.started) : 'bezig'); }
       else if (b.lib === 'loan') sub = (b.a ? b.a + ' · ' : '') + 'nog niet begonnen';
+      else if (b.lib === 'res') sub = (b.a ? b.a + ' · ' : '') + (+b.m >= 1 ? 'gepland in ' + MONTHS[+b.m - 1].toLowerCase() : 'nog ophalen');
       else sub = (b.a ? b.a + ' · ' : '') + (+b.m >= 1 ? 'gepland in ' + MONTHS[+b.m - 1].toLowerCase() : 'wil lenen');
       return '<button class="owc" data-ow="' + esc(b.id) + '">' + coverHTML(b) + '<span class="ot"><b>' + esc(b.t) + '</b><span class="os' + (old ? ' is-old' : '') + '">' + esc(sub) + '</span>' + libBadge(b) + '</span></button>';
     }).join('');
@@ -1346,7 +1358,7 @@ button.ayr{cursor:pointer}
     }
     list.innerHTML = html;
   }
-  function isToLend(b) { return b.lib === 'want' && b.status !== 'done'; }
+  function isToLend(b) { return (b.lib === 'want' || b.lib === 'res') && b.status !== 'done'; }
   function stockSegHTML() {
     var vs = YB().filter(function (b) { return b.m === 'voorraad'; }), sv = state.sview || 'all';
     var nw = vs.filter(isToLend).length, inb = vs.filter(function (b) { return isToLend(b) && b.libHas === true; }).length;
@@ -1706,6 +1718,7 @@ button.ayr{cursor:pointer}
         var v = el.dataset.lib; flush();
         if (v === 'loan') { if (b.lib !== 'loan' || !b.loanDate) { b.loanDate = todayISO(); b.renewed = 0; } delete b.libHas; }
         else { delete b.loanDate; delete b.renewed; }
+        if (v === 'res') { if (b.lib !== 'res' || !b.resDate) b.resDate = todayISO(); b.libHas = true; } else delete b.resDate;
         if (v === 'own') delete b.libHas;
         if (v === 'own') delete b.lib; else b.lib = v;
         save(); renderKeep(); openDetail(id);
@@ -1714,6 +1727,7 @@ button.ayr{cursor:pointer}
     sheet.querySelectorAll('[data-has]').forEach(function (el) {
       el.addEventListener('click', function () { flush(); var v = el.dataset.has === '1'; if (b.libHas === v) delete b.libHas; else b.libHas = v; save(); renderKeep(); openDetail(id); });
     });
+    if ($('dd-res')) $('dd-res').addEventListener('change', function () { if (this.value) { b.resDate = this.value; flush(); save(); renderKeep(); openDetail(id); } });
     if ($('dd-loan')) $('dd-loan').addEventListener('change', function () { if (this.value) { b.loanDate = this.value; flush(); save(); renderKeep(); openDetail(id); } });
     if ($('dd-renew')) $('dd-renew').addEventListener('click', function () { flush(); b.renewed = (b.renewed || 0) + 1; save(); renderKeep(); openDetail(id); toast('Verlengd tot ' + dShort(dueISO(b))); });
     if ($('dd-return')) $('dd-return').addEventListener('click', function () { flush(); delete b.lib; delete b.loanDate; delete b.renewed; save(); renderKeep(); openDetail(id); toast('Ingeleverd'); });
@@ -4276,6 +4290,7 @@ button.ayr{cursor:pointer}
   }
   function whereOf(b) {
     if (b.status === 'bezig') return 'nu bezig';
+    if (b.lib === 'res') return 'gereserveerd' + (b.resDate ? ' sinds ' + dShort(b.resDate) : '');
     if (b.m === 'voorraad') return b.lib === 'want' ? 'te lenen' + (b.libHas === true ? ' · in de bieb' : b.libHas === false ? ' · niet in de bieb' : '') : 'voorraad';
     return (b.m === 'door' ? 'doorlopend' : MONTHS[+b.m - 1].toLowerCase()) + (b.y ? ' ' + b.y : '');
   }
@@ -4435,7 +4450,8 @@ button.ayr{cursor:pointer}
     var age = state.lastBackup ? daysSince(state.lastBackup.slice(0, 10)) : null, stale = age === null || age > 14;
     var bkT = age === null ? 'Nog geen back-up' : age === 0 ? 'Back-up van vandaag' : age === 1 ? 'Back-up van gisteren' : 'Back-up van ' + age + ' dagen geleden';
     var loans = libLoans(), wants = libWants();
-    var libSub = loans.length ? loans.length + ' geleend · eerst inleveren ' + dShort(dueISO(loans[0])) : wants.length ? wants.length + ' wil je lenen' : 'Leenregels en catalogus';
+    var nres = libRes().length;
+    var libSub = [loans.length ? loans.length + ' geleend · eerst inleveren ' + dShort(dueISO(loans[0])) : '', nres ? nres + ' gereserveerd' : '', !loans.length && wants.length ? wants.length + ' wil je lenen' : ''].filter(Boolean).join(' · ') || 'Leenregels en catalogus';
     var nl = lineTags().length, nt = plainTags().length;
     var th = getTheme();
     box.innerHTML = '<div class="shead"><h2 style="padding:8px 6px">Meer</h2></div><div class="sbody">' +
