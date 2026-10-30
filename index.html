@@ -5397,7 +5397,7 @@ button.ayr{cursor:pointer}
   function zRow(x, withDate) {
     var o = x.o, meta, right = '', rc = 'rt';
     if (x.k === 'b') {
-      meta = [withDate && x.d ? dShort(x.d) : '', o.a, x.w === 'plan' ? 'gepland ' + (o.y || '') : '', x.w === 'done' && !withDate && x.yr ? 'gelezen ' + x.yr : ''].filter(Boolean).join(' · ');
+      meta = [withDate && x.d ? dShort(x.d) : '', o.orig != null && o.orig !== '' ? fmtYear(+o.orig) : '', o.a, x.w === 'plan' ? 'gepland ' + (o.y || '') : '', x.w === 'done' && !withDate && x.yr ? 'gelezen ' + x.yr : ''].filter(Boolean).join(' · ');
       if (x.w === 'plan') { right = o.m === 'door' ? 'doorl.' : MON_SHORT[+o.m - 1]; rc = 'mo'; }
       else if (x.w === 'lenen') { right = o.lib === 'res' ? 'gereserveerd' : 'wil lenen'; rc = 'mo'; }
       else if (x.w === 'bezig') { right = 'bezig'; rc = 'mo'; }
@@ -5427,8 +5427,11 @@ button.ayr{cursor:pointer}
     if (c.group === 'az') return zSection('az', 'A–Z', xs.slice().sort(byT), false);
     if (c.group === 'ontstaan') {
       var oy = function (x) { return x.k === 'b' ? (x.o.orig != null ? +x.o.orig : null) : (+x.o.yr || null); };
-      var known = xs.filter(function (x) { return oy(x) !== null; }).sort(function (a, b) { return oy(a) - oy(b); });
-      return zSection('ont', 'Op volgorde van ontstaan', known, false) + zSection('ont-x', 'Jaar van ontstaan onbekend', xs.filter(function (x) { return oy(x) === null; }).sort(byT), false);
+      var known = xs.filter(function (x) { return oy(x) !== null; }).sort(function (a, b) { return oy(a) - oy(b) || byT(a, b); });
+      var cent = function (y) { return y < 1 ? 'Voor Christus' : (Math.floor((y - 1) / 100) + 1) + 'e eeuw'; }, cs = [], out = '';
+      known.forEach(function (x) { var c = cent(oy(x)); if (cs.indexOf(c) < 0) cs.push(c); });
+      cs.forEach(function (c) { out += zSection('ont-' + c, c, known.filter(function (x) { return cent(oy(x)) === c; }), false); });
+      return out + zSection('ont-x', 'Jaar van ontstaan onbekend', xs.filter(function (x) { return oy(x) === null; }).sort(byT), false);
     }
     var html = '', w = function (k) { return xs.filter(function (x) { return x.w === k; }); };
     html += zSection('bezig', 'Bezig', w('bezig'), false);
