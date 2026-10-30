@@ -4536,7 +4536,7 @@ button.ayr{cursor:pointer}
 
 
   // ---------- suggesties: profiel → Claude → terug in de app ----------
-  var askCfg = { kind: 'both', line: '', n: 10, lines: true, stars: true, lists: true, notes: false, nos: true };
+  var askCfg = { kind: 'both', line: '', n: 10, lines: true, stars: true, lists: false, notes: false, nos: true };
   function sugList(st) { return (state.sugg || []).filter(function (x) { return x.st === st; }); }
   function sugKey(k, t, a) { return k + '|' + norm(t).replace(/^(the|a|an|de|het|een|le|la|les|el|il|der|die|das)\s+/, '').replace(/[^a-z0-9]+/g, ' ').trim() + '|' + norm(String(a || '').split(/\s+/).pop()); }
   function sugHave(x) {
@@ -4561,14 +4561,20 @@ button.ayr{cursor:pointer}
       lineTags().filter(function (t) { return !L || t.id === L.id; }).forEach(function (t) {
         var b = bks.filter(function (x) { return x.tags.indexOf(t.id) >= 0; }), f = state.films.filter(function (x) { return (x.tags || []).indexOf(t.id) >= 0; });
         if (!b.length && !f.length) return;
+        if (!L) {
+          // zonder gekozen lijn: per lijn de sterkste en de open titels, kort
+          var rk = function (x) { return x.status === 'done' || x.st === 'seen' ? (x.rating || 0) : 2.5; };
+          b = b.slice().sort(function (p, q) { return rk(q) - rk(p); }).slice(0, 10);
+          f = f.filter(function (x, i, arr) { return arr.findIndex(function (y) { return fkey(y) === fkey(x); }) === i; }).sort(function (p, q) { return rk(q) - rk(p); }).slice(0, 5);
+        }
         out.push('### ' + t.name); b.forEach(function (x) { out.push(bLine(x)); }); f.forEach(function (x) { out.push(fLine(x)); }); out.push('');
       });
       if (L) out.push('Andere lijnen die ik heb: ' + lineTags().filter(function (t) { return t.id !== L.id; }).map(function (t) { return t.name; }).join(', ') + '.', '');
     }
     if (c.stars) {
-      out.push('## Hoog gewaardeerd (4 of 5 sterren)', '');
-      if (c.kind !== 'films') { out.push('### Boeken'); bks.filter(function (b) { return b.status === 'done' && b.rating >= 4; }).sort(function (a, b) { return b.rating - a.rating; }).forEach(function (b) { out.push(bLine(b)); }); out.push(''); }
-      if (c.kind !== 'books') { var seenK = {}; out.push('### Films'); fms.filter(function (f) { return f.rating >= 4; }).sort(function (a, b) { return b.rating - a.rating; }).forEach(function (f) { var k = fkey(f); if (seenK[k]) return; seenK[k] = 1; out.push(fLine(f)); }); out.push(''); }
+      out.push('## Hoogst gewaardeerd (4,5 en 5 sterren)', '');
+      if (c.kind !== 'films') { var seenB = {}, nb = 0; out.push('### Boeken'); bks.filter(function (b) { return b.status === 'done' && b.rating >= 4.5; }).sort(function (a, b) { return b.rating - a.rating || ((b.finished || '') < (a.finished || '') ? -1 : 1); }).forEach(function (b) { var k = importKey(b.t, b.a); if (seenB[k] || nb >= 60) return; seenB[k] = 1; nb++; out.push('- ' + b.t + (b.a ? ' — ' + b.a : '') + ' ★' + fmtRating(b.rating)); }); out.push(''); }
+      if (c.kind !== 'books') { var seenK = {}, nf = 0; out.push('### Films'); fms.filter(function (f) { return f.rating >= 4.5; }).sort(function (a, b) { return b.rating - a.rating || ((b.d || '') < (a.d || '') ? -1 : 1); }).forEach(function (f) { var k = fkey(f); if (seenK[k] || nf >= 60) return; seenK[k] = 1; nf++; out.push(fLine(f)); }); out.push(''); }
     }
     if (c.notes) {
       out.push('## Uit mijn aantekeningen (begin)', '');
@@ -4584,10 +4590,11 @@ button.ayr{cursor:pointer}
         out.push('');
       }
     }
+    if (!c.lists) out.push('Mijn volledige lijsten staan in de kennisbank van het project (gelezen, te lezen, bekeken, te kijken); controleer daartegen.', '');
     if (c.lists) {
       out.push('## Al op mijn lijsten (niet voorstellen)', '');
-      if (c.kind !== 'films') { out.push('### Boeken'); bks.forEach(function (b) { out.push('- ' + b.t + (b.a ? ' — ' + b.a : '')); }); out.push(''); }
-      if (c.kind !== 'books') { var k2 = {}; out.push('### Films'); state.films.forEach(function (f) { var k = fkey(f); if (k2[k]) return; k2[k] = 1; out.push('- ' + f.t + (f.yr ? ' (' + f.yr + ')' : '')); }); out.push(''); }
+      if (c.kind !== 'films') { var kb2 = {}, bl = []; bks.forEach(function (b) { var k = importKey(b.t, b.a); if (kb2[k]) return; kb2[k] = 1; bl.push(b.t + (b.a ? ' (' + String(b.a).split(/\s+/).pop() + ')' : '')); }); out.push('Boeken: ' + bl.join('; '), ''); }
+      if (c.kind !== 'books') { var k2 = {}, fl = []; state.films.forEach(function (f) { var k = fkey(f); if (k2[k]) return; k2[k] = 1; fl.push(f.t + (f.yr ? ' (' + f.yr + ')' : '')); }); out.push('Films: ' + fl.join('; '), ''); }
     }
     return out.join('\n');
   }
@@ -4612,7 +4619,7 @@ button.ayr{cursor:pointer}
       '<p class="lbl">Rond een lijn <span style="text-transform:none;letter-spacing:0;font-weight:500">(optioneel)</span></p><div class="chips"><button class="tagopt' + (c.line ? '' : ' is-on') + '" data-aline="" style="--tag-c:var(--ink);--tag-d:var(--ink)">Vrij</button>' +
         lines.map(function (t) { var on = c.line === t.id; return '<button class="tagopt is-line' + (on ? ' is-on' : '') + '" data-aline="' + esc(t.id) + '" style="' + tagVars(t) + '">' + iconSVG(t, 14, on ? '#FFFFFF' : null) + esc(t.name) + '</button>'; }).join('') + '</div>' +
       '<p class="lbl">Hoeveel</p><div class="seg2">' + [5, 10, 15].map(function (n) { return '<button data-an="' + n + '" class="' + (c.n === n ? 'is-on' : '') + '">' + n + '</button>'; }).join('') + '</div>' +
-      '<p class="lbl">Wat gaat mee</p><div class="cklist">' + ck('lines', 'Je lijnen, met de boeken en films erin', c.line && findTag(c.line) ? 'alleen ' + esc(findTag(c.line).name) : 'alle ' + lines.length) + ck('stars', 'Vier en vijf sterren', 'boeken en films') + ck('lists', 'Je lijsten, zodat niets dubbel komt', 'alles') + ck('notes', 'Aantekeningen', 'eerste zinnen') + ck('nos', 'Eerdere suggesties en waarom', nNo + '') + '</div>' +
+      '<p class="lbl">Wat gaat mee</p><div class="cklist">' + ck('lines', 'Je lijnen, met de boeken en films erin', c.line && findTag(c.line) ? 'alleen ' + esc(findTag(c.line).name) : 'alle ' + lines.length) + ck('stars', 'Wat je 4,5 of 5 sterren gaf', 'boeken en films') + ck('lists', 'Al je titels, zodat niets dubbel komt', 'lang; Claude heeft je lijsten ook') + ck('notes', 'Aantekeningen', 'eerste zinnen') + ck('nos', 'Eerdere suggesties en waarom', nNo + '') + '</div>' +
       '<p class="note" style="font-size:12.5px;color:var(--muted)">Niets verlaat je telefoon tot je het zelf plakt.</p>' +
       '<div class="btnrow dfoot"><button class="btn" id="ask-view">Bekijk profiel</button><button class="btn primary" id="ask-copy">Kopieer profiel</button></div>');
     $('ask-done').addEventListener('click', closeSheet);
@@ -4624,7 +4631,7 @@ button.ayr{cursor:pointer}
     $('ask-view').addEventListener('click', function () {
       var txt = profileText();
       openSheet('Je profiel', '<div class="sheethead"><h3>Je profiel</h3><button class="linkbtn" id="pv-back" style="align-self:center">Terug</button></div>' +
-        '<p class="note" style="font-size:13px;color:var(--muted)">' + nlNum(txt.length) + ' tekens. Dit is precies wat je naar Claude stuurt.</p>' +
+        '<p class="note" style="font-size:13px;color:' + (txt.length > 18000 ? 'var(--danger)' : 'var(--muted)') + '">' + nlNum(txt.length) + ' tekens. Dit is precies wat je naar Claude stuurt.' + (txt.length > 18000 ? ' Dat is veel om te plakken: deel het liever als bestand, dan komt alles mee.' : '') + '</p>' +
         '<pre class="pview"></pre><div class="btnrow dfoot"><button class="btn" id="pv-file">Deel als bestand</button><button class="btn primary" id="pv-copy">Kopieer</button></div>');
       sheet.querySelector('.pview').textContent = txt;
       $('pv-back').addEventListener('click', openAsk);
