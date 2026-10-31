@@ -317,6 +317,14 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .cbtn.is-on{background:#F6C98A;color:#2A1D14}
 .scan-msg{position:absolute;left:24px;right:24px;top:calc(51% + 18px);margin:0;text-align:center;font-size:14.5px;line-height:1.45;color:rgba(246,237,226,.92)}
 .scan-foot{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:center;padding:18px 20px calc(28px + env(safe-area-inset-bottom,0px))}
+.rnlist{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.rnrow{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border-top:1px solid var(--line);cursor:pointer}
+.rnrow:first-child{border-top:0}
+.rnrow input{width:20px;height:20px;margin-top:2px;flex:none;accent-color:var(--accent)}
+.rnrow span{display:flex;flex-direction:column;gap:1px;min-width:0}
+.rnrow s{font-size:12.5px;color:var(--muted)}
+.rnrow b{font-size:14.5px;font-weight:650}
+.rnrow em{font-style:normal;font-size:12px;color:var(--muted)}
 .sortban{width:100%;display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:10px 12px;margin:8px 0 2px;text-align:left;cursor:pointer;color:inherit}
 .sortban>svg{flex:none;color:var(--ok)}
 .sortban span{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
@@ -3429,6 +3437,10 @@ button.ayr{cursor:pointer}
       if (!Array.isArray(d.items) || !d.items.every(function (x) { return x && typeof x.t === 'string' && (typeof x.line === 'string' || typeof x.tag === 'string'); })) throw new Error('vorm');
       return { kind: 'lijnvoorstel', items: d.items, lines: Array.isArray(d.lines) ? d.lines : [], tags: Array.isArray(d.tags) ? d.tags : [], note: d.note || '', from: d.from || '' };
     }
+    if (d && d.kind === 'aanpassen') {
+      if (!Array.isArray(d.authors || []) || !Array.isArray(d.titles || [])) throw new Error('vorm');
+      return { kind: 'aanpassen', authors: d.authors || [], titles: d.titles || [], note: d.note || '' };
+    }
     if (d && d.kind === 'wensenlijst') {
       if (!Array.isArray(d.books) || !d.books.every(function (b) { return b && typeof b.t === 'string'; })) throw new Error('vorm');
       return { kind: 'wensenlijst', books: d.books, note: d.note || '', from: d.from || '' };
@@ -3551,6 +3563,7 @@ button.ayr{cursor:pointer}
     if (bk.kind === 'films') { confirmFilmImport(bk); return; }
     if (bk.kind === 'aanvullen') { confirmFill(bk); return; }
     if (bk.kind === 'wensenlijst') { confirmWish(bk); return; }
+    if (bk.kind === 'aanpassen') { confirmRename(bk); return; }
     if (bk.kind === 'lijnvoorstel') { lpRev = null; openLinePlan(bk); return; }
     if (bk.kind === 'suggesties') { sugPick = null; confirmSugg(bk); return; }
     if (bk.kind === 'import') {
@@ -4895,6 +4908,46 @@ button.ayr{cursor:pointer}
       save(); closeSheet(); closePanels(); render(); list.scrollTop = 0;
       toast(add.length + (add.length === 1 ? ' boek' : ' boeken') + ' op Later');
     });
+  }
+  // aanpassen: schrijversnamen en titels naar de Nederlandse vorm; per regel een vinkje, twijfel staat uit
+  function confirmRename(bk) {
+    var au = (bk.authors || []).map(function (x, i) {
+      var k = norm(x.from || '').trim(), bs = state.books.filter(function (b) { return norm(b.a || '').trim() === k; });
+      return { i: i, x: x, bs: bs, on: x.sure !== false };
+    }).filter(function (r) { return r.bs.length && r.x.to && r.x.to !== r.x.from; });
+    var ti = (bk.titles || []).map(function (x, i) {
+      var b = x.id ? find(String(x.id)) : null;
+      if (b && fillBase(b.t) !== fillBase(x.t || '')) b = null;
+      if (!b) b = state.books.filter(function (y) { return fillBase(y.t) === fillBase(x.t || '') && (!x.a || norm(y.a || '').trim() === norm(x.a).trim()); })[0] || null;
+      return { i: i, x: x, b: b, on: x.sure !== false };
+    }).filter(function (r) { return r.b && r.x.nt && r.x.nt !== r.b.t; });
+    var row = function (kind, r, oldT, newT, sub) {
+      return '<label class="rnrow"><input type="checkbox" data-rn="' + kind + ':' + r.i + '"' + (r.on ? ' checked' : '') + '><span><s>' + esc(oldT) + '</s><b>' + esc(newT) + '</b>' + (sub ? '<em>' + esc(sub) + '</em>' : '') + '</span></label>';
+    };
+    var draw = function () {
+      var n = au.filter(function (r) { return r.on; }).length + ti.filter(function (r) { return r.on; }).length;
+      openSheet('Aanpassen',
+        '<h3>Namen en titels aanpassen?</h3>' + (bk.note ? '<p class="note" style="font-size:13px;color:var(--muted);margin:0">' + esc(bk.note) + '</p>' : '') +
+        (au.length ? '<p class="lbl">Schrijvers · ' + au.length + '</p><div class="rnlist">' + au.map(function (r) { return row('a', r, r.x.from, r.x.to, r.bs.length + (r.bs.length === 1 ? ' boek' : ' boeken') + (r.x.why ? ' · ' + r.x.why : '')); }).join('') + '</div>' : '') +
+        (ti.length ? '<p class="lbl">Titels · ' + ti.length + '</p><div class="rnlist">' + ti.map(function (r) { return row('t', r, r.b.t, r.x.nt, (r.b.a || '') + (r.x.clear ? ' · ISBN en bladzijden van de oude uitgave gaan eruit' : '') + (r.x.why ? ' · ' + r.x.why : '')); }).join('') + '</div>' : '') +
+        (!au.length && !ti.length ? '<p class="note">Niets aan te passen: alles staat al zo in de app.</p>' : '') +
+        '<div class="btnrow"><button class="btn" id="rs-no">Annuleer</button><button class="btn primary" id="rs-yes"' + (n ? '' : ' disabled') + '>Pas ' + n + ' aan</button></div>');
+      sheet.querySelectorAll('[data-rn]').forEach(function (el) {
+        el.addEventListener('change', function () { var p = el.dataset.rn.split(':'), list = p[0] === 'a' ? au : ti; list.filter(function (r) { return r.i === +p[1]; })[0].on = el.checked; var st = sheet.scrollTop; draw(); sheet.scrollTop = st; });
+      });
+      $('rs-no').addEventListener('click', openBackup);
+      $('rs-yes').addEventListener('click', function () {
+        var k = 0;
+        au.forEach(function (r) { if (!r.on) return; r.bs.forEach(function (b) { b.a = r.x.to; k++; }); });
+        ti.forEach(function (r) {
+          if (!r.on) return;
+          sameBook(r.b).forEach(function (b) { b.t = r.x.nt; if (r.x.clear) { delete b.isbn; delete b.pages; delete b.year; delete b.publisher; delete b.edition; delete b.kbAuto; delete b.kbMiss; } k++; });
+        });
+        save(); closeSheet(); closePanels(); renderKeep();
+        toast(k + (k === 1 ? ' boek aangepast' : ' boeken aangepast'));
+      });
+    };
+    draw();
   }
   function wishBook(x, m, own) {
     var b = { id: 'n' + (state.nextId++), t: x.t, a: x.a || '', m: m, status: 'open', done: false, started: null, finished: null, until: null, tags: [] };
