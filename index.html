@@ -665,6 +665,10 @@ button.ayr{cursor:pointer}
 .zpill.zero{color:var(--muted);font-weight:500;opacity:.7}
 .zpin{display:flex;align-items:center;gap:4px;border-top:1px solid var(--line);padding-right:4px}
 .zpin:first-child{border-top:0}
+.zgrip{flex:none;width:36px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--muted);cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none}
+.zpin.is-drag{position:relative;z-index:2;background:var(--surface);box-shadow:0 6px 18px rgba(0,0,0,.18);border-radius:12px;transition:none!important}
+.zpin.is-drag .zgrip{cursor:grabbing;color:var(--ink)}
+.zpin{transition:transform .15s}
 .zpinb{flex:1;min-width:0;display:flex;align-items:center;gap:10px;padding:10px 12px;border:0;background:transparent;text-align:left;cursor:pointer;color:var(--ink)}
 .zpi{width:34px;height:34px;border-radius:10px;background:var(--accent-soft);color:var(--nav-on-ink);display:flex;align-items:center;justify-content:center;flex:none}
 .ztx{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
@@ -5919,7 +5923,7 @@ button.ayr{cursor:pointer}
     neer: '<path d="M6 9l6 6 6-6"/>', terug: '<path d="M15 5l-7 7 7 7"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>',
     zoek: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>', pin: '<path d="M9 3h6l-1 6 3 3H7l3-3zM12 12v9"/>',
     meer: '<path d="M4 7h10M18 7h2M4 12h4M12 12h8M4 17h12"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="17" r="2"/>',
-    rechts: '<path d="M9 6l6 6-6 6"/>'
+    rechts: '<path d="M9 6l6 6-6 6"/>', grip: '<path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01"/>'
   };
   function zic(n, s, w) { return '<svg width="' + (s || 18) + '" height="' + (s || 18) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w || 2) + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ZI[n] + '</svg>'; }
   function zActive(c) { c = c || zq; return !!(c.line || c.tags.length || c.kind !== 'all' || c.stand !== 'all' || c.when !== 'all' || c.person || c.where || c.sug); }
@@ -6093,7 +6097,8 @@ button.ayr{cursor:pointer}
     var pins = (state.pins || []).map(function (p, i) {
       var c = Object.assign(zq0(), p.cfg), n = zCount(all.filter(function (x) { return zMatch(x, c); }));
       return '<div class="zpin"><button class="zpinb" data-zpin="' + i + '"><span class="zpi">' + zic('pin', 17) + '</span><span class="ztx"><b>' + esc(zLabel(c)) + '</b><span>' + [c.kind !== 'films' ? zN(n.b, 'boek', 'boeken') : '', c.kind !== 'books' ? zN(n.f, 'film', 'films') : ''].filter(Boolean).join(' · ') + '</span></span></button>' +
-        '<button class="iconbtn" data-zunpin="' + i + '" aria-label="' + esc(zLabel(c)) + ' losmaken">' + zic('x', 16, 2.2) + '</button></div>';
+        '<button class="iconbtn" data-zunpin="' + i + '" aria-label="' + esc(zLabel(c)) + ' losmaken">' + zic('x', 16, 2.2) + '</button>' +
+        (state.pins.length > 1 ? '<span class="zgrip" data-zgrip="' + i + '" role="button" aria-label="' + esc(zLabel(c)) + ' verslepen" title="Versleep">' + zic('grip', 18, 2.4) + '</span>' : '') + '</div>';
     }).join('');
     return '<p class="zlbl">Snel</p><div class="zquick">' + quick.map(function (q) { return '<button class="zq" data-zquick="' + q[0] + '">' + q[1] + (q[2] ? ' <em>' + q[2] + '</em>' : '') + '</button>'; }).join('') + '</div>' +
       (pins ? '<p class="zlbl">Vastgezet</p><div class="zcard">' + pins + '</div>' : '') +
@@ -6305,6 +6310,42 @@ button.ayr{cursor:pointer}
     if (el.dataset.fzoek.indexOf('seen:') === 0 && FY()) c.when = FY();
     openZoek(c, true);
   }, true);
+  // vastgezette zoekopdrachten: volgorde verslepen aan het greepje
+  (function () {
+    var d = null;
+    document.addEventListener('pointerdown', function (e) {
+      var g = e.target.closest && e.target.closest('[data-zgrip]'); if (!g) return;
+      var row = g.closest('.zpin'), box = row && row.parentElement; if (!box) return;
+      e.preventDefault();
+      var rows = [].slice.call(box.querySelectorAll('.zpin'));
+      d = { row: row, rows: rows, from: rows.indexOf(row), to: rows.indexOf(row), y0: e.clientY, h: row.getBoundingClientRect().height, id: e.pointerId };
+      try { g.setPointerCapture(e.pointerId); } catch (x) {}
+      row.classList.add('is-drag');
+    });
+    document.addEventListener('pointermove', function (e) {
+      if (!d || e.pointerId !== d.id) return;
+      var dy = e.clientY - d.y0;
+      dy = Math.max(-d.from * d.h, Math.min((d.rows.length - 1 - d.from) * d.h, dy));
+      d.row.style.transform = 'translateY(' + dy + 'px)';
+      var to = Math.max(0, Math.min(d.rows.length - 1, d.from + Math.round(dy / d.h)));
+      if (to === d.to) return;
+      d.to = to;
+      d.rows.forEach(function (r, i) {
+        if (r === d.row) return;
+        var sh = d.from < to && i > d.from && i <= to ? -d.h : d.from > to && i >= to && i < d.from ? d.h : 0;
+        r.style.transform = sh ? 'translateY(' + sh + 'px)' : '';
+      });
+    });
+    var end = function (e) {
+      if (!d || (e && e.pointerId !== d.id)) return;
+      var x = d; d = null;
+      x.rows.forEach(function (r) { r.style.transform = ''; r.classList.remove('is-drag'); });
+      if (x.to !== x.from && state.pins && state.pins[x.from]) {
+        var p = state.pins.splice(x.from, 1)[0]; state.pins.splice(x.to, 0, p); save(); renderZoek();
+      }
+    };
+    document.addEventListener('pointerup', end); document.addEventListener('pointercancel', end);
+  })();
   // lijnlabels overal in de app openen het zoekscherm met die lijn
   document.addEventListener('click', function (e) {
     var el = e.target.closest && e.target.closest('[data-zl]'); if (!el) return;
