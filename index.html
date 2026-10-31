@@ -418,6 +418,10 @@ button.ayr{cursor:pointer}
 .fwseg .n{opacity:.7;font-weight:500}
 .sec .flist{margin-top:0}
 .fseg{padding:10px 2px 2px;display:flex;flex-direction:column;gap:8px}
+.fzoek{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;border:0;background:none;padding:2px 4px;margin:-2px 0 0;font-size:13px;color:var(--muted);cursor:pointer;border-radius:8px}
+.fzoek b{font-weight:600;color:var(--soft)}
+.fzoek svg{flex:none;opacity:.8}
+.fzoek:active{background:var(--hover)}
 .fsort{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);font-weight:600}
 .fsort select{flex:1;min-height:40px;border:1px solid var(--line2);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;font-weight:600;font-size:14px;padding:0 10px}
 .frow{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:6px 10px 6px 6px;min-height:56px}
@@ -743,9 +747,12 @@ button.ayr{cursor:pointer}
 .mit > svg{flex:none;color:var(--muted)}
 .mlist .seg2{margin:10px 12px}
 /* films: eigen nachtkleur */
-.m-films{--hd1:#152839;--hd2:#122230;--hd-ink:#E9EEF2;--hd-soft:#B9C8D3;--hd-glass:rgba(233,238,242,.09);--sun-soft:#F6C98A;--kb:rgba(169,187,200,.32);--ground:#EEF0EE;--surface:#FCFCFA;--line:#DCE1E4;--line2:#C9D0D5;--track:#E5E9EB;--hover:#E5E9EB;--muted:#56626C;--soft:#3F4A53;--ink:#1B2229;--nav-on:#DCE6EE;--nav-on-ink:#122230}
-.m-films .segbtn.is-on{color:#122230}
-@media (prefers-color-scheme: dark){ .m-films{--hd1:#0F1D29;--hd2:#0B1620;--ground:#0F1418;--surface:#161D23;--line:#25303A;--line2:#334250;--track:#1C252D;--hover:#1C252D;--muted:#9AA9B5;--soft:#BCC8D1;--ink:#E6ECF0;--nav-on:#1E3446;--nav-on-ink:#BFD3E4} .mbk .mok{background:#173A33;color:#9FD8CB} .mbk .mok.is-old{background:#3A1A16;color:#F0A9A0} }
+.m-films,.k-films{--hd1:#152839;--hd2:#122230;--hd-ink:#E9EEF2;--hd-soft:#B9C8D3;--hd-glass:rgba(233,238,242,.09);--sun-soft:#F6C98A;--kb:rgba(169,187,200,.32);--ground:#EEF0EE;--surface:#FCFCFA;--line:#DCE1E4;--line2:#C9D0D5;--track:#E5E9EB;--hover:#E5E9EB;--muted:#56626C;--soft:#3F4A53;--ink:#1B2229;--nav-on:#DCE6EE;--nav-on-ink:#122230}
+.m-films .segbtn.is-on,.k-films .segbtn.is-on{color:#122230}
+.m-films .k-base .segbtn.is-on{color:#2A1D14}
+.k-base{--hd1:#3E2616;--hd2:#2A190E;--hd-ink:#F6EDE2;--hd-soft:#D9C9B6;--hd-glass:rgba(246,237,226,.09);--sun-soft:#F6C98A;--kb:rgba(224,135,58,.3);--ground:#F4EEE6;--surface:#FFFCF8;--line:#E6DACB;--line2:#D9CAB8;--track:#F1E8DC;--hover:#F4EEE6;--muted:#7A6656;--soft:#5C4A3C;--ink:#2A1D14;--nav-on:#F6E3D3;--nav-on-ink:#8A3812}
+.k-base,.k-films{color:var(--ink)}
+@media (prefers-color-scheme: dark){ .k-base{--hd1:#1E130B;--hd2:#140D08;--ground:#17110C;--surface:#22180F;--line:#382A1F;--line2:#4A3829;--track:#2A1F16;--hover:#2A1F16;--muted:#B8A593;--soft:#D2C1AE;--ink:#F1E6D8;--nav-on:#3A2414;--nav-on-ink:#F6C98A} .m-films,.k-films{--hd1:#0F1D29;--hd2:#0B1620;--ground:#0F1418;--surface:#161D23;--line:#25303A;--line2:#334250;--track:#1C252D;--hover:#1C252D;--muted:#9AA9B5;--soft:#BCC8D1;--ink:#E6ECF0;--nav-on:#1E3446;--nav-on-ink:#BFD3E4} .mbk .mok{background:#173A33;color:#9FD8CB} .mbk .mok.is-old{background:#3A1A16;color:#F0A9A0} }
 .koers{position:relative}
 .kavg{position:absolute;left:0;right:0;height:0;border-top:1.5px dashed var(--hd-soft);opacity:.75;pointer-events:none}
 .kcap{grid-column:1 / -1;font-size:11px;color:var(--hd-soft);text-align:right;margin-top:2px;opacity:.9}
@@ -931,8 +938,8 @@ button.ayr{cursor:pointer}
   <div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
 </div>
 <div class="stats" id="stats" role="region" aria-label="Terugblik" hidden></div>
-<div class="stats" id="more" role="region" aria-label="Meer" hidden></div>
-<div class="stats zoek" id="zoek" role="region" aria-label="Zoeken" hidden></div>
+<div class="stats k-base" id="more" role="region" aria-label="Meer" hidden></div>
+<div class="stats zoek k-base" id="zoek" role="region" aria-label="Zoeken" hidden></div>
 <div class="toast" id="toast" hidden></div>
 <div class="scan" id="scan" role="dialog" aria-modal="true" aria-label="Streepjescode scannen" hidden></div>
 
@@ -1613,7 +1620,7 @@ button.ayr{cursor:pointer}
     var nw = vs.filter(isToLend).length, inb = vs.filter(function (b) { return isToLend(b) && b.libHas === true; }).length;
     return '<div class="fseg"><div class="seg2 sm fwseg" role="group" aria-label="Voorraad">' + [['all', 'Alles', vs.length], ['own', 'In huis', vs.length - nw], ['want', 'Te lenen', nw]].map(function (o) {
       return '<button data-sview="' + o[0] + '" class="' + (sv === o[0] ? 'is-on' : '') + '" aria-pressed="' + (sv === o[0]) + '">' + o[1] + ' <span class="n">' + o[2] + '</span></button>';
-    }).join('') + '</div>' + (sv === 'want' && nw ? '<p class="note" style="font-size:12.5px;color:var(--muted);margin:0 4px">' + inb + ' van ' + nw + ' staan bij de bieb · sleep een boek naar een maand om het te plannen, dan krijg je op tijd een seintje om te reserveren.</p>' : '') + '</div>';
+    }).join('') + '</div>' + (sv === 'want' && nw ? '<p class="note" style="font-size:12.5px;color:var(--muted);margin:0 4px">' + inb + ' van ' + nw + ' staan bij de bieb · sleep een boek naar een maand om het te plannen, dan krijg je op tijd een seintje om te reserveren.</p>' : '') + fzoekHTML('stock:' + sv) + '</div>';
   }
   // zoekresultaten over alle jaren: per jaar (nieuwste eerst), dan de voorraad; zonder slepen
   function allYearsHTML(pool) {
@@ -1777,12 +1784,20 @@ button.ayr{cursor:pointer}
 
   // ---------- onderblad ----------
   var overlay = $('overlay'), sheet = $('sheet'), lastFocus = null;
+  // gedeelde schermen in de basiskleur, filmschermen blauw; een onderblad volgt het scherm eronder
+  function paneTone(el) {
+    var t = '';
+    if (!$('zoek').hidden || !$('more').hidden) t = 'base';
+    else if (!$('stats').hidden) t = statsKindNow() === 'films' ? 'films' : 'base';
+    el.classList.toggle('k-base', t === 'base'); el.classList.toggle('k-films', t === 'films');
+  }
   function openSheet(label, html, focusSel) {
     if (detailFlush) { var df = detailFlush; detailFlush = null; try { df(); } catch (e) {} }
     if (overlay.hidden) lastFocus = document.activeElement;
     $('toast').hidden = true;
     sheet.setAttribute('aria-label', label);
     sheet.innerHTML = '<span class="handle" aria-hidden="true"></span>' + html;
+    paneTone(sheet);
     overlay.hidden = false;
     var f = focusSel ? sheet.querySelector(focusSel) : null;
     if (f) setTimeout(function () { f.focus(); }, 60);
@@ -3173,6 +3188,7 @@ button.ayr{cursor:pointer}
   function renderStatsBox(title, cardsHTML) {
     var box = $('stats');
     var prev = box.querySelector('.sbody'), prevTop = prev ? prev.scrollTop : 0, wasOpen = !box.hidden;
+    box.classList.toggle('k-films', statsKindNow() === 'films'); box.classList.toggle('k-base', statsKindNow() !== 'films');
     box.innerHTML =
       '<div class="shead"><button class="hbtn" id="stats-back" aria-label="Terug naar je lijst"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button><h2>' + title + '</h2></div>' +
       '<div class="sbody">' +
@@ -3722,7 +3738,7 @@ button.ayr{cursor:pointer}
       var ag = sortWatch(againList()), agClosed = !!state.coll['f:again'];
       var nv = all.filter(function (f) { return !f.avail; });
       html += '<div class="fseg"><div class="seg2 sm fwseg" role="group" aria-label="Kijklijst">' + [['all', 'Alles', all.length], ['avail', 'Beschikbaar', av.length + ag.length], ['not', 'Nog niet', nv.length]].map(function (o) { return '<button data-favail="' + o[0] + '"' + (o[0] === 'not' ? ' aria-label="Nog niet beschikbaar, ' + o[2] + '"' : '') + ' class="' + (fwatchAvail === o[0] ? 'is-on' : '') + '">' + o[1] + ' <span class="n">' + o[2] + '</span></button>'; }).join('') + '</div>' +
-        '<label class="fsort"><span>Sorteer</span><select id="fsort" aria-label="Sorteer de kijklijst">' + [['title', 'Titel (A–Z)'], ['dur-asc', 'Duur: kort eerst'], ['dur-desc', 'Duur: lang eerst'], ['yr-desc', 'Jaar: nieuw eerst'], ['yr-asc', 'Jaar: oud eerst'], ['added', 'Laatst toegevoegd']].map(function (o) { return '<option value="' + o[0] + '"' + (state.fsort === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label></div>';
+        '<label class="fsort"><span>Sorteer</span><select id="fsort" aria-label="Sorteer de kijklijst">' + [['title', 'Titel (A–Z)'], ['dur-asc', 'Duur: kort eerst'], ['dur-desc', 'Duur: lang eerst'], ['yr-desc', 'Jaar: nieuw eerst'], ['yr-asc', 'Jaar: oud eerst'], ['added', 'Laatst toegevoegd']].map(function (o) { return '<option value="' + o[0] + '"' + (state.fsort === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>' + fzoekHTML('watch:' + fwatchAvail) + '</div>';
       var shown = sortWatch((fwatchAvail === 'avail' ? av : fwatchAvail === 'not' ? nv : all).slice());
       if (ag.length && fwatchAvail !== 'not') html += '<section class="sec' + (agClosed ? ' is-collapsed' : '') + '"><button class="sechead" data-fcoll="again" aria-expanded="' + !agClosed + '"><span class="h">Herkijken</span><span class="sp"></span><span class="cnt">' + ag.length + '</span><span class="chev' + (agClosed ? '' : ' is-open') + '">' + ICON_CHEV + '</span></button>' + (agClosed ? '' : '<div class="flist">' + ag.map(function (f) { return filmRowHTML(f); }).join('') + '</div>') + '</section>';
       html += '<section class="sec"><div class="sechead is-static"><span class="h">' + (fwatchAvail === 'avail' ? 'Beschikbaar' : fwatchAvail === 'not' ? 'Nog niet beschikbaar' : 'Kijklijst') + '</span><span class="sp"></span><span class="cnt">' + shown.length + '</span></div>' +
@@ -3734,7 +3750,7 @@ button.ayr{cursor:pointer}
       var reN = seen.filter(isRewatch).length, rv = state.fre || 'all';
       html += '<div class="fseg"><div class="seg2 sm fwseg" role="group" aria-label="Welke kijkbeurten">' + [['all', 'Alles', seen.length], ['first', 'Eerste keer', seen.length - reN], ['re', 'Herzien', reN]].map(function (o) {
         return '<button data-fre="' + o[0] + '" class="' + (rv === o[0] ? 'is-on' : '') + '" aria-pressed="' + (rv === o[0]) + '">' + o[1] + ' <span class="n">' + o[2] + '</span></button>';
-      }).join('') + '</div></div>';
+      }).join('') + '</div>' + fzoekHTML('seen:' + rv) + '</div>';
       if (rv !== 'all') seen = seen.filter(function (f) { return rv === 're' ? isRewatch(f) : !isRewatch(f); });
       if (!seen.length) return html + '<p class="results">' + (rv === 're' ? 'Nog niets herzien in ' + fyLabel(FY()) + '.' : 'Alles in ' + fyLabel(FY()) + ' was een herziening.') + '</p>';
     }
@@ -5482,7 +5498,7 @@ button.ayr{cursor:pointer}
   function zq0() { return { q: '', line: null, tags: [], kind: 'all', stand: 'all', when: 'all', person: '', where: '', sug: false, group: 'auto' }; }
   var zq = zq0(), zOpenSec = {};
   var Z_STAND = [['all', 'Alles'], ['todo', 'Nog te doen'], ['plan', 'Gepland'], ['bezig', 'Bezig'], ['done', 'Gedaan']];
-  var Z_WHERE = { lenen: 'Te lenen', avail: 'Beschikbaar om te kijken', again: 'Herkijken' };
+  var Z_WHERE = { lenen: 'Te lenen', huis: 'In huis', voorraad: 'Voorraad', avail: 'Beschikbaar om te kijken', notyet: 'Nog niet beschikbaar', again: 'Herkijken', first: 'Eerste keer gezien', re: 'Herzien' };
   var Z_TODO = { bezig: 1, plan: 1, huis: 1, lenen: 1, avail: 1, notyet: 1 };
   var ZI = {
     boek: '<path d="M3 5h6a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H3zM21 5h-6a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h7z"/>',
@@ -5519,6 +5535,10 @@ button.ayr{cursor:pointer}
     if (c.person && !zWho(x).some(function (p) { return norm(p).trim() === norm(c.person).trim(); })) return false;
     if (c.where === 'lenen' && x.w !== 'lenen') return false;
     if (c.where === 'avail' && x.w !== 'avail') return false;
+    if (c.where === 'huis' && x.w !== 'huis') return false;
+    if (c.where === 'voorraad' && !(x.k === 'b' && x.o.m === 'voorraad' && x.w !== 'done' && x.w !== 'bezig')) return false;
+    if (c.where === 'notyet' && x.w !== 'notyet') return false;
+    if ((c.where === 'first' || c.where === 're') && !(x.k === 'f' && o.st === 'seen' && (c.where === 're') === !!isRewatch(o))) return false;
     if (c.where === 'again' && !(x.k === 'f' && o.st === 'seen' && o.again)) return false;
     if (c.sug && !(x.k === 'b' ? bookFromSug(o) : filmFromSug(o))) return false;
     if (skip !== 'q' && c.q.trim()) {
@@ -5847,6 +5867,25 @@ button.ayr{cursor:pointer}
     $('zm-show').addEventListener('click', closeSheet);
     $('zm-clear').addEventListener('click', function () { var q = zq.q; zq = zq0(); zq.q = q; closeSheet(); renderZoek(true); });
   }
+  // "Verder zoeken in…" onder de subfilters van voorraad, kijklijst en gezien
+  var FZOEK = {
+    'stock:all': [{ kind: 'books', where: 'voorraad' }, 'Voorraad'], 'stock:own': [{ kind: 'books', where: 'huis' }, 'In huis'], 'stock:want': [{ kind: 'books', where: 'lenen' }, 'Te lenen'],
+    'watch:all': [{ kind: 'films', stand: 'todo' }, 'Kijklijst'], 'watch:avail': [{ kind: 'films', where: 'avail' }, 'Beschikbaar'], 'watch:not': [{ kind: 'films', where: 'notyet' }, 'Nog niet beschikbaar'],
+    'seen:all': [{ kind: 'films', stand: 'done' }, 'Gezien'], 'seen:first': [{ kind: 'films', stand: 'done', where: 'first' }, 'Eerste keer'], 'seen:re': [{ kind: 'films', stand: 'done', where: 're' }, 'Herzien']
+  };
+  function fzoekHTML(key) {
+    var d = FZOEK[key]; if (!d) return '';
+    var lab = d[1] + (key.indexOf('seen:') === 0 && FY() ? ' ' + FY() : '');
+    return '<button class="fzoek" data-fzoek="' + key + '">' + zic('zoek', 14, 2.3) + '<span>Verder zoeken in <b>' + esc(lab) + '</b></span>' + zic('rechts', 13, 2.4) + '</button>';
+  }
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest && e.target.closest('[data-fzoek]'); if (!el) return;
+    var d = FZOEK[el.dataset.fzoek]; if (!d) return;
+    e.preventDefault(); e.stopPropagation();
+    var c = Object.assign({}, d[0]);
+    if (el.dataset.fzoek.indexOf('seen:') === 0 && FY()) c.when = FY();
+    openZoek(c, true);
+  }, true);
   // lijnlabels overal in de app openen het zoekscherm met die lijn
   document.addEventListener('click', function (e) {
     var el = e.target.closest && e.target.closest('[data-zl]'); if (!el) return;
