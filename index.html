@@ -1479,7 +1479,7 @@ button.ayr{cursor:pointer}
   function secHTML(d, f) {
     var sv = !f && isPoolKey(d.key) ? poolView(d.key) : 'all';
     var items = YB().filter(function (b) { return b.m === d.key && (!f || matches(b)) && (sv === 'all' || (sv === 'want' ? isToLend(b) : sv === 'not' ? !b.own : !!b.own)); });
-    if (sv === 'want') { var hv = function (b) { return b.lib === 'res' ? -1 : b.libHas === true ? 0 : b.libHas === false ? 2 : 1; }; items = items.map(function (b, i) { return { b: b, i: i }; }).sort(function (x, z) { return (hv(x.b) - hv(z.b)) || (x.i - z.i); }).map(function (x) { return x.b; }); }
+    if (sv === 'want') items = items.map(function (b, i) { return { b: b, i: i }; }).sort(function (x, z) { return (lendRank(x.b) - lendRank(z.b)) || (x.i - z.i); }).map(function (x) { return x.b; });
     if (f && !items.length) return '';
     var doneN = items.filter(function (b) { return b.done; }).length;
     var complete = !f && items.length > 0 && doneN === items.length;
@@ -1689,6 +1689,16 @@ button.ayr{cursor:pointer}
       html += nag + poolSegHTML(pk) + secHTML(DESTS[pk === 'wens' ? 14 : 13], false);
     }
     list.innerHTML = html;
+  }
+  // Te lenen staat gegroepeerd: gereserveerd, dan wat de bieb heeft, dan onbekend, dan niet in de bieb
+  function lendRank(b) { return b.lib === 'res' ? -1 : b.libHas === true ? 0 : b.libHas === false ? 2 : 1; }
+  // slepen binnen die gegroepeerde weergave: schuif binnen de eigen groep, nooit ertussendoor
+  function lendBefore(id, beforeId) {
+    var b = find(id), t = beforeId ? find(beforeId) : null;
+    if (!b || !t || lendRank(t) === lendRank(b)) return beforeId;
+    if (lendRank(t) > lendRank(b)) return null;
+    var grp = YB().filter(function (x) { return x !== b && x.m === b.m && isToLend(x) && lendRank(x) === lendRank(b); });
+    return grp.length ? grp[0].id : null;
   }
   function isToLend(b) { return (b.lib === 'want' || b.lib === 'res') && b.status !== 'done'; }
   // subfilter per lijst: Binnenkort en Later onthouden elk hun eigen keuze
@@ -3720,7 +3730,15 @@ button.ayr{cursor:pointer}
       document.body.classList.remove('dragging');
       suppressClick = true; setTimeout(function () { suppressClick = false; }, 350);
       drag = null;
-      if (commit && key) moveTo(id, key, beforeId);
+      if (commit && key) {
+        var mb = find(id);
+        if (mb && key === mb.m && isPoolKey(key) && poolView(key) === 'want' && isToLend(mb)) {
+          var nb = lendBefore(id, beforeId);
+          if (nb !== beforeId && beforeId) toast(lendRank(find(beforeId)) < lendRank(mb) ? 'Gereserveerd en "in de bieb" staan bovenaan; hij gaat bovenaan zijn eigen groep' : 'Hij blijft in zijn eigen groep, onderaan');
+          beforeId = nb;
+        }
+        moveTo(id, key, beforeId);
+      }
     } else drag = null;
   }
 
