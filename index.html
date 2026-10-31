@@ -317,6 +317,42 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .cbtn.is-on{background:#F6C98A;color:#2A1D14}
 .scan-msg{position:absolute;left:24px;right:24px;top:calc(51% + 18px);margin:0;text-align:center;font-size:14.5px;line-height:1.45;color:rgba(246,237,226,.92)}
 .scan-foot{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:center;padding:18px 20px calc(28px + env(safe-area-inset-bottom,0px))}
+.sortban{width:100%;display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:10px 12px;margin:8px 0 2px;text-align:left;cursor:pointer;color:inherit}
+.sortban>svg{flex:none;color:var(--ok)}
+.sortban span{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.sortban b{font-size:14.5px}
+.sortban span span{font-size:12.5px;color:var(--muted)}
+.sortban em{font-style:normal;font-weight:700;font-size:13.5px;color:var(--accent)}
+.srt{display:flex;flex-direction:column;gap:14px;min-height:min(560px,70vh)}
+.srthd{display:flex;align-items:baseline;gap:10px}
+.srthd b{font-family:var(--f-title);font-size:19px;font-weight:600}
+.srthd span{flex:1;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.srtbar{height:5px;border-radius:3px;background:var(--track);overflow:hidden;margin-top:-6px}
+.srtbar i{display:block;height:100%;background:var(--accent);transition:width .2s}
+.srtcard{flex:1;display:flex;flex-direction:column;justify-content:center;gap:6px;border:1px solid var(--line);border-radius:18px;background:var(--ground);padding:22px 20px;min-height:180px}
+.srtt{font-family:var(--f-title);font-size:24px;font-weight:600;line-height:1.2}
+.srta{font-size:16px;color:var(--soft)}
+.srtm{font-size:13px;color:var(--muted)}
+.srtq{margin:0;text-align:center;font-weight:600;color:var(--soft)}
+.srtown{display:flex;align-items:center;gap:12px;width:100%;border:1.5px dashed var(--line2);border-radius:14px;background:transparent;padding:10px 14px;text-align:left;cursor:pointer;color:inherit;min-height:58px}
+.srtown>svg{flex:none;color:var(--muted)}
+.srtown span{flex:1;display:flex;flex-direction:column;gap:1px}
+.srtown span span{font-size:12.5px;color:var(--muted)}
+.srtown .sw{flex:none;width:44px;height:26px;border-radius:13px;background:var(--track);position:relative}
+.srtown .sw::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.25);transition:left .15s}
+.srtown.is-on{border-style:solid;border-color:var(--ok)}
+.srtown.is-on>svg{color:var(--ok)}
+.srtown.is-on .sw{background:var(--ok)}
+.srtown.is-on .sw::after{left:21px}
+.srtbtns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.srtb{min-height:64px;border-radius:16px;border:1px solid var(--line2);background:var(--surface);font-size:16.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.srtb:active{background:var(--hover)}
+.srtfoot{display:flex;justify-content:space-between;gap:10px}
+.srtfoot button{border:0;background:none;min-height:44px;padding:0 8px;font-weight:600;font-size:14px;color:var(--muted);cursor:pointer}
+.srtfoot button:disabled{opacity:.35;cursor:default}
+.srtdone{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center}
+.srtdone b{font-family:var(--f-title);font-size:26px}
+.srtdone span{color:var(--muted)}
 .kastlog{position:absolute;left:16px;right:16px;bottom:calc(96px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:6px}
 .kastlog .kc{margin:0 0 2px;font-size:12.5px;font-weight:700;color:rgba(246,237,226,.85);text-align:center}
 .kastlog .ki{margin:0;display:flex;align-items:center;gap:10px;background:rgba(14,10,7,.62);border-radius:12px;padding:8px 12px;color:#F6EDE2;font-size:12.5px}
@@ -917,7 +953,7 @@ button.ayr{cursor:pointer}
     <div class="seg" role="tablist">
       <button class="segbtn" id="tab-plan" role="tab" data-spring="plan"><span id="lab-plan">Planning</span> <span class="n" id="n-plan"></span></button>
       <button class="segbtn" id="tab-stock" role="tab" data-spring="stock" data-drop="voorraad"><span id="lab-stock">Binnenkort</span> <span class="n" id="n-stock"></span></button>
-      <button class="segbtn" id="tab-wish" role="tab" data-spring="wish" data-drop="wens"><span id="lab-wish">Wensenlijst</span> <span class="n" id="n-wish"></span></button>
+      <button class="segbtn" id="tab-wish" role="tab" data-spring="wish" data-drop="wens"><span id="lab-wish">Later</span> <span class="n" id="n-wish"></span></button>
     </div>
     <div class="searchrow" id="searchrow" hidden>
       <div class="hsearch">
@@ -971,12 +1007,12 @@ button.ayr{cursor:pointer}
   var SHORT = ['Jan','Feb','Mrt','Apr','Mei','Jun','Jul','Aug','Sep','Okt','Nov','Dec'];
   var DESTS = [{ key: 'door', label: 'Doorlopend', short: 'Doorlopend', chip: 'Doorl.', wide: true }];
   for (var i = 0; i < 12; i++) DESTS.push({ key: String(i + 1), label: MONTHS[i], short: SHORT[i], chip: SHORT[i], wide: false });
-  // twee lijsten zonder jaar: Binnenkort (intern nog 'voorraad') en Wensenlijst. Of je een boek hebt staat los daarvan in b.own.
+  // twee lijsten zonder jaar: Binnenkort (intern nog 'voorraad') en Later (intern 'wens'). Of je een boek hebt staat los daarvan in b.own.
   DESTS.push({ key: 'voorraad', label: 'Binnenkort', short: 'Binnenkort', chip: 'Binnenk.', wide: true, half: true });
-  DESTS.push({ key: 'wens', label: 'Wensenlijst', short: 'Wensenlijst', chip: 'Wensen', wide: true, half: true });
+  DESTS.push({ key: 'wens', label: 'Later', short: 'Later', chip: 'Later', wide: true, half: true });
   function isPoolKey(k) { return k === 'voorraad' || k === 'wens'; }
   function isPool(b) { return isPoolKey(b.m); }
-  function poolLabel(k) { return k === 'wens' ? 'Wensenlijst' : 'Binnenkort'; }
+  function poolLabel(k) { return k === 'wens' ? 'Later' : 'Binnenkort'; }
   function destLabel(k) { for (var i = 0; i < DESTS.length; i++) if (DESTS[i].key === k) return DESTS[i].label; return k; }
 
   var PALETTE = [
@@ -1073,7 +1109,7 @@ button.ayr{cursor:pointer}
         var d = JSON.parse(raw);
         if (d && Array.isArray(d.books)) {
           var st = { v: d.v || 1, tab: d.tab === 'stock' || d.tab === 'wish' ? d.tab : 'plan', nextId: d.nextId || 1000, nextTag: d.nextTag || 1, coll: d.coll || {}, books: d.books, tags: Array.isArray(d.tags) ? d.tags : null, lastBackup: d.lastBackup || null, year: d.year || null, years: Array.isArray(d.years) ? d.years : [], imported: Array.isArray(d.imported) ? d.imported : [], lib: d.lib && typeof d.lib === 'object' ? d.lib : null,
-            films: Array.isArray(d.films) ? d.films : [], nextFilm: d.nextFilm || 1, mode: d.mode === 'films' ? 'films' : 'books', fyear: d.fyear === 0 ? 0 : (d.fyear || null), fsort: d.fsort || 'title', ftab: d.ftab === 'watch' ? 'watch' : 'seen', fre: d.fre === 're' || d.fre === 'first' ? d.fre : 'all', sugg: Array.isArray(d.sugg) ? d.sugg : [], nextSug: d.nextSug || 1, pins: Array.isArray(d.pins) ? d.pins : [], bkSnooze: d.bkSnooze || null, sview: d.sview === 'own' || d.sview === 'want' ? d.sview : 'all', wview: d.wview === 'own' || d.wview === 'want' ? d.wview : 'all', ownMig: d.ownMig || 0, best: d.best && typeof d.best === 'object' ? d.best : {} };
+            films: Array.isArray(d.films) ? d.films : [], nextFilm: d.nextFilm || 1, mode: d.mode === 'films' ? 'films' : 'books', fyear: d.fyear === 0 ? 0 : (d.fyear || null), fsort: d.fsort || 'title', ftab: d.ftab === 'watch' ? 'watch' : 'seen', fre: d.fre === 're' || d.fre === 'first' ? d.fre : 'all', sugg: Array.isArray(d.sugg) ? d.sugg : [], nextSug: d.nextSug || 1, pins: Array.isArray(d.pins) ? d.pins : [], bkSnooze: d.bkSnooze || null, sview: d.sview === 'own' || d.sview === 'want' ? d.sview : 'all', wview: d.wview === 'own' || d.wview === 'not' ? d.wview : 'all', ownMig: d.ownMig || 0, sortQ: Array.isArray(d.sortQ) ? d.sortQ : [], sortTotal: d.sortTotal || 0, ownSeen: Array.isArray(d.ownSeen) ? d.ownSeen : [], laterSeen: Array.isArray(d.laterSeen) ? d.laterSeen : [], best: d.best && typeof d.best === 'object' ? d.best : {} };
           normalizeBooks(st.books);
           st.books.forEach(function (b) { if (b.lib === 'loan' && !b.loanDate) { b.loanDate = new Date().toISOString().slice(0, 10); b.renewed = 0; } });
           st.books.forEach(function (b) { if (b.y) b.y = +b.y; });
@@ -1087,7 +1123,7 @@ button.ayr{cursor:pointer}
     return seedState();
   }
   var state = load();
-  // leesjaren: elk gepland boek hoort bij een jaar (b.y); Binnenkort en Wensenlijst horen bij alle jaren
+  // leesjaren: elk gepland boek hoort bij een jaar (b.y); Binnenkort en Later horen bij alle jaren
   function fixYears() {
     state.books.forEach(function (b) { if (!isPool(b) && !b.y) b.y = LEGACY_YEAR; });
     var ys = (state.years || []).map(Number).filter(function (y) { return y > 1900 && y < 3000; });
@@ -1117,7 +1153,7 @@ button.ayr{cursor:pointer}
   function isImp(y) { return state.imported.indexOf(y === undefined ? YEAR : +y) >= 0; }
   function inYear(b) { return isPool(b) || +b.y === YEAR; }
   function YB() { return state.books.filter(inYear); }
-  // voor statistiek en hulplijsten: de Wensenlijst telt alleen mee als je er iets uit gelezen hebt
+  // voor statistiek en hulplijsten: Later telt alleen mee als je er iets uit gelezen hebt
   function YBS() { return YB().filter(function (b) { return b.m !== 'wens' || b.status === 'done'; }); }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
   save();
@@ -1438,7 +1474,7 @@ button.ayr{cursor:pointer}
   }
   function secHTML(d, f) {
     var sv = !f && isPoolKey(d.key) ? poolView(d.key) : 'all';
-    var items = YB().filter(function (b) { return b.m === d.key && (!f || matches(b)) && (sv === 'all' || (sv === 'want' ? isToLend(b) : !!b.own)); });
+    var items = YB().filter(function (b) { return b.m === d.key && (!f || matches(b)) && (sv === 'all' || (sv === 'want' ? isToLend(b) : sv === 'not' ? !b.own : !!b.own)); });
     if (sv === 'want') { var hv = function (b) { return b.lib === 'res' ? -1 : b.libHas === true ? 0 : b.libHas === false ? 2 : 1; }; items = items.map(function (b, i) { return { b: b, i: i }; }).sort(function (x, z) { return (hv(x.b) - hv(z.b)) || (x.i - z.i); }).map(function (x) { return x.b; }); }
     if (f && !items.length) return '';
     var doneN = items.filter(function (b) { return b.done; }).length;
@@ -1455,12 +1491,12 @@ button.ayr{cursor:pointer}
     }).join('');
     return '<section class="sec' + (collapsed ? ' is-collapsed' : '') + '" data-drop="' + d.key + '" id="sec-' + d.key + '">' +
       '<button class="sechead" data-act="sec" data-key="' + d.key + '" aria-expanded="' + !collapsed + '">' +
-      '<span class="h">' + esc(sv === 'want' ? 'Te lenen' : sv === 'own' ? 'In huis' : d.label) + '</span>' + (now ? '<span class="nowtag">nu</span>' : '') + '<span class="sp"></span>' +
+      '<span class="h">' + esc(sv === 'want' ? 'Te lenen' : sv === 'own' ? 'In huis' : sv === 'not' ? 'Niet in huis' : d.label) + '</span>' + (now ? '<span class="nowtag">nu</span>' : '') + '<span class="sp"></span>' +
       (f ? '' : secPagesHTML(d.key, items)) +
       '<span class="cnt">' + (items.length ? doneN + '/' + items.length : '') + '</span>' +
       (complete ? '<span class="ok">' + ICON_CHECK + '</span>' : '') +
       '<span class="chev' + (collapsed ? '' : ' is-open') + '">' + ICON_CHEV + '</span></button>' +
-      (collapsed ? '' : (items.map(rowHTML).join('') + contHTML + (items.length || conts.length ? '' : '<p class="empty">' + (sv === 'want' ? 'Nog niets op je lenen-lijst. Voeg een boek toe met + en kies bij Waar "Te lenen".' : sv === 'own' ? 'Nog niets in huis op deze lijst.' : d.key === 'wens' ? 'Nog leeg. Zet hier wat je ooit wilt lezen, of lees je Goodreads-lijst in via Meer → Herstellen en importeren.' : isPoolKey(d.key) ? 'Nog leeg' : 'Nog niets gepland') + '</p>'))) +
+      (collapsed ? '' : (items.map(rowHTML).join('') + contHTML + (items.length || conts.length ? '' : '<p class="empty">' + (sv === 'want' ? 'Nog niets op je lenen-lijst. Voeg een boek toe met + en kies bij Waar "Te lenen".' : sv === 'own' ? 'Nog niets in huis op deze lijst.' : sv === 'not' ? 'Alles op Later staat in huis.' : d.key === 'wens' ? 'Nog leeg. Zet hier wat je ooit wilt lezen, of lees je Goodreads-lijst in via Meer → Herstellen en importeren.' : isPoolKey(d.key) ? 'Nog leeg' : 'Nog niets gepland') + '</p>'))) +
       '</section>';
   }
   function secPagesHTML(key, items) {
@@ -1642,7 +1678,7 @@ button.ayr{cursor:pointer}
       else html += DESTS.map(function (d) { return secHTML(d, true); }).join('');
     } else if (state.tab === 'plan') {
       if (!state.books.length) html += welcomeHTML();
-      else if (!YB().some(function (b) { return !isPool(b); })) html += '<p class="results">Nog niets gepland voor ' + YEAR + '. Voeg boeken toe met + of sleep ze uit Binnenkort of je Wensenlijst.</p>';
+      else if (!YB().some(function (b) { return !isPool(b); })) html += '<p class="results">Nog niets gepland voor ' + YEAR + '. Voeg boeken toe met + of sleep ze uit Binnenkort of Later.</p>';
       html += nag + onderwegHTML() + DESTS.slice(0, 13).map(function (d) { return secHTML(d, false); }).join('');
     } else {
       var pk = state.tab === 'wish' ? 'wens' : 'voorraad';
@@ -1651,12 +1687,14 @@ button.ayr{cursor:pointer}
     list.innerHTML = html;
   }
   function isToLend(b) { return (b.lib === 'want' || b.lib === 'res') && b.status !== 'done'; }
-  // subfilter per lijst: Binnenkort en Wensenlijst onthouden elk hun eigen keuze
-  function poolView(key) { return (key === 'wens' ? state.wview : state.sview) || 'all'; }
+  // subfilter per lijst: Binnenkort en Later onthouden elk hun eigen keuze
+  function poolView(key) { var v = (key === 'wens' ? state.wview : state.sview) || 'all'; if (key === 'wens' && v === 'want') v = 'all'; if (key !== 'wens' && v === 'not') v = 'all'; return v; }
   function poolSegHTML(key) {
     var vs = YB().filter(function (b) { return b.m === key; }), sv = poolView(key);
     var nw = vs.filter(isToLend).length, no = vs.filter(function (b) { return b.own; }).length, inb = vs.filter(function (b) { return isToLend(b) && b.libHas === true; }).length;
-    return '<div class="fseg"><div class="seg2 sm fwseg" role="group" aria-label="' + poolLabel(key) + '">' + [['all', 'Alles', vs.length], ['own', 'In huis', no], ['want', 'Te lenen', nw]].map(function (o) {
+    // Binnenkort: lenen hoort erbij. Later: alleen of je hem hebt.
+    var opts = key === 'wens' ? [['all', 'Alles', vs.length], ['own', 'In huis', no], ['not', 'Niet in huis', vs.length - no]] : [['all', 'Alles', vs.length], ['own', 'In huis', no], ['want', 'Te lenen', nw]];
+    return sortBannerHTML(key) + '<div class="fseg"><div class="seg2 sm fwseg" role="group" aria-label="' + poolLabel(key) + '">' + opts.map(function (o) {
       return '<button data-sview="' + o[0] + '" data-pool="' + key + '" class="' + (sv === o[0] ? 'is-on' : '') + '" aria-pressed="' + (sv === o[0]) + '">' + o[1] + ' <span class="n">' + o[2] + '</span></button>';
     }).join('') + '</div>' + (sv === 'want' && nw ? '<p class="note" style="font-size:12.5px;color:var(--muted);margin:0 4px">' + inb + ' van ' + nw + ' staan bij de bieb · sleep een boek naar een maand om het te plannen, dan krijg je op tijd een seintje om te reserveren.</p>' : '') + fzoekHTML((key === 'wens' ? 'wish:' : 'stock:') + sv) + '</div>';
   }
@@ -1681,7 +1719,7 @@ button.ayr{cursor:pointer}
   }
   function welcomeHTML() {
     return '<div class="welcome"><h2>Welkom bij Ithaka</h2>' +
-      '<p>Plan je leesjaar per maand, zet wat je spontaan wilt lezen op Binnenkort en wat je ooit wilt lezen op je Wensenlijst, en vink af wat je uit hebt. Boeken toevoegen gaat met + , of door de streepjescode achterop te scannen.</p>' +
+      '<p>Plan je leesjaar per maand, zet wat je spontaan wilt lezen op Binnenkort en wat je ooit wilt lezen op Later, en vink af wat je uit hebt. Boeken toevoegen gaat met + , of door de streepjescode achterop te scannen.</p>' +
       '<div class="btnrow"><button class="btn primary" data-w="add">Eerste boek toevoegen</button><button class="btn" data-w="restore">Back-up terugzetten</button></div></div>';
   }
   list.addEventListener('click', function (e) {
@@ -1695,6 +1733,7 @@ button.ayr{cursor:pointer}
     if (oa) { if (oa.dataset.owa === 'bezig') openBezig(); else if (oa.dataset.owa === 'sugg') { sugView = 'new'; openSugg(); } else openLib(); return; }
     var sc = e.target.closest && e.target.closest('[data-scope]');
     if (sc) { filter.scope = sc.dataset.scope; render(); list.scrollTop = 0; return; }
+    if (e.target.closest && e.target.closest('[data-sorthub]')) { openSorter('imp'); return; }
     var w = e.target.closest && e.target.closest('[data-w]'); if (!w) return;
     if (w.dataset.w === 'add') openAdd(false); else pickBackupFile();
   });
@@ -1733,6 +1772,8 @@ button.ayr{cursor:pointer}
     rest.splice(at, 0, b);
     var same = from === key && rest.every(function (x, j) { return x === state.books[j]; });
     if (same) return;
+    // Later is geen leenlijst: wie een te-lenen boek naar Later zet, laat het lenen voorlopig los
+    if (key === 'wens' && (b.lib === 'want' || b.lib === 'res')) { delete b.lib; delete b.libHas; delete b.resDate; }
     // periode schuift mee (zelfde lengte, hooguit t/m december); buiten de maanden vervalt hij
     if (b.until) {
       if (+key >= 1) { var len = +b.until - +b.m; var nu = Math.min(12, +key + len); b.until = nu > +key ? String(nu) : null; }
@@ -1805,7 +1846,7 @@ button.ayr{cursor:pointer}
   });
   $('btn-add').addEventListener('click', function () { if (isFilms()) openAddFilm(); else openAdd(false); });
 
-  // vegen tussen Planning, Binnenkort en Wensenlijst
+  // vegen tussen Planning, Binnenkort en Later
   var sw = null;
   list.addEventListener('touchstart', function (e) {
     if (e.touches.length !== 1 || e.target.closest('.owstrip')) { sw = null; return; }
@@ -1847,6 +1888,7 @@ button.ayr{cursor:pointer}
   function closeSheet() {
     if (detailFlush) { var f = detailFlush; detailFlush = null; try { f(); } catch (e) {} }
     overlay.hidden = true; sheet.innerHTML = '';
+    if (srtDirty) { srtDirty = false; renderKeep(); }
     if (lastFocus && lastFocus.focus) try { lastFocus.focus(); } catch (e) {}
   }
   $('backdrop').addEventListener('click', closeSheet);
@@ -1896,7 +1938,7 @@ button.ayr{cursor:pointer}
       '<p class="lbl">Leesjaar toevoegen</p>' +
       '<div class="btnrow"><button class="btn" data-yadd="' + prev + '">+ ' + prev + '</button><button class="btn" data-yadd="' + next + '">+ ' + next + '</button></div>' +
       (msg ? '<p class="err">' + esc(msg) + '</p>' : '') +
-      '<p class="note" style="font-size:13px;color:var(--muted)">Binnenkort, je Wensenlijst, tags en lijnen horen bij alle jaren. Leesjaren uit Goodreads lees je in als importbestand (laat Claude dat maken van je Goodreads-export), via Meer → Herstellen en importeren. Die krijgen het label import.</p>');
+      '<p class="note" style="font-size:13px;color:var(--muted)">Binnenkort, Later, tags en lijnen horen bij alle jaren. Leesjaren uit Goodreads lees je in als importbestand (laat Claude dat maken van je Goodreads-export), via Meer → Herstellen en importeren. Die krijgen het label import.</p>');
     $('yr-done').addEventListener('click', closeSheet); bindModeSeg();
     sheet.querySelectorAll('[data-y]').forEach(function (el) {
       el.addEventListener('click', function () { switchYear(+el.dataset.y); closeSheet(); });
@@ -1943,7 +1985,7 @@ button.ayr{cursor:pointer}
     var cover = coverHTML(b, 'dcover');
     var own = !!photos[b.id];
     var order = { open: 0, bezig: 1, done: 2 }, cur = order[b.status] || 0;
-    var whereLow = isPool(b) ? (b.m === 'wens' ? 'op je wensenlijst' : 'binnenkort') : b.m === 'door' ? 'doorlopend' : MONTHS[+b.m - 1].toLowerCase() + (b.y ? ' ' + b.y : '');
+    var whereLow = isPool(b) ? (b.m === 'wens' ? 'later' : 'binnenkort') : b.m === 'door' ? 'doorlopend' : MONTHS[+b.m - 1].toLowerCase() + (b.y ? ' ' + b.y : '');
     var stepSub = {
       open: cur === 0 ? whereLow : 'gepland',
       bezig: b.started ? 'sinds ' + dShort(b.started) : cur === 1 ? 'nu' : cur === 2 ? '–' : 'tik om te beginnen',
@@ -2028,7 +2070,10 @@ button.ayr{cursor:pointer}
         if (v === 'res') { if (b.lib !== 'res' || !b.resDate) b.resDate = todayISO(); b.libHas = true; } else delete b.resDate;
         if (v === 'own') delete b.libHas;
         if (v === 'own') delete b.lib; else { b.lib = v; delete b.own; }
+        var moved = v !== 'own' && b.m === 'wens';
+        if (moved) b.m = 'voorraad';
         save(); renderKeep(); openDetail(id);
+        if (moved) toast('Naar Binnenkort: lenen doe je voor wat je binnenkort leest');
       });
     });
     sheet.querySelectorAll('[data-own]').forEach(function (el) {
@@ -2590,7 +2635,7 @@ button.ayr{cursor:pointer}
     }).join('');
     openSheet('Bladzijden aanvullen',
       '<div class="sheethead"><h3>Bladzijden aanvullen</h3><button class="linkbtn" id="el-done" style="align-self:center">Klaar</button></div>' +
-      '<p class="note">' + known + ' van ' + all + ' boeken in ' + YEAR + ', Binnenkort en je Wensenlijst hebben bladzijden. Tik op een boek en kies jouw uitgave bij de KB.</p>' +
+      '<p class="note">' + known + ' van ' + all + ' boeken in ' + YEAR + ', Binnenkort en Later hebben bladzijden. Tik op een boek en kies jouw uitgave bij de KB.</p>' +
       (rows ? '<div>' + rows + '</div>' : '<p class="note">Alles is aangevuld.</p>'));
     $('el-done').addEventListener('click', closeSheet);
     sheet.querySelectorAll('[data-en]').forEach(function (el) { el.addEventListener('click', function () { enrich = null; openEnrich(el.dataset.en, 'list'); }); });
@@ -2700,7 +2745,7 @@ button.ayr{cursor:pointer}
     var commit = function (andNext) {
       sync();
       var t = f.t.trim(); if (!t) return;
-      var lend = f.have === 'lend', m = f.dest === 'lenen' ? 'voorraad' : f.dest;
+      var lend = f.have === 'lend', m = f.dest === 'lenen' || (lend && f.dest === 'wens') ? 'voorraad' : f.dest;
       var nb = { id: 'n' + (state.nextId++), t: t, a: f.a.trim(), m: m, status: 'open', done: false, started: null, finished: null, until: null, tags: f.tags.slice() };
       if (lend) nb.lib = 'want'; else if (f.have === 'own') nb.own = true;
       if (f.isbn && toIsbn13(f.isbn)) nb.isbn = f.isbn;
@@ -2802,7 +2847,7 @@ button.ayr{cursor:pointer}
         return getDetector();
       }).then(function (det) {
         if (sc.done) return;
-        msg(kast ? 'Loop langs je kast en houd elke streepjescode in het kader. Wat de app kent, komt op In huis; de rest gaat naar je Wensenlijst.' : 'Houd de streepjescode in het kader.');
+        msg(kast ? 'Loop langs je kast en houd elke streepjescode in het kader. Wat de app kent, komt op In huis; de rest gaat naar Later.' : 'Houd de streepjescode in het kader.');
         var tick = function () {
           if (sc.done || sc.busy || video.readyState < 2) return;
           sc.busy = true;
@@ -2833,7 +2878,7 @@ button.ayr{cursor:pointer}
       findIsbn(isbn, true).then(function () { closeScanner(); });
     }
   }
-  // boekenkast: elke scan zet een bekend boek op In huis, of zet een onbekend boek op de Wensenlijst (in huis)
+  // boekenkast: elke scan zet een bekend boek op In huis, of zet een onbekend boek op Later (in huis)
   function kastMatch(info, isbn) {
     var hit = state.books.filter(function (b) { return b.isbn === isbn; })[0];
     if (!hit && info && info.t) {
@@ -2853,7 +2898,7 @@ button.ayr{cursor:pointer}
     var fr = $('scan-frame'); if (fr) fr.classList.add('is-hit');
     var done = function (line) {
       sc.log.unshift(line); sc.log = sc.log.slice(0, 4);
-      var lg = $('kastlog'); if (lg) lg.innerHTML = '<p class="kc">' + sc.nOwn + ' op In huis · ' + sc.nNew + ' nieuw op je Wensenlijst</p>' + sc.log.join('');
+      var lg = $('kastlog'); if (lg) lg.innerHTML = '<p class="kc">' + sc.nOwn + ' op In huis · ' + sc.nNew + ' nieuw op Later</p>' + sc.log.join('');
       setTimeout(function () { var f2 = $('scan-frame'); if (f2) f2.classList.remove('is-hit'); msg('Volgende boek…'); }, 900);
       save(); renderKeep();
     };
@@ -2875,12 +2920,12 @@ button.ayr{cursor:pointer}
       if (info.pages) nb.pages = info.pages; if (info.year) nb.year = info.year; if (info.publisher) nb.publisher = info.publisher; if (info.edition) nb.edition = info.edition;
       state.books.push(nb); sc.nNew++;
       msg('<b>' + esc(nb.t) + '</b>');
-      done('<p class="ki new">' + ICON_HOME + '<span><b>' + esc(nb.t) + '</b>nieuw op je Wensenlijst · in huis</span></p>');
+      done('<p class="ki new">' + ICON_HOME + '<span><b>' + esc(nb.t) + '</b>nieuw op Later · in huis</span></p>');
     });
   }
   function closeScanner() {
     var sc = scanner; if (!sc) return;
-    if (sc.kast && (sc.nOwn || sc.nNew)) setTimeout(function () { toast(sc.nOwn + ' op In huis · ' + sc.nNew + ' nieuw op je Wensenlijst'); }, 50);
+    if (sc.kast && (sc.nOwn || sc.nNew)) setTimeout(function () { toast(sc.nOwn + ' op In huis · ' + sc.nNew + ' nieuw op Later'); }, 50);
     sc.done = true; clearInterval(sc.timer);
     if (sc.stream) sc.stream.getTracks().forEach(function (t) { t.stop(); });
     scanner = null;
@@ -3061,7 +3106,7 @@ button.ayr{cursor:pointer}
     if (!ls.length) return '';
     if (statsLine === undefined || (statsLine && !ls.some(function (L) { return L.id === statsLine; }))) statsLine = ls[0].id;
     var ord = function (b) { return b.m === 'door' ? 0 : isPool(b) ? 13 : +b.m; };
-    var when = function (b) { return b.m === 'door' ? 'doorl.' : isPool(b) ? (b.m === 'wens' ? 'wensen' : 'binnenk.') : (b.until ? MON_SHORT[+b.m - 1] + '–' + MON_SHORT[+b.until - 1] : MON_SHORT[+b.m - 1]); };
+    var when = function (b) { return b.m === 'door' ? 'doorl.' : isPool(b) ? (b.m === 'wens' ? 'later' : 'binnenk.') : (b.until ? MON_SHORT[+b.m - 1] + '–' + MON_SHORT[+b.until - 1] : MON_SHORT[+b.m - 1]); };
     return '<div class="card"><h4>Lijnen</h4><div class="lanes">' + ls.map(function (L) {
       var bs = lineBooks(L)
         .map(function (b, i) { return { b: b, i: i }; })
@@ -3324,7 +3369,7 @@ button.ayr{cursor:pointer}
     for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
     return JSON.parse(new TextDecoder().decode(bytes));
   }
-  function backupData() { var d = { app: 'ithaka', v: 3, savedAt: new Date().toISOString(), books: state.books, tags: state.tags, years: state.years, imported: state.imported, films: state.films, best: state.best, lib: state.lib, sugg: state.sugg || [], pins: state.pins || [], ownMig: 1 }; if (Object.keys(photos).length) d.photos = photos; return d; }
+  function backupData() { var d = { app: 'ithaka', v: 3, savedAt: new Date().toISOString(), books: state.books, tags: state.tags, years: state.years, imported: state.imported, films: state.films, best: state.best, lib: state.lib, sugg: state.sugg || [], pins: state.pins || [], ownMig: 1, sortQ: state.sortQ || [], sortTotal: state.sortTotal || 0, ownSeen: state.ownSeen || [], laterSeen: state.laterSeen || [] }; if (Object.keys(photos).length) d.photos = photos; return d; }
   function markBackup() { state.lastBackup = new Date().toISOString(); save(); }
   function backupAge() {
     if (!state.lastBackup) return 'Nog geen back-up gemaakt op dit apparaat.';
@@ -3423,6 +3468,7 @@ button.ayr{cursor:pointer}
     if (bk.lib) state.lib = bk.lib;
     if (bk.sugg) state.sugg = bk.sugg;
     if (bk.pins) state.pins = bk.pins;
+    state.sortQ = Array.isArray(bk.sortQ) ? bk.sortQ : []; state.sortTotal = bk.sortTotal || 0; state.ownSeen = Array.isArray(bk.ownSeen) ? bk.ownSeen : []; state.laterSeen = Array.isArray(bk.laterSeen) ? bk.laterSeen : [];
     PH.replace(ph).catch(function () {});
     fixYears();
     save(); closeSheet(); closePanels(); render(); list.scrollTop = 0; toast('Lijst hersteld');
@@ -3505,7 +3551,7 @@ button.ayr{cursor:pointer}
       var vs = plan.filter(function (p) { return isPoolKey(p.x.m); });
       if (vs.length) {
         var vn = vs.filter(function (p) { return !p.old; }).length, vx = vs.length - vn;
-        yrRows += '<div class="irow"><b style="font-size:14px">' + (vs.every(function (p) { return p.x.lib === 'want'; }) ? 'Te lenen' : vs.every(function (p) { return p.x.m === 'wens'; }) ? 'Wensenlijst' : 'Binnenkort') + '</b><span>' + (vn ? vn + ' nieuw' : '') + (vn && vx ? ' · ' : '') + (vx ? vx + ' aanvullen' : '') + '</span><span></span></div>';
+        yrRows += '<div class="irow"><b style="font-size:14px">' + (vs.every(function (p) { return p.x.lib === 'want'; }) ? 'Te lenen' : vs.every(function (p) { return p.x.m === 'wens'; }) ? 'Later' : 'Binnenkort') + '</b><span>' + (vn ? vn + ' nieuw' : '') + (vn && vx ? ' · ' : '') + (vx ? vx + ' aanvullen' : '') + '</span><span></span></div>';
       }
       var title = !bk.years.length ? (bk.books.every(function (x) { return x.lib === 'want'; }) ? 'Lenen-lijst toevoegen?' : 'Lijsten aanvullen?') : bk.years.length === 1 ? 'Leesjaar ' + bk.years[0] + ' importeren?' : 'Leesjaren ' + bk.years[0] + '–' + bk.years[bk.years.length - 1] + ' importeren?';
       openSheet('Importeren',
@@ -4805,29 +4851,154 @@ button.ayr{cursor:pointer}
     var own = add.filter(function (x) { return x.own; }).length;
     var ex = have.slice(0, 40).map(function (h) { return '<li>' + esc(h.x.t) + ' <span style="color:var(--muted)">· staat al als ' + esc(h.b.t) + ' (' + esc(h.b.status === 'done' ? 'gelezen' : destLabel(h.b.m).toLowerCase()) + ')</span></li>'; }).join('');
     openSheet('Wensenlijst',
-      '<h3>Wensenlijst aanvullen?</h3><div class="irows">' +
-        '<div class="irow"><b>' + add.length + '</b><span>' + (add.length === 1 ? 'boek komt' : 'boeken komen') + ' op je Wensenlijst' + (own ? ', waarvan ' + own + ' in huis' : '') + '</span></div>' +
+      '<h3>Wensenlijst inlezen?</h3><div class="irows">' +
+        '<div class="irow"><b>' + add.length + '</b><span>' + (add.length === 1 ? 'boek is' : 'boeken zijn') + ' nieuw voor de app' + (own ? ', waarvan ' + own + ' in huis' : '') + '</span></div>' +
         (have.length ? '<div class="irow"><b>' + have.length + '</b><span>' + (have.length === 1 ? 'staat' : 'staan') + ' al in de app; die blijven waar ze zijn</span></div>' : '') + '</div>' +
       (have.length ? '<details class="sydet"><summary>Welke staan er al?</summary><ul style="margin:6px 0 0;padding-left:18px;font-size:13px;line-height:1.5">' + ex + (have.length > 40 ? '<li>en nog ' + (have.length - 40) + '</li>' : '') + '</ul></details>' : '') +
       '<p class="note" style="font-size:13.5px">Er wordt niets overschreven. Heb je een boek in huis, zet het dan op In huis met Meer → Boekenkast scannen, of op de boekkaart.</p>' +
       (bk.note ? '<p class="note" style="color:var(--muted);font-size:13px">' + esc(bk.note) + '</p>' : '') +
-      '<div class="btnrow"><button class="btn" id="rs-no">Annuleer</button><button class="btn primary" id="rs-yes"' + (add.length ? '' : ' disabled') + '>Zet op Wensenlijst</button></div>');
+      '<button class="btn primary" id="rs-sort" style="flex:none"' + (add.length ? '' : ' disabled') + '>Per boek sorteren</button>' +
+      '<p class="note" style="font-size:12.5px;color:var(--muted);margin:-4px 2px 0">Eén boek per keer: naar Binnenkort of Later, en in huis of niet. Stoppen kan altijd; de rest wacht op Later onder \'nog te sorteren\'.</p>' +
+      '<div class="btnrow"><button class="btn" id="rs-no">Annuleer</button><button class="btn" id="rs-yes"' + (add.length ? '' : ' disabled') + '>Alles op Later</button></div>');
     $('rs-no').addEventListener('click', openBackup);
+    $('rs-sort').addEventListener('click', function () {
+      srtInit();
+      var have = {}; (state.sortQ || []).forEach(function (x) { have[importKey(x.t, x.a)] = 1; });
+      add.forEach(function (x) { if (!have[importKey(x.t, x.a)]) state.sortQ.push(x); });
+      state.sortTotal = state.sortQ.length; srtHist.imp = []; save(); openSorter('imp');
+    });
     $('rs-yes').addEventListener('click', function () {
-      add.forEach(function (x) {
-        var b = { id: 'n' + (state.nextId++), t: x.t, a: x.a || '', m: 'wens', status: 'open', done: false, started: null, finished: null, until: null, tags: [] };
-        var i13 = x.isbn ? toIsbn13(String(x.isbn)) : null; if (i13) b.isbn = i13;
-        var pg = parseInt(x.pages, 10); if (pg > 0 && pg < 20000) b.pages = pg;
-        var o = parseInt(x.orig, 10); if (o >= -3000 && o <= 2100 && o) b.orig = o;
-        if (x.year) b.year = String(x.year); if (x.publisher) b.publisher = x.publisher;
-        if (x.own) b.own = true;
-        (x.tags || []).forEach(function (n) { var t = tagByName(n, false) || tagByName(n, true); if (t && b.tags.indexOf(t.id) < 0) b.tags.push(t.id); });
-        state.books.push(b);
-      });
+      add.forEach(function (x) { wishBook(x, 'wens', !!x.own); });
       state.mode = 'books'; state.tab = 'wish';
       save(); closeSheet(); closePanels(); render(); list.scrollTop = 0;
-      toast(add.length + (add.length === 1 ? ' boek' : ' boeken') + ' op je Wensenlijst');
+      toast(add.length + (add.length === 1 ? ' boek' : ' boeken') + ' op Later');
     });
+  }
+  function wishBook(x, m, own) {
+    var b = { id: 'n' + (state.nextId++), t: x.t, a: x.a || '', m: m, status: 'open', done: false, started: null, finished: null, until: null, tags: [] };
+    var i13 = x.isbn ? toIsbn13(String(x.isbn)) : null; if (i13) b.isbn = i13;
+    var pg = parseInt(x.pages, 10); if (pg > 0 && pg < 20000) b.pages = pg;
+    var o = parseInt(x.orig, 10); if (o >= -3000 && o <= 2100 && o) b.orig = o;
+    if (x.year) b.year = String(x.year); if (x.publisher) b.publisher = x.publisher;
+    if (own) b.own = true;
+    (x.tags || []).forEach(function (n) { var t = tagByName(n, false) || tagByName(n, true); if (t && b.tags.indexOf(t.id) < 0) b.tags.push(t.id); });
+    state.books.push(b);
+    return b;
+  }
+
+  // ---------- langslopen: per boek snel beslissen ----------
+  // imp: een geïmporteerde lijst naar Binnenkort of Later (met In huis); read: gelezen boeken, in huis of niet; later: Later nalopen
+  var srtHist = { imp: [], read: [], later: [] }, srtSkip = { read: {}, later: {} }, srtOwn = false, srtCur = null, srtDirty = false;
+  function srtInit() { ['sortQ', 'ownSeen', 'laterSeen'].forEach(function (k) { if (!Array.isArray(state[k])) state[k] = []; }); }
+  function surKey(a) { var w = String(a || '').trim().split(/\s+/); return norm(w[w.length - 1] || '') + ' ' + norm(a || ''); }
+  function bySur(x, y) { return surKey(x.a).localeCompare(surKey(y.a), 'nl') || String(x.t).localeCompare(String(y.t), 'nl'); }
+  function srtReadList() {
+    var seen = {}, own = {}, by = {};
+    (state.ownSeen || []).forEach(function (k) { seen[k] = 1; });
+    state.books.forEach(function (b) { if (b.own) own[bookKeyOf(b)] = 1; });
+    state.books.forEach(function (b) { if (b.status !== 'done') return; var k = bookKeyOf(b); if (seen[k] || own[k] || srtSkip.read[k] || by[k]) return; by[k] = b; });
+    return Object.keys(by).map(function (k) { return by[k]; }).sort(bySur);
+  }
+  function srtReadTotal() { var k = {}; state.books.forEach(function (b) { if (b.status === 'done') k[bookKeyOf(b)] = 1; }); return Object.keys(k).length; }
+  function srtLaterList() {
+    var seen = {}; (state.laterSeen || []).forEach(function (id) { seen[id] = 1; });
+    return state.books.filter(function (b) { return b.m === 'wens' && b.status === 'open' && !seen[b.id] && !srtSkip.later[b.id]; }).sort(bySur);
+  }
+  function sortBannerHTML(key) {
+    var n = (state.sortQ || []).length;
+    if (key !== 'wens' || !n) return '';
+    return '<button class="sortban" data-sorthub>' + ICON_HOME_L + '<span><b>' + n + ' nog te sorteren</b><span>Per boek naar Binnenkort of Later, en in huis of niet</span></span><em>Verder</em></button>';
+  }
+  function sortHubSub() {
+    var a = (state.sortQ || []).length, r = srtReadList().length, l = srtLaterList().length;
+    return [a ? a + ' te sorteren' : '', r ? r + ' gelezen: in huis?' : '', l ? l + ' op Later' : ''].filter(Boolean).join(' · ') || 'Alles is langsgelopen';
+  }
+  function openSortHub() {
+    var a = (state.sortQ || []).length, r = srtReadList().length, l = srtLaterList().length;
+    var row = function (mode, t, sub, n) { return '<button class="lrow2" data-srthub="' + mode + '"' + (n ? '' : ' disabled') + '><span class="tx"><b>' + t + '</b><span>' + sub + '</span></span><span class="r">' + (n || '✓') + '</span>' + zic('rechts', 16, 2.2) + '</button>'; };
+    openSheet('Langslopen',
+      '<div class="sheethead"><h3>Langslopen</h3><button class="linkbtn" id="sh-done" style="align-self:center">Klaar</button></div>' +
+      '<p class="note" style="font-size:13.5px;margin:0">Eén boek per keer, met grote knoppen. Stoppen kan altijd; je gaat later verder waar je was.</p>' +
+      '<div class="pick">' +
+        row('imp', 'Nog te sorteren', a ? 'Uit je import: naar Binnenkort of Later, en in huis of niet' : 'Lees een wensenlijst in via Herstellen en importeren', a) +
+        row('read', 'Gelezen boeken: in huis?', 'Op schrijver, zodat je je kast van links naar rechts afloopt', r) +
+        row('later', 'Later nalopen', 'In huis of niet, en wat er naar Binnenkort mag', l) +
+      '</div>');
+    $('sh-done').addEventListener('click', closeSheet);
+    sheet.querySelectorAll('[data-srthub]').forEach(function (el) { el.addEventListener('click', function () { openSorter(el.dataset.srthub); }); });
+  }
+  function openSorter(mode) {
+    srtInit();
+    var cur = null, left = 0, total = 0, title = '', hist = srtHist[mode];
+    if (mode === 'imp') { cur = (state.sortQ || [])[0] || null; left = (state.sortQ || []).length; total = Math.max(state.sortTotal || 0, left); title = 'Sorteren'; }
+    else if (mode === 'read') { var rl = srtReadList(); cur = rl[0] || null; left = rl.length; total = srtReadTotal(); title = 'Gelezen · in huis?'; }
+    else { var ll = srtLaterList(); cur = ll[0] || null; left = ll.length; total = Math.max(left, state.books.filter(function (b) { return b.m === 'wens' && b.status === 'open'; }).length); title = 'Later nalopen'; }
+    if (mode === 'later' && cur && srtCur !== cur.id) { srtCur = cur.id; srtOwn = !!cur.own; }
+    var doneN = Math.max(0, total - left), pct = total ? Math.round(doneN / total * 100) : 100;
+    var head = '<div class="srthd"><b>' + title + '</b><span>' + (cur ? (doneN + 1) + ' van ' + total : 'klaar') + '</span><button class="linkbtn" data-srt="stop">Stoppen</button></div><div class="srtbar"><i style="width:' + pct + '%"></i></div>';
+    if (!cur) {
+      openSheet('Langslopen', '<div class="srt">' + head + '<div class="srtdone"><b>Klaar</b><span>' + (mode === 'imp' ? 'Alles is gesorteerd.' : mode === 'read' ? 'Al je gelezen boeken zijn langsgelopen.' : 'Later is helemaal nagelopen.') + '</span></div>' +
+        '<div class="srtfoot">' + (hist.length ? '<button data-srt="undo">Terug</button>' : '<span></span>') + '<button data-srt="hub">Andere stapel</button></div></div>');
+    } else {
+      var meta = [], who = cur.a || '';
+      if (mode === 'read') {
+        var reads = sameBook(cur).filter(function (b) { return b.status === 'done'; });
+        meta.push('gelezen ' + reads.map(readYearOf).filter(Boolean).join(', '));
+        var rb = reads.filter(function (b) { return b.rating; })[0]; if (rb) meta.push('★ ' + fmtRating(rb.rating));
+      } else {
+        if (cur.orig) meta.push(fmtYear(+cur.orig)); if (cur.pages) meta.push(nlNum(+cur.pages) + ' blz.');
+        var tg = mode === 'imp' ? (cur.tags || []) : (cur.tags || []).map(function (id) { var t = findTag(id); return t ? t.name : ''; }).filter(Boolean);
+        if (tg.length) meta.push(tg.join(', '));
+      }
+      var card = '<div class="srtcard"><b class="srtt">' + esc(cur.t) + '</b>' + (who ? '<span class="srta">' + esc(who) + '</span>' : '') + (meta.length ? '<span class="srtm">' + esc(meta.join(' · ')) + '</span>' : '') + '</div>';
+      var ownBtn = '<button class="srtown' + (srtOwn ? ' is-on' : '') + '" data-srt="own" aria-pressed="' + srtOwn + '">' + ICON_HOME_L + '<span><b>In huis</b><span>' + (srtOwn ? 'Staat in je kast' : mode === 'imp' ? 'Tik aan als je hem hebt; blijft aan voor het volgende boek' : 'Tik aan als je hem hebt') + '</span></span><i class="sw" aria-hidden="true"></i></button>';
+      var btns = mode === 'read'
+        ? '<p class="srtq">Staat dit boek in je kast?</p><div class="srtbtns"><button class="srtb" data-srt="yes">' + ICON_HOME + 'In huis</button><button class="srtb" data-srt="no">Niet in huis</button></div>'
+        : ownBtn + '<div class="srtbtns"><button class="srtb" data-srt="soon">Binnenkort</button><button class="srtb" data-srt="later">' + (mode === 'imp' ? 'Later' : 'Blijft op Later') + '</button></div>';
+      var skip = mode === 'imp' ? 'Niet toevoegen' : mode === 'read' ? 'Weet ik niet' : 'Overslaan';
+      openSheet('Langslopen', '<div class="srt">' + head + card + btns +
+        '<div class="srtfoot"><button data-srt="undo"' + (hist.length ? '' : ' disabled') + '>Terug</button><button data-srt="skip">' + skip + '</button></div></div>');
+    }
+    sheet.querySelectorAll('[data-srt]').forEach(function (el) { el.addEventListener('click', function () { srtAct(mode, el.dataset.srt, cur); }); });
+  }
+  function srtAct(mode, act, cur) {
+    srtInit();
+    var hist = srtHist[mode];
+    if (act === 'stop') { closeSheet(); if (mode === 'imp') { closePanels(); state.mode = 'books'; state.tab = 'wish'; save(); render(); list.scrollTop = 0; } return; }
+    if (act === 'hub') { openSortHub(); return; }
+    if (act === 'own') { srtOwn = !srtOwn; openSorter(mode); return; }
+    if (act === 'undo') {
+      var h = hist.pop(); if (!h) return;
+      if (mode === 'imp') { if (h.id) state.books = state.books.filter(function (b) { return b.id !== h.id; }); state.sortQ.unshift(h.x); if (h.own !== undefined) srtOwn = h.own; }
+      else if (mode === 'read') { if (h.skip) delete srtSkip.read[h.k]; else { h.prev.forEach(function (p) { if (p[1]) p[0].own = true; else delete p[0].own; }); state.ownSeen = state.ownSeen.filter(function (k) { return k !== h.k; }); } }
+      else { var b = find(h.id); if (h.skip) delete srtSkip.later[h.id]; else if (b) { b.m = h.m; if (h.own) b.own = true; else delete b.own; state.laterSeen = state.laterSeen.filter(function (id) { return id !== h.id; }); } srtCur = null; }
+      srtDirty = true; save(); openSorter(mode); return;
+    }
+    if (!cur) return;
+    if (mode === 'imp') {
+      var x = state.sortQ.shift(), nb = null;
+      if (act === 'soon' || act === 'later') nb = wishBook(x, act === 'soon' ? 'voorraad' : 'wens', srtOwn);
+      hist.push({ x: x, id: nb ? nb.id : null, own: srtOwn });
+      if (!state.sortQ.length) state.sortTotal = 0;
+    } else if (mode === 'read') {
+      var k = bookKeyOf(cur);
+      if (act === 'skip') { srtSkip.read[k] = 1; hist.push({ k: k, skip: true }); }
+      else {
+        var all = sameBook(cur), prev = all.map(function (b) { return [b, !!b.own]; });
+        all.forEach(function (b) { if (act === 'yes') b.own = true; else delete b.own; });
+        state.ownSeen.push(k); hist.push({ k: k, prev: prev });
+      }
+    } else {
+      if (act === 'skip') { srtSkip.later[cur.id] = 1; hist.push({ id: cur.id, skip: true }); }
+      else {
+        hist.push({ id: cur.id, m: cur.m, own: !!cur.own });
+        if (srtOwn) cur.own = true; else delete cur.own;
+        if (act === 'soon') { cur.m = 'voorraad'; state.books = state.books.filter(function (b) { return b !== cur; }).concat([cur]); }
+        state.laterSeen.push(cur.id);
+      }
+      srtCur = null;
+    }
+    srtDirty = true; save(); openSorter(mode);
   }
   // lijnvoorstel: per lijn aanvinken wat erin mag; twijfel staat standaard uit
   // lijnvoorstel: per lijn aanvinken wat erin of eruit gaat; twijfel staat standaard uit.
@@ -5181,7 +5352,7 @@ button.ayr{cursor:pointer}
       return out;
     };
     if (v === 'samen') {
-      // per jaar boeken en films door elkaar, nieuwste jaar eerst; daarna Binnenkort, Wensenlijst en kijklijst
+      // per jaar boeken en films door elkaar, nieuwste jaar eerst; daarna Binnenkort, Later en kijklijst
       var ys = [];
       books.forEach(function (b) { var y = isPool(b) ? null : +b.y; if (y && ys.indexOf(y) < 0) ys.push(y); });
       films.forEach(function (f) { var y = seenYear(f); if (y && ys.indexOf(y) < 0) ys.push(y); });
@@ -5670,8 +5841,8 @@ button.ayr{cursor:pointer}
       var tag = null; lineTags().forEach(function (t) { if (x.line && norm(t.name) === norm(x.line)) tag = t; });
       var col = PALETTE[Math.abs(String(x.t).split('').reduce(function (h, ch) { return (h * 31 + ch.charCodeAt(0)) | 0; }, 0)) % PALETTE.length].d;
       var acts = '';
-      if (x.st === 'new') acts = (x.k === 'film' ? '<button class="sa" data-sact="watch:' + x.id + '">Op kijklijst</button>' : '<button class="sa lib" data-sact="lenen:' + x.id + '">' + ICON_LIB + 'Te lenen</button><button class="sa" data-sact="voorraad:' + x.id + '">Binnenkort</button><button class="sa" data-sact="wens:' + x.id + '">Wensenlijst</button>') + '<button class="sa no' + (sugNo === x.id ? ' is-on' : '') + '" data-sact="nee:' + x.id + '" aria-expanded="' + (sugNo === x.id) + '">Nee</button>';
-      else if (x.st === 'kept') acts = '<span class="sst">' + (x.to === 'lenen' ? 'Op Te lenen' : x.to === 'watch' ? 'Op je kijklijst' : x.to === 'wens' ? 'Op je wensenlijst' : 'Op Binnenkort') + '</span>' + (sugTarget(x) ? '<button class="sa" data-sact="open:' + x.id + '">Open</button>' : '');
+      if (x.st === 'new') acts = (x.k === 'film' ? '<button class="sa" data-sact="watch:' + x.id + '">Op kijklijst</button>' : '<button class="sa lib" data-sact="lenen:' + x.id + '">' + ICON_LIB + 'Te lenen</button><button class="sa" data-sact="voorraad:' + x.id + '">Binnenkort</button><button class="sa" data-sact="wens:' + x.id + '">Later</button>') + '<button class="sa no' + (sugNo === x.id ? ' is-on' : '') + '" data-sact="nee:' + x.id + '" aria-expanded="' + (sugNo === x.id) + '">Nee</button>';
+      else if (x.st === 'kept') acts = '<span class="sst">' + (x.to === 'lenen' ? 'Op Te lenen' : x.to === 'watch' ? 'Op je kijklijst' : x.to === 'wens' ? 'Op Later' : 'Op Binnenkort') + '</span>' + (sugTarget(x) ? '<button class="sa" data-sact="open:' + x.id + '">Open</button>' : '');
       else acts = '<span class="sst">Weggelegd' + (x.no ? ': ' + esc(x.no.toLowerCase()) : '') + '</span><button class="sa" data-sact="terug:' + x.id + '">Terugzetten</button>';
       return '<article class="scard"><div class="sch"><span class="poster" style="background:' + col + '" aria-hidden="true"><b>' + esc((x.t.replace(/^(the|a|an|de|het|een|le|la|les|el|il|der|die|das)\s+/i, '').charAt(0) || '?').toUpperCase()) + '</b>' + (x.yr ? '<small>' + esc(x.yr) + '</small>' : '') + '</span>' +
         '<span class="sct"><span class="kind">' + (x.k === 'film' ? 'Film' : 'Boek') + '</span><b>' + esc(x.t) + '</b><span>' + esc([x.a, x.yr].filter(Boolean).join(' · ')) + '</span></span></div>' +
@@ -5710,7 +5881,7 @@ button.ayr{cursor:pointer}
           state.books.push(b); x.ref = b.id; x.to = act;
         }
         x.st = 'kept'; save(); renderKeep(); keepScroll(openSugg);
-        toast(act === 'watch' ? 'Op je kijklijst' : act === 'lenen' ? 'Op Te lenen' : act === 'wens' ? 'Op je wensenlijst' : 'Op Binnenkort');
+        toast(act === 'watch' ? 'Op je kijklijst' : act === 'lenen' ? 'Op Te lenen' : act === 'wens' ? 'Op Later' : 'Op Binnenkort');
       });
     });
   }
@@ -5738,9 +5909,9 @@ button.ayr{cursor:pointer}
   // Drie vaste vragen (soort, stand, wanneer) plus lijn, tags, maker, snelkeuzes en vrije tekst.
   function zq0() { return { q: '', line: null, tags: [], kind: 'all', stand: 'all', when: 'all', person: '', where: '', sug: false, group: 'auto' }; }
   var zq = zq0(), zOpenSec = {};
-  var Z_STAND = [['all', 'Alles'], ['todo', 'Nog te doen'], ['plan', 'Gepland'], ['soon', 'Binnenkort'], ['wens', 'Wensenlijst en kijklijst'], ['bezig', 'Bezig'], ['done', 'Gedaan']];
-  var Z_WHERE = { lenen: 'Te lenen', huis: 'In huis', avail: 'Beschikbaar om te kijken', notyet: 'Nog niet beschikbaar', again: 'Herkijken', first: 'Eerste keer gezien', re: 'Herzien' };
-  function zStandLab(stand, kind) { if (stand === 'wens') return kind === 'books' ? 'Wensenlijst' : kind === 'films' ? 'Kijklijst' : 'Wensen- en kijklijst'; return Z_STAND.filter(function (s) { return s[0] === stand; })[0][1]; }
+  var Z_STAND = [['all', 'Alles'], ['todo', 'Nog te doen'], ['plan', 'Gepland'], ['soon', 'Binnenkort'], ['wens', 'Later en kijklijst'], ['bezig', 'Bezig'], ['done', 'Gedaan']];
+  var Z_WHERE = { lenen: 'Te lenen', huis: 'In huis', niethuis: 'Niet in huis', avail: 'Beschikbaar om te kijken', notyet: 'Nog niet beschikbaar', again: 'Herkijken', first: 'Eerste keer gezien', re: 'Herzien' };
+  function zStandLab(stand, kind) { if (stand === 'wens') return kind === 'books' ? 'Later' : kind === 'films' ? 'Kijklijst' : 'Later en kijklijst'; return Z_STAND.filter(function (s) { return s[0] === stand; })[0][1]; }
   var Z_TODO = { bezig: 1, plan: 1, soon: 1, wens: 1, avail: 1, notyet: 1 };
   var ZI = {
     boek: '<path d="M3 5h6a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H3zM21 5h-6a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h7z"/>',
@@ -5777,6 +5948,7 @@ button.ayr{cursor:pointer}
     if (c.person && !zWho(x).some(function (p) { return norm(p).trim() === norm(c.person).trim(); })) return false;
     if (c.where === 'lenen' && !(x.k === 'b' && isToLend(o))) return false;
     if (c.where === 'huis' && !(x.k === 'b' && o.own)) return false;
+    if (c.where === 'niethuis' && !(x.k === 'b' && !o.own)) return false;
     if (c.where === 'avail' && x.w !== 'avail') return false;
     if (c.where === 'notyet' && x.w !== 'notyet') return false;
     if ((c.where === 'first' || c.where === 're') && !(x.k === 'f' && o.st === 'seen' && (c.where === 're') === !!isRewatch(o))) return false;
@@ -5817,9 +5989,9 @@ button.ayr{cursor:pointer}
     if (c.stand === 'todo') return 'Nog ' + both('<b>' + zN(n.b, 'boek', 'boeken') + '</b>', '<b>' + zN(n.f, 'film', 'films') + '</b>') + inL;
     if (c.stand === 'plan') return '<b>' + zN(n.b, 'boek', 'boeken') + '</b> gepland' + (c.when !== 'all' ? ' in ' + c.when : '') + inL;
     if (c.stand === 'bezig') return '<b>' + zN(n.b, 'boek', 'boeken') + '</b> nu bezig' + inL;
-    var wh = c.where === 'huis' ? ' in huis' : c.where === 'lenen' ? ' te lenen' : '';
+    var wh = c.where === 'huis' ? ' in huis' : c.where === 'niethuis' ? ' niet in huis' : c.where === 'lenen' ? ' te lenen' : '';
     if (c.stand === 'soon') return '<b>' + zN(n.b, 'boek', 'boeken') + '</b> op Binnenkort' + wh + inL;
-    if (c.stand === 'wens' && !F) return '<b>' + zN(n.b, 'boek', 'boeken') + '</b> op je wensenlijst' + wh + inL;
+    if (c.stand === 'wens' && !F) return '<b>' + zN(n.b, 'boek', 'boeken') + '</b> op Later' + wh + inL;
     if (c.where === 'huis' && !F) return '<b>' + zN(n.b, 'boek', 'boeken') + '</b> in huis' + inL;
     if (c.stand === 'done') {
       var a = zAvg(xs), avg = a ? ' · gemiddeld ★ ' + f1(a) : '';
@@ -5874,7 +6046,7 @@ button.ayr{cursor:pointer}
     plan.forEach(function (x) { if (pys.indexOf(x.yr) < 0) pys.push(x.yr); });
     pys.forEach(function (y) { html += zSection('plan' + y, 'Gepland ' + (y || ''), plan.filter(function (x) { return x.yr === y; }), false); });
     html += zSection('soon', 'Binnenkort', w('soon').sort(byT), false);
-    html += zSection('wens', 'Wensenlijst', w('wens').sort(byT), false);
+    html += zSection('wens', 'Later', w('wens').sort(byT), false);
     html += zSection('avail', 'Kijklijst · beschikbaar', w('avail').sort(byT), false);
     html += zSection('notyet', 'Kijklijst · nog niet', w('notyet').sort(byT), false);
     var done = w('done').sort(function (a, b) { return (b.d || '') < (a.d || '') ? -1 : (b.d || '') > (a.d || '') ? 1 : 0; }), dys = [];
@@ -6067,11 +6239,11 @@ button.ayr{cursor:pointer}
       opts = [['all', 'Boeken en films'], ['books', 'Alleen boeken'], ['films', 'Alleen films']].map(function (o) { var c = Object.assign({}, zq, { kind: o[0] }); return { v: o[0], lab: o[1], sub: nTxt(count(c), c), on: zq.kind === o[0] }; });
     } else if (name === 'stand') {
       title = 'Stand';
-      var help = { all: 'alles wat bij deze filters past', todo: 'bezig, gepland, binnenkort, je wensenlijst en je kijklijst', plan: 'in een maand van een leesjaar', soon: 'boeken die je spontaan wilt lezen', wens: 'boeken die je ooit wilt lezen, en films die je wilt zien', bezig: 'boeken waar je nu in leest', done: 'gelezen en gezien' };
+      var help = { all: 'alles wat bij deze filters past', todo: 'bezig, gepland, binnenkort, later en je kijklijst', plan: 'in een maand van een leesjaar', soon: 'boeken die je spontaan wilt lezen', wens: 'boeken die je ooit wilt lezen, en films die je wilt zien', bezig: 'boeken waar je nu in leest', done: 'gelezen en gezien' };
       opts = Z_STAND.map(function (o) { var c = Object.assign({}, zq, { stand: o[0] }); return { v: o[0], lab: o[1], sub: help[o[0]] + ' · ' + nTxt(count(c), c), on: zq.stand === o[0] }; });
     } else if (name === 'when') {
       title = 'Wanneer';
-      note = zq.stand === 'done' ? 'Telt wat je in dat jaar uitlas of zag.' : zq.stand === 'all' || zq.stand === 'todo' ? 'Een jaar telt het jaar waarin je iets las, zag of gepland hebt; Binnenkort, Wensenlijst en kijklijst hebben geen jaar.' : '';
+      note = zq.stand === 'done' ? 'Telt wat je in dat jaar uitlas of zag.' : zq.stand === 'all' || zq.stand === 'todo' ? 'Een jaar telt het jaar waarin je iets las, zag of gepland hebt; Binnenkort, Later en kijklijst hebben geen jaar.' : '';
       var ys = {};
       all.forEach(function (x) { if (x.yr && zMatch(x, zq, 'when')) { ys[x.yr] = ys[x.yr] || []; ys[x.yr].push(x); } });
       opts = [{ v: 'all', lab: 'Alle jaren', sub: nTxt(count(Object.assign({}, zq, { when: 'all' })), zq), on: zq.when === 'all' }].concat(Object.keys(ys).sort(function (a, b) { return b - a; }).map(function (y) {
@@ -6113,10 +6285,10 @@ button.ayr{cursor:pointer}
     $('zm-show').addEventListener('click', closeSheet);
     $('zm-clear').addEventListener('click', function () { var q = zq.q; zq = zq0(); zq.q = q; closeSheet(); renderZoek(true); });
   }
-  // "Verder zoeken in…" onder de subfilters van Binnenkort, Wensenlijst, kijklijst en gezien
+  // "Verder zoeken in…" onder de subfilters van Binnenkort, Later, kijklijst en gezien
   var FZOEK = {
     'stock:all': [{ kind: 'books', stand: 'soon' }, 'Binnenkort'], 'stock:own': [{ kind: 'books', stand: 'soon', where: 'huis' }, 'Binnenkort · in huis'], 'stock:want': [{ kind: 'books', stand: 'soon', where: 'lenen' }, 'Binnenkort · te lenen'],
-    'wish:all': [{ kind: 'books', stand: 'wens' }, 'Wensenlijst'], 'wish:own': [{ kind: 'books', stand: 'wens', where: 'huis' }, 'Wensenlijst · in huis'], 'wish:want': [{ kind: 'books', stand: 'wens', where: 'lenen' }, 'Wensenlijst · te lenen'],
+    'wish:all': [{ kind: 'books', stand: 'wens' }, 'Later'], 'wish:own': [{ kind: 'books', stand: 'wens', where: 'huis' }, 'Later · in huis'], 'wish:not': [{ kind: 'books', stand: 'wens', where: 'niethuis' }, 'Later · niet in huis'],
     'watch:all': [{ kind: 'films', stand: 'todo' }, 'Kijklijst'], 'watch:avail': [{ kind: 'films', where: 'avail' }, 'Beschikbaar'], 'watch:not': [{ kind: 'films', where: 'notyet' }, 'Nog niet beschikbaar'],
     'seen:all': [{ kind: 'films', stand: 'done' }, 'Gezien'], 'seen:first': [{ kind: 'films', stand: 'done', where: 'first' }, 'Eerste keer'], 'seen:re': [{ kind: 'films', stand: 'done', where: 're' }, 'Herzien']
   };
@@ -6152,6 +6324,7 @@ button.ayr{cursor:pointer}
     pag: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/>',
     note: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
     kompas: '<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',
+    sort: '<rect x="4" y="7" width="16" height="13" rx="2"/><path d="M7 4h10M10 12h4"/>',
     huis: '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/>',
     koppel: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>'
   };
@@ -6182,6 +6355,7 @@ button.ayr{cursor:pointer}
         mitHTML('m-tags', 'lijn', 'Lijnen en tags', nl + (nl === 1 ? ' lijn' : ' lijnen') + ' · ' + nt + ' tags, voor boeken en films') +
         mitHTML('m-years', 'jaar', 'Leesjaren en filmjaren', 'Kiezen, toevoegen of weghalen') +
         mitHTML('m-notes', 'note', 'Aantekeningen', noteItems().length + ' bij boeken en films · zoeken, per lijn, exporteren') +
+        mitHTML('m-sort', 'sort', 'Langslopen', esc(sortHubSub())) +
         mitHTML('m-kast', 'huis', 'Boekenkast scannen', ownCount() + (ownCount() === 1 ? ' boek' : ' boeken') + ' in huis · scan langs je planken') + '</div></div>' +
       '<div class="mgrp"><p class="lbl">Ontdekken</p><div class="mlist">' + mitHTML('m-sugg', 'kompas', 'Suggesties van Claude', sugList('new').length ? sugList('new').length + ' nieuw · ' + sugList('kept').length + ' bewaard' : 'Vraag om suggesties op basis van je profiel') + '</div></div>' +
       '<div class="mgrp"><p class="lbl">Bibliotheek</p><div class="mlist">' + mitHTML('m-lib', 'bieb', 'Bibliotheek', esc(libSub)) + '</div></div>' +
@@ -6202,6 +6376,7 @@ button.ayr{cursor:pointer}
     $('m-imp').addEventListener('click', function () { openBackup(); });
     $('m-pages').addEventListener('click', function () { openEnrichList(); });
     $('m-sync').addEventListener('click', function () { openSync(); });
+    $('m-sort').addEventListener('click', function () { openSortHub(); });
     $('m-kast').addEventListener('click', function () { if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) { toast('Geen camera beschikbaar op dit apparaat'); return; } closePanels(); openScanner('kast'); });
     box.querySelectorAll('[data-theme-set]').forEach(function (el) { el.addEventListener('click', function () { setTheme(el.dataset.themeSet); openMore(); }); });
   }
