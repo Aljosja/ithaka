@@ -194,7 +194,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .btn.primary:disabled{opacity:.45;cursor:not-allowed}
 .btn.danger{background:var(--danger);border-color:var(--danger);color:var(--surface)}
-.photorow{display:flex;gap:12px;flex-wrap:wrap}
+.photorow{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .linkbtn.sm{min-height:32px;font-size:13px}
 .linkbtn.muted{color:var(--muted)}
 .linkbtn{min-height:40px;border:0;background:transparent;color:var(--accent);font-weight:600;font-size:14px;cursor:pointer;align-self:flex-start;padding:0 2px}
@@ -1358,6 +1358,8 @@ button.ayr{cursor:pointer}
     var sur = String(b.a || '').trim().split(/\s+/).pop() || '';
     return (t + (sur && norm(t).indexOf(norm(sur)) < 0 ? ' ' + sur : '')).trim();
   }
+  // Goodreads: zoeken op ISBN springt meestal direct naar het boek; zonder ISBN zoeken op titel + auteur
+  function grURL(b) { var q = b.isbn || (libQuery(b) + ' ' + (b.a || '')).trim(); return 'https://www.goodreads.com/search?q=' + encodeURIComponent(q); }
   function libSearchURL(b, byIsbn) { var u = libCfg().url; if (!u) return ''; var q = byIsbn ? b.isbn : libQuery(b); if (!q) return ''; return u.indexOf('{q}') >= 0 ? u.replace('{q}', encodeURIComponent(q)) : u; }
   function dShort(iso) { var d = parseISO(iso); return d.getDate() + ' ' + MON_SHORT[d.getMonth()]; }
   function libBoxHTML(b) {
@@ -2024,7 +2026,7 @@ button.ayr{cursor:pointer}
     openSheet(b.t,
       '<div class="dhead">' + cover + '<div class="dmeta"><h3>' + esc(b.t) + '</h3>' + (b.a ? '<button type="button" class="alink" id="dd-author" aria-label="Alles van ' + esc(b.a) + '">' + esc(b.a) + '</button>' : '') +
         (bookFacts(b) ? '<span class="facts">' + esc(bookFacts(b)) + '</span>' : '') + '<span class="dwhere">' + esc(where) + '</span>' +
-        '<span class="photorow"><button type="button" class="linkbtn sm" id="dd-photo">' + (own ? 'Andere foto' : 'Foto van de kaft maken') + '</button>' + (own ? '<button type="button" class="linkbtn sm muted" id="dd-photo-del">Foto weg</button>' : '') + '</span></div></div>' +
+        '<span class="photorow"><a class="linkbtn sm" href="' + esc(grURL(b)) + '" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">Goodreads</a><button type="button" class="linkbtn sm" id="dd-photo">' + (own ? 'Andere foto' : 'Foto van de kaft maken') + '</button>' + (own ? '<button type="button" class="linkbtn sm muted" id="dd-photo-del">Foto weg</button>' : '') + '</span></div></div>' +
       sugWhyHTML('book', b.id) +
       steps + dates +
       (b.status === 'done' ? '<div class="field"><label>Sterren</label><div class="rate"><div class="stars" role="group" aria-label="Sterren">' + starsHTML(b.rating || 0) + '</div>' +
