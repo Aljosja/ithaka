@@ -767,6 +767,30 @@ button.ayr{cursor:pointer}
 .lbtns{display:flex;flex-direction:column;gap:6px;flex:none}
 .lbtn{min-height:38px;border-radius:10px;border:1px solid var(--lib-line);background:var(--surface);color:var(--lib);font-weight:600;font-size:13px;padding:0 12px;cursor:pointer;white-space:nowrap}
 .libline.is-quiet .lbtn{border-color:var(--line2);color:var(--soft)}
+.hist .li b{font-size:14px}
+.hruns{display:flex;flex-wrap:wrap;align-items:center;column-gap:5px;row-gap:0}
+.hit{border:0;background:none;padding:0;min-height:26px;font:inherit;font-size:12.5px;color:var(--soft);text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:3px;cursor:pointer;white-space:nowrap}
+.hit i{font-style:normal;font-weight:700;color:var(--accent)}
+.hit.is-cur{color:var(--ink);font-weight:700;text-decoration:none;cursor:default}
+.hit.hmore{color:var(--accent);font-weight:600;text-decoration:none}
+.hsep{color:var(--muted);font-size:12px}
+.ropt{border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.ropt.is-on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.ropth{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;background:none;border:0;padding:12px 14px;font:inherit;color:inherit;cursor:pointer}
+.ropth .rd{width:20px;height:20px;border-radius:50%;border:2px solid var(--line2);flex:none;margin-top:1px;box-sizing:border-box}
+.ropt.is-on .rd{border:6px solid var(--accent)}
+.ropth b{display:block;font-size:14.5px}.ropth span span{font-size:12.5px;color:var(--muted);line-height:1.4}
+.ropti{padding:0 14px 14px 46px;display:flex;flex-direction:column;gap:10px}
+.ropti .destgrid{margin:0}
+.carry{background:var(--track);border-radius:12px;padding:10px 12px;font-size:12.5px;line-height:1.55;color:var(--soft);margin:0}
+.carry b{color:var(--ink)}
+.ctag{display:inline-block;border:1px solid var(--line2);border-radius:999px;padding:0 8px;font-size:11.5px;margin:2px 3px 0 0}
+.ctag.new{border-color:color-mix(in srgb,var(--ok) 50%,transparent);color:var(--ok)}
+.rchips{display:flex;gap:8px;flex-wrap:wrap}
+.rchip{min-height:38px;border-radius:10px;border:1px solid var(--line2);background:var(--surface);color:var(--soft);font-weight:600;font-size:13.5px;padding:0 13px;cursor:pointer}
+.rchip.is-on{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+label .opt{font-weight:500;color:var(--muted)}
+.zruns{display:inline-block;align-self:flex-start;margin-top:3px;font-size:11.5px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:6px;padding:1px 7px}
 .libline.is-wide{flex-wrap:wrap}
 .libline.is-wide .li{flex:1 1 calc(100% - 40px)}
 .libline.is-wide .lbtns{flex-direction:row;flex:1 1 100%;padding-left:34px}
@@ -2028,7 +2052,7 @@ button.ayr{cursor:pointer}
         (bookFacts(b) ? '<span class="facts">' + esc(bookFacts(b)) + '</span>' : '') + '<span class="dwhere">' + esc(where) + '</span>' +
         '<span class="photorow"><a class="linkbtn sm" href="' + esc(grURL(b)) + '" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">Goodreads</a><button type="button" class="linkbtn sm" id="dd-photo">' + (own ? 'Andere foto' : 'Foto van de kaft maken') + '</button>' + (own ? '<button type="button" class="linkbtn sm muted" id="dd-photo-del">Foto weg</button>' : '') + '</span></div></div>' +
       sugWhyHTML('book', b.id) +
-      steps + dates +
+      histHTML('b', b) + steps + dates +
       (b.status === 'done' ? '<div class="field"><label>Sterren</label><div class="rate"><div class="stars" role="group" aria-label="Sterren">' + starsHTML(b.rating || 0) + '</div>' +
         '<span class="rval" id="dd-rval">' + (b.rating ? fmtRating(b.rating) : 'nog geen') + '</span>' +
         '<button type="button" class="linkbtn" id="dd-rclear"' + (b.rating ? '' : ' hidden') + '>Wis</button></div></div>' : '') +
@@ -2052,6 +2076,7 @@ button.ayr{cursor:pointer}
       }, 400);
     });
     var flush = function () { clearTimeout(t); var v = notes.value.replace(/\s+$/, ''); if ((b.notes || '') !== v) { if (v) b.notes = v; else delete b.notes; save(); renderKeep(); } };
+    bindHist('b', b, flush);
     sheet.querySelectorAll('[data-dst]').forEach(function (el) {
       el.addEventListener('click', function () {
         if (b.status === el.dataset.dst) return;
@@ -2140,6 +2165,7 @@ button.ayr{cursor:pointer}
     openSheet('Opties voor ' + b.t,
       '<div style="display:flex;flex-direction:column;gap:2px"><h3>' + esc(b.t) + '</h3>' + (b.a ? '<span class="a">' + esc(b.a) + '</span>' : '') + (bookFacts(b) ? '<span class="facts">' + esc(bookFacts(b)) + '</span>' : '') + '</div>' +
       '<button class="btn" id="detail-open" style="flex:none">Datums, sterren en aantekeningen</button>' +
+      (b.status === 'done' && !bookRuns(b).rest.length ? '<button class="btn" id="reread-open" style="flex:none">Opnieuw lezen…</button>' : '') +
       '<p class="lbl">Status</p><div class="seg2">' + stSeg + '</div>' +
       (+b.m >= 1 ? '<div class="field"><label for="d-until">Gepland t/m</label><select id="d-until"><option value="">Alleen ' + destLabel(b.m).toLowerCase() + '</option>' +
         MONTHS.slice(+b.m).map(function (name, i) { var v = String(+b.m + i + 1); return '<option value="' + v + '"' + (b.until === v ? ' selected' : '') + '>' + destLabel(b.m) + ' t/m ' + name.toLowerCase() + '</option>'; }).join('') +
@@ -2164,6 +2190,7 @@ button.ayr{cursor:pointer}
       });
     });
     $('detail-open').addEventListener('click', function () { openDetail(id); });
+    if ($('reread-open')) $('reread-open').addEventListener('click', function () { openReread(id); });
     if ($('d-until')) $('d-until').addEventListener('change', function () { b.until = this.value || null; save(); renderKeep(); });
     sheet.querySelectorAll('[data-dest]').forEach(function (el) {
       el.addEventListener('click', function () { closeSheet(); moveTo(id, el.dataset.dest); });
@@ -3808,6 +3835,162 @@ button.ayr{cursor:pointer}
   function fkey(f) { return f.lb ? 'lb:' + f.lb : f.wd ? 'wd:' + f.wd : 'tt:' + norm(f.t).trim() + '|' + (f.yr || ''); }
   function sameFilm(k) { return state.films.filter(function (x) { return fkey(x) === k; }); }
   function seenYear(f) { return f.st !== 'seen' ? null : f.d ? +f.d.slice(0, 4) : f.y ? +f.y : 0; }
+  // ---------- opnieuw lezen en kijken ----------
+  // Elke keer lezen of kijken is een eigen regel; boeken horen bij elkaar op titel + achternaam schrijver (niet op ISBN: een herlezing is vaak een andere druk).
+  function bkey(b) { var s = String(b.a || '').trim().split(/\s+/).pop() || ''; return wbase(b.t).replace(/['’`´]/g, '').replace(/[^a-z0-9]+/g, ' ').trim() + '|' + norm(s); }
+  function sameBook(b) { var k = bkey(b); return state.books.filter(function (x) { return bkey(x) === k; }); }
+  var ICON_RE = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/></svg>';
+  function shortYM(iso, withDay) { var d = parseISO(iso); if (!d) return ''; return (withDay ? d.getDate() + ' ' : '') + MON_SHORT[d.getMonth()] + ' ’' + String(d.getFullYear()).slice(2); }
+  function bookRuns(b) {
+    var g = sameBook(b), done = g.filter(function (x) { return x.status === 'done'; });
+    done.sort(function (x, y) { var a = x.finished || '9', c = y.finished || '9'; return a < c ? -1 : a > c ? 1 : 0; });
+    var rest = g.filter(function (x) { return x.status !== 'done'; }).sort(function (x) { return x.status === 'bezig' ? -1 : 1; });
+    return { g: g, done: done, rest: rest, all: done.concat(rest) };
+  }
+  function filmRuns(f) {
+    var g = sameFilm(fkey(f)), seen = g.filter(function (x) { return x.st === 'seen'; });
+    seen.sort(function (x, y) { var a = x.d || '', c = y.d || ''; return a < c ? -1 : a > c ? 1 : 0; });
+    return { g: g, done: seen, rest: [], all: seen };
+  }
+  var histAll = {};
+  function histHTML(kind, o) {
+    var R = kind === 'b' ? bookRuns(o) : filmRuns(o), n = R.done.length;
+    if (kind === 'b' ? !n : (!n || o.st !== 'seen')) return '';
+    var items = R.all.map(function (x) {
+      var lab, st = x.rating ? '<i>★' + fmtRating(x.rating) + '</i>' : '';
+      if (kind === 'b') lab = x.status === 'done' ? (x.finished ? shortYM(x.finished) : 'datum onbekend') : x.status === 'bezig' ? 'nu bezig' : 'gepland';
+      else lab = x.d ? shortYM(x.d, true) : 'datum onbekend';
+      return '<button type="button" class="hit' + (x.id === o.id ? ' is-cur' : '') + '" data-hist="' + esc(x.id) + '"' + (x.id === o.id ? ' aria-current="true"' : '') + '>' + esc(lab) + (st ? ' ' + st : '') + '</button>';
+    });
+    var key = kind + o.id, cut = items.length > 6 && !histAll[key];
+    if (cut) items = items.slice(items.length - 5);
+    var canAgain = kind === 'b' ? o.status === 'done' && !R.rest.length : true;
+    return '<div class="libline is-quiet hist' + (items.length > 2 && canAgain ? ' is-wide' : '') + '">' + ICON_RE + '<span class="li"><b>' + n + ' keer ' + (kind === 'b' ? 'gelezen' : 'gezien') + '</b><span class="hruns">' +
+      (cut ? '<button type="button" class="hit hmore" data-histall="' + esc(key) + '">eerdere ' + (R.all.length - 5) + '</button>' : '') + items.join('<span class="hsep" aria-hidden="true">·</span>') + '</span></span>' +
+      (canAgain ? '<span class="lbtns"><button type="button" class="lbtn" id="hist-again">Opnieuw ' + (kind === 'b' ? 'lezen' : 'gezien') + '</button></span>' : '') + '</div>';
+  }
+  function bindHist(kind, o, flush) {
+    sheet.querySelectorAll('[data-hist]').forEach(function (el) {
+      el.addEventListener('click', function () { if (el.dataset.hist === o.id) return; flush(); if (kind === 'b') openDetail(el.dataset.hist); else openFilm(el.dataset.hist); });
+    });
+    sheet.querySelectorAll('[data-histall]').forEach(function (el) {
+      el.addEventListener('click', function () { histAll[el.dataset.histall] = true; flush(); var st = sheet.scrollTop; if (kind === 'b') openDetail(o.id); else openFilm(o.id); sheet.scrollTop = st; });
+    });
+    if ($('hist-again')) $('hist-again').addEventListener('click', function () { flush(); if (kind === 'b') openReread(o.id); else openRewatch(o.id); });
+  }
+  function herTag() {
+    var ids = herTagIds(); if (ids.length) return ids[0];
+    var t = { id: 't' + (state.nextTag++), name: 'herlezen', color: 3, line: false }; state.tags.push(t); return t.id;
+  }
+  function rateField(r, id) {
+    return '<div class="field"><label>Sterren</label><div class="rate"><div class="stars" id="' + id + '" role="group" aria-label="Sterren">' + starsHTML(r || 0) + '</div><span class="rval" id="' + id + '-v">' + (r ? fmtRating(r) : 'nog geen') + '</span></div></div>';
+  }
+  function bindRate(id, get, set) {
+    var box = $(id); if (!box) return;
+    var draw = function () { box.innerHTML = starsHTML(get() || 0); $(id + '-v').textContent = get() ? fmtRating(get()) : 'nog geen'; bind(); };
+    var bind = function () { box.querySelectorAll('[data-rate]').forEach(function (el) { el.addEventListener('click', function () { var r = +el.dataset.rate; set(get() === r ? 0 : r); draw(); }); }); };
+    bind();
+  }
+  function carryTagsHTML(ids, extra) {
+    var names = ids.map(function (id) { var t = state.tags.filter(function (x) { return x.id === id; })[0]; return t ? '<span class="ctag">' + esc(t.name) + '</span>' : ''; }).join('');
+    return names + (extra || '');
+  }
+  function openReread(id, st) {
+    var b = find(id); if (!b) return;
+    st = st || { opt: '', dest: '', start: '', end: '', rating: 0 };
+    var R = bookRuns(b), when = R.done.map(function (x) { return x.finished ? shortYM(x.finished) : 'ooit'; });
+    var hid = herTagIds()[0];
+    var keep = (b.tags || []).filter(function (t) { return t !== hid; });
+    var opt = function (k, t, s, inner) {
+      var on = st.opt === k;
+      return '<div class="ropt' + (on ? ' is-on' : '') + '"><button type="button" class="ropth" data-ropt="' + k + '" aria-pressed="' + on + '"><span class="rd" aria-hidden="true"></span><span><b>' + t + '</b><span>' + s + '</span></span></button>' + (on && inner ? '<div class="ropti">' + inner + '</div>' : '') + '</div>';
+    };
+    var grid = DESTS.map(function (d) { var cur = d.key === st.dest; return '<button type="button" class="dest' + (d.wide ? ' wide' : '') + (d.half ? ' half' : '') + (cur ? ' is-cur' : '') + '" data-rdest="' + d.key + '"' + (cur ? ' aria-current="true"' : '') + '>' + d.short + '</button>'; }).join('');
+    var al = '<div class="datefields"><div class="field"><label for="rr-start">Begonnen op <span class="opt">mag leeg</span></label><input id="rr-start" type="date" value="' + esc(st.start) + '"></div><div class="field"><label for="rr-end">Uitgelezen op</label><input id="rr-end" type="date" value="' + esc(st.end) + '"></div></div>' + rateField(st.rating, 'rr-stars');
+    var ok = st.opt === 'nu' || (st.opt === 'plan' && st.dest) || (st.opt === 'al' && st.end);
+    openSheet('Opnieuw lezen',
+      '<div style="display:flex;flex-direction:column;gap:2px"><h3>' + esc(b.t) + ' opnieuw lezen</h3><span class="a">' + esc([b.a, when.length ? 'gelezen ' + when.join(' en ') : ''].filter(Boolean).join(' · ')) + '</span></div>' +
+      opt('nu', 'Nu herlezen', 'Komt op Bezig, begonnen vandaag.') +
+      opt('plan', 'Plannen', 'Zet hem in een maand, op Binnenkort of op Later.', '<div class="destgrid">' + grid + '</div>') +
+      opt('al', 'Al herlezen', 'Leg een herlezing van vroeger vast: datum en sterren.', al) +
+      '<p class="carry"><b>Gaat mee:</b> ' + esc([b.pages ? b.pages + ' blz.' : '', b.isbn ? 'ISBN' : '', b.own ? 'in huis' : ''].filter(Boolean).concat(['lijnen en tags']).join(', ')) + ' ' + carryTagsHTML(keep, '<span class="ctag new">+ herlezen</span>') +
+        '<br>Aantekeningen en sterren beginnen leeg; die van eerder blijven bij hun eigen keer.</p>' +
+      '<div class="btnrow"><button type="button" class="btn" id="rr-no">Annuleer</button><button type="button" class="btn primary" id="rr-yes"' + (ok ? '' : ' disabled') + '>Bewaar</button></div>');
+    var re = function () { var s = sheet.scrollTop; openReread(id, st); sheet.scrollTop = s; };
+    sheet.querySelectorAll('[data-ropt]').forEach(function (el) { el.addEventListener('click', function () { st.opt = el.dataset.ropt; re(); }); });
+    sheet.querySelectorAll('[data-rdest]').forEach(function (el) { el.addEventListener('click', function () { st.dest = el.dataset.rdest; re(); }); });
+    if ($('rr-start')) $('rr-start').addEventListener('change', function () { st.start = this.value; });
+    if ($('rr-end')) $('rr-end').addEventListener('change', function () { st.end = this.value; $('rr-yes').disabled = !st.end; });
+    bindRate('rr-stars', function () { return st.rating; }, function (r) { st.rating = r; });
+    $('rr-no').addEventListener('click', function () { openDetail(id); });
+    $('rr-yes').addEventListener('click', function () {
+      var nb = { id: 'n' + (state.nextId++), t: b.t, a: b.a || '', m: 'voorraad', status: 'open', done: false, started: null, finished: null, until: null, tags: keep.concat([herTag()]) };
+      ['isbn', 'pages', 'publisher', 'year', 'orig', 'edition', 'own'].forEach(function (k) { if (b[k] != null && b[k] !== '') nb[k] = b[k]; });
+      var now = new Date(), msg;
+      if (st.opt === 'nu') { nb.m = String(now.getMonth() + 1); nb.y = now.getFullYear(); setStatus(nb, 'bezig'); msg = 'Herlezen: nu bezig'; }
+      else if (st.opt === 'plan') { nb.m = st.dest; if (!isPoolKey(st.dest)) nb.y = YEAR; msg = 'Herlezing gepland: ' + destLabel(st.dest).toLowerCase(); }
+      else if (st.opt === 'al') {
+        var e = parseISO(st.end); if (!e) return;
+        nb.m = String(e.getMonth() + 1); nb.y = e.getFullYear(); nb.started = st.start || null; nb.finished = st.end; nb.status = 'done'; nb.done = true;
+        if (st.rating) nb.rating = st.rating; msg = 'Herlezing vastgelegd';
+      } else return;
+      state.books.push(nb);
+      if (photos[b.id]) setPhoto(nb.id, photos[b.id]);
+      save(); renderKeep(); toast(msg); openDetail(nb.id);
+    });
+  }
+  function openRewatch(id, st) {
+    var f = findFilm(id); if (!f) return;
+    var R = filmRuns(f), last = R.done[R.done.length - 1];
+    var bios = state.tags.filter(function (t) { return norm(t.name).trim() === 'bios'; })[0];
+    st = st || { when: 'today', d: '', rating: 0, notes: '', bios: false };
+    var y = new Date(); y.setDate(y.getDate() - 1);
+    var yISO = y.getFullYear() + '-' + pad(y.getMonth() + 1) + '-' + pad(y.getDate());
+    var chip = function (k, t) { return '<button type="button" class="rchip' + (st.when === k ? ' is-on' : '') + '" data-rwhen="' + k + '" aria-pressed="' + (st.when === k) + '">' + t + '</button>'; };
+    openSheet('Opnieuw gezien',
+      '<div style="display:flex;flex-direction:column;gap:2px"><h3>' + esc(f.t) + ' opnieuw gezien</h3><span class="a">' + esc([f.dir, f.yr, 'telt als herzien'].filter(Boolean).join(' · ')) + '</span></div>' +
+      '<div class="field"><label>Wanneer</label><div class="rchips">' + chip('today', 'Vandaag') + chip('yday', 'Gisteren') + chip('pick', 'Kies datum') + '</div>' +
+        (st.when === 'pick' ? '<input id="rw-d" type="date" value="' + esc(st.d) + '" style="margin-top:8px" aria-label="Datum">' : '') + '</div>' +
+      rateField(st.rating, 'rw-stars') + (last && last.rating ? '<p class="note" style="margin-top:-8px;font-size:12.5px;color:var(--muted)">Vorige keer: ★ ' + fmtRating(last.rating) + (last.d ? ' (' + nlDate(last.d) + ')' : '') + '</p>' : '') +
+      '<div class="field"><label for="rw-notes">Aantekening <span class="opt">mag leeg</span></label><textarea id="rw-notes" class="notes" style="min-height:70px" placeholder="Wat viel je deze keer op?"></textarea></div>' +
+      (bios ? '<div class="field"><label>Waar</label><div class="rchips"><button type="button" class="rchip' + (st.bios ? ' is-on' : '') + '" id="rw-bios" aria-pressed="' + st.bios + '">' + (st.bios ? '' : '+ ') + esc(bios.name) + '</button></div></div>' : '') +
+      '<p class="carry"><b>Gaat mee:</b> ' + esc([f.dir ? 'regisseur' : '', f.min ? 'speelduur' : '', f.lb ? 'Letterboxd-link' : ''].filter(Boolean).concat(['lijnen en tags']).join(', ')) + '.' + (R.g.some(function (x) { return x.again; }) ? ' Hij gaat van je Herkijken-lijst af.' : '') + '</p>' +
+      '<div class="btnrow"><button type="button" class="btn" id="rw-no">Annuleer</button><button type="button" class="btn primary" id="rw-yes">Bewaar</button></div>');
+    var nt = $('rw-notes'); nt.value = st.notes;
+    var re = function () { st.notes = nt.value; var s = sheet.scrollTop; openRewatch(id, st); sheet.scrollTop = s; };
+    sheet.querySelectorAll('[data-rwhen]').forEach(function (el) { el.addEventListener('click', function () { st.when = el.dataset.rwhen; re(); }); });
+    if ($('rw-d')) $('rw-d').addEventListener('change', function () { st.d = this.value; });
+    if ($('rw-bios')) $('rw-bios').addEventListener('click', function () { st.bios = !st.bios; re(); });
+    bindRate('rw-stars', function () { return st.rating; }, function (r) { st.rating = r; });
+    $('rw-no').addEventListener('click', function () { openFilm(id); });
+    $('rw-yes').addEventListener('click', function () {
+      var d = st.when === 'today' ? todayISO() : st.when === 'yday' ? yISO : st.d;
+      if (!d) { toast('Kies eerst een datum'); return; }
+      var tags = (f.tags || []).filter(function (t) { return !bios || t !== bios.id; });
+      if (bios && st.bios) tags.push(bios.id);
+      var nf = { id: 'f' + (state.nextFilm++), t: f.t, st: 'seen', d: d, re: true, tags: tags, links: (f.links || []).slice(), added: todayISO() };
+      ['yr', 'dir', 'min', 'wd', 'lb'].forEach(function (k) { if (f[k] != null && f[k] !== '') nf[k] = f[k]; });
+      if (st.rating) nf.rating = st.rating;
+      var v = nt.value.replace(/\s+$/, ''); if (v) nf.notes = v;
+      R.g.forEach(function (x) { delete x.again; });
+      state.films.push(nf); save(); renderKeep(); toast('Herzien vastgelegd'); openFilm(nf.id);
+    });
+  }
+  // zoeken: één regel per titel (boek: titel + schrijver, film: fkey)
+  function zGroup(xs) {
+    var by = {}, out = [];
+    xs.forEach(function (x) {
+      var k = x.k === 'b' ? 'b' + bkey(x.o) : 'f' + fkey(x.o);
+      if (!by[k]) { by[k] = { x: x, n: 0, ys: [] }; out.push(by[k]); }
+      if (x.w === 'done') { by[k].n++; if (x.yr) by[k].ys.push(x.yr); }
+    });
+    return out.map(function (e) { var x = Object.assign({}, e.x); if (e.n > 1 || (e.n === 1 && e.x.w !== 'done')) { x.runs = e.n; x.ys = e.ys; } return x; });
+  }
+  function zRunsHTML(x) {
+    if (!x.runs) return '';
+    var ys = x.ys.slice().sort(), span = ys.length ? (ys[0] === ys[ys.length - 1] ? ys[0] : x.runs === 2 ? ys[0] + ', ' + ys[1] : ys[0] + '–' + ys[ys.length - 1]) : '';
+    return '<span class="zruns">' + (x.w !== 'done' ? 'al ' : '') + x.runs + ' keer ' + (x.k === 'b' ? 'gelezen' : 'gezien') + (span && x.runs > 1 ? ' · ' + span : '') + '</span>';
+  }
   function fyLabel(y) { return y ? String(y) : 'Eerder'; }
   function filmYears() {
     var ys = [new Date().getFullYear()];
@@ -3842,7 +4025,8 @@ button.ayr{cursor:pointer}
     var meta = filmMeta(f);
     var bits = [];
     if (o.date && f.d) bits.push(dShort(f.d));
-    if (f.st === 'seen' && isRewatch(f)) bits.push('herzien');
+    if (f.st === 'seen' && isRewatch(f) && !o.again) bits.push('herzien');
+    if (o.again) { var nv = sameFilm(fkey(f)).filter(function (x) { return x.st === 'seen'; }).length; if (nv > 1) bits.push(nv + ' keer gezien'); }
     if (f.st === 'watch' && f.avail) bits.push('beschikbaar');
     var tags = tagsHTML(f.tags || []);
     return '<div class="frow" data-fid="' + esc(f.id) + '">' +
@@ -3908,7 +4092,7 @@ button.ayr{cursor:pointer}
       html += '<div class="fseg"><div class="seg2 sm fwseg" role="group" aria-label="Kijklijst">' + [['all', 'Alles', all.length], ['avail', 'Beschikbaar', av.length + ag.length], ['not', 'Nog niet', nv.length]].map(function (o) { return '<button data-favail="' + o[0] + '"' + (o[0] === 'not' ? ' aria-label="Nog niet beschikbaar, ' + o[2] + '"' : '') + ' class="' + (fwatchAvail === o[0] ? 'is-on' : '') + '">' + o[1] + ' <span class="n">' + o[2] + '</span></button>'; }).join('') + '</div>' +
         '<label class="fsort"><span>Sorteer</span><select id="fsort" aria-label="Sorteer de kijklijst">' + [['title', 'Titel (A–Z)'], ['dur-asc', 'Duur: kort eerst'], ['dur-desc', 'Duur: lang eerst'], ['yr-desc', 'Jaar: nieuw eerst'], ['yr-asc', 'Jaar: oud eerst'], ['added', 'Laatst toegevoegd']].map(function (o) { return '<option value="' + o[0] + '"' + (state.fsort === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>' + fzoekHTML('watch:' + fwatchAvail) + '</div>';
       var shown = sortWatch((fwatchAvail === 'avail' ? av : fwatchAvail === 'not' ? nv : all).slice());
-      if (ag.length && fwatchAvail !== 'not') html += '<section class="sec' + (agClosed ? ' is-collapsed' : '') + '"><button class="sechead" data-fcoll="again" aria-expanded="' + !agClosed + '"><span class="h">Herkijken</span><span class="sp"></span><span class="cnt">' + ag.length + '</span><span class="chev' + (agClosed ? '' : ' is-open') + '">' + ICON_CHEV + '</span></button>' + (agClosed ? '' : '<div class="flist">' + ag.map(function (f) { return filmRowHTML(f); }).join('') + '</div>') + '</section>';
+      if (ag.length && fwatchAvail !== 'not') html += '<section class="sec' + (agClosed ? ' is-collapsed' : '') + '"><button class="sechead" data-fcoll="again" aria-expanded="' + !agClosed + '"><span class="h">Herkijken</span><span class="sp"></span><span class="cnt">' + ag.length + '</span><span class="chev' + (agClosed ? '' : ' is-open') + '">' + ICON_CHEV + '</span></button>' + (agClosed ? '' : '<div class="flist">' + ag.map(function (f) { return filmRowHTML(f, { again: true }); }).join('') + '</div>') + '</section>';
       html += '<section class="sec"><div class="sechead is-static"><span class="h">' + (fwatchAvail === 'avail' ? 'Beschikbaar' : fwatchAvail === 'not' ? 'Nog niet beschikbaar' : 'Kijklijst') + '</span><span class="sp"></span><span class="cnt">' + shown.length + '</span></div>' +
         (shown.length ? '<div class="flist">' + shown.map(function (f) { return filmRowHTML(f); }).join('') + '</div>' : '<p class="results">' + (fwatchAvail === 'not' ? 'Alles op je kijklijst is beschikbaar.' : fwatchAvail === 'avail' ? 'Nog niets als beschikbaar gemarkeerd. Open een film op je kijklijst en zet "Beschikbaar" aan.' : 'Je kijklijst is leeg. Voeg films toe met +.') + '</p>') + '</section>';
       return html;
@@ -3973,11 +4157,11 @@ button.ayr{cursor:pointer}
     openSheet(f.t,
       '<div class="dhead"><span class="cover dcover fposter" style="background:' + posterColor(f) + '" aria-hidden="true">' + posterInner(f) + '</span><div class="dmeta"><h3>' + esc(f.t) + '</h3>' +
         (filmMeta(f) ? '<span class="a">' + esc(filmMeta(f)) + '</span>' : '<span class="facts">Regisseur en speelduur onbekend</span>') +
-        (views.length > 1 ? '<span class="facts">' + views.length + ' keer gezien: ' + views.map(function (v) { return v.d ? nlDate(v.d) : '?'; }).join(', ') + '</span>' : '') +
         (f.dir ? '<span class="dirlinks">' + f.dir.split(' & ').map(function (d) { return '<button type="button" class="alink" data-fperson="' + esc(d.trim()) + '">Alles van ' + esc(d.trim()) + '</button>'; }).join('') + '</span>' : '') +
         (f.lb ? '<a class="linkbtn sm" href="' + esc(f.lb) + '" target="_blank" rel="noopener" style="text-decoration:none">Letterboxd</a>' : '') +
       '</div></div>' +
       sugWhyHTML('film', f.id) +
+      histHTML('f', f) +
       '<div class="seg2">' + stSeg + '</div>' +
       (f.st === 'seen' ?
         '<div class="datefields"><div class="field"><label for="ff-d">Gezien op</label><input id="ff-d" type="date" value="' + esc(f.d || '') + '"></div><div class="field"><label>&nbsp;</label>' + sw('ff-re', f.re, 'Herzien') + '</div></div>' +
@@ -3995,6 +4179,7 @@ button.ayr{cursor:pointer}
     var flush = function () { clearTimeout(t); var v = notes.value.replace(/\s+$/, ''); if ((f.notes || '') !== v) { if (v) f.notes = v; else delete f.notes; save(); renderKeep(); } };
     notes.addEventListener('input', function () { clearTimeout(t); t = setTimeout(function () { flush(); var sv = $('ff-saved'); if (sv) { sv.textContent = 'bewaard'; setTimeout(function () { if ($('ff-saved')) $('ff-saved').textContent = ''; }, 1400); } }, 400); });
     detailFlush = flush;
+    bindHist('f', f, flush);
     var re = function () { flush(); save(); renderKeep(); openFilm(id); };
     sheet.querySelectorAll('[data-fperson]').forEach(function (el) { el.addEventListener('click', function () { flush(); openPerson('film', el.dataset.fperson); }); });
     sheet.querySelectorAll('[data-fst]').forEach(function (el) {
@@ -4038,7 +4223,7 @@ button.ayr{cursor:pointer}
     var f = findFilm(id); if (!f) return;
     openSheet('Opties voor ' + f.t,
       '<div style="display:flex;flex-direction:column;gap:2px"><h3>' + esc(f.t) + '</h3><span class="a">' + esc(filmMeta(f)) + '</span></div>' +
-      '<button class="btn" id="fm-again" style="flex:none">Nog een keer gezien (vandaag)</button>' +
+      (f.st === 'seen' ? '<button class="btn" id="fm-again" style="flex:none">Opnieuw gezien…</button>' : '') +
       '<button class="btn" id="fm-wd" style="flex:none">Aanvullen via Wikidata</button>' +
       '<form id="fm-form" style="display:flex;flex-direction:column;gap:12px" novalidate>' +
         '<div class="field"><label for="fm-t">Titel</label><input id="fm-t" type="text" autocomplete="off"></div>' +
@@ -4047,10 +4232,7 @@ button.ayr{cursor:pointer}
         '<div class="btnrow"><button type="button" class="btn" id="fm-back">Terug</button><button type="submit" class="btn primary">Bewaar</button></div></form>' +
       '<div id="fm-delzone">' + (confirmDel ? '<p class="note" style="margin-bottom:10px">Deze kijkbeurt verdwijnt uit je lijst.</p><div class="btnrow"><button class="btn" id="fm-delno">Annuleer</button><button class="btn danger" id="fm-delyes">Verwijder</button></div>' : '<button class="linkdanger" id="fm-del">Verwijder uit de lijst</button>') + '</div>');
     $('fm-t').value = f.t; $('fm-yr').value = f.yr || ''; $('fm-min').value = f.min || ''; $('fm-dir').value = f.dir || '';
-    $('fm-again').addEventListener('click', function () {
-      var nf = { id: 'f' + (state.nextFilm++), t: f.t, yr: f.yr, dir: f.dir, min: f.min, wd: f.wd, lb: f.lb, st: 'seen', d: todayISO(), re: true, tags: (f.tags || []).slice(), links: (f.links || []).slice(), added: todayISO() };
-      state.films.push(nf); save(); renderKeep(); toast('Herzien vandaag'); openFilm(nf.id);
-    });
+    if ($('fm-again')) $('fm-again').addEventListener('click', function () { openRewatch(id); });
     $('fm-wd').addEventListener('click', function () { openAddFilm({ fill: id, q: f.t }); });
     $('fm-back').addEventListener('click', function () { openFilm(id); });
     $('fm-form').addEventListener('submit', function (e) {
@@ -6091,7 +6273,7 @@ button.ayr{cursor:pointer}
       if (x.w === 'avail') { right = 'beschikbaar'; rc = 'av'; }
       else if (x.w === 'done' && o.rating) right = '★ ' + fmtRating(o.rating);
     }
-    return '<button class="zrow" data-z' + x.k + '="' + esc(o.id) + '"><span class="zti z' + x.k + '">' + zic(x.k === 'b' ? 'boek' : 'film', 15, 2.1) + '</span><span class="ztx"><b>' + esc(o.t) + '</b><span>' + esc(meta) + '</span></span>' +
+    return '<button class="zrow" data-z' + x.k + '="' + esc(o.id) + '"><span class="zti z' + x.k + '">' + zic(x.k === 'b' ? 'boek' : 'film', 15, 2.1) + '</span><span class="ztx"><b>' + esc(o.t) + '</b><span>' + esc(meta) + '</span>' + zRunsHTML(x) + '</span>' +
       (right ? '<span class="z' + rc + '">' + esc(right) + '</span>' : '') + (o.notes ? '<span class="anote" title="Aantekeningen">' + ICON_NOTE + '</span>' : '') + '</button>';
   }
   function zSection(key, title, xs, withDate, sub) {
@@ -6203,6 +6385,7 @@ button.ayr{cursor:pointer}
     }
     var hits = all.filter(function (x) { return zMatch(x, zq); });
     hits.sort(function (a, b) { var r = function (x) { return x.w === 'bezig' ? 0 : Z_TODO[x.w] ? 1 : 2; }; return r(a) - r(b) || ((b.d || '') < (a.d || '') ? -1 : 1); });
+    hits = zGroup(hits);
     html += '<p class="zlbl">Titels <span class="zn">' + hits.length + '</span></p>' + (hits.length ? '<div class="zcard">' + hits.slice(0, zOpenSec.typed ? 400 : 25).map(function (x) { return zRow(x, false); }).join('') + '</div>' +
       (hits.length > 25 && !zOpenSec.typed ? '<button class="linkbtn" data-zsec="typed">Alle ' + hits.length + ' titels</button>' : '') : '<p class="note">Geen titel met “' + esc(zq.q.trim()) + '”' + (zActive() ? ' binnen deze filters' : '') + '.</p>');
     var notes = all.filter(function (x) { return x.o.notes && norm(x.o.notes).indexOf(q) >= 0 && zMatch(x, zq, 'q'); });
